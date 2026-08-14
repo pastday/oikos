@@ -1,0 +1,41 @@
+# oikos.pastday.co.kr — Oikos University 경영대학원 홈페이지 (Next.js)
+#
+# 설치:
+#   sudo cp /home/pastday/oikos/deploy/systemd/oikos.service /etc/systemd/system/oikos.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now oikos
+#
+# 상태 확인:
+#   systemctl status oikos
+#   journalctl -u oikos -n 50 --no-pager
+#
+# 코드 갱신 후 재시작:
+#   cd /home/pastday/oikos && npm ci && npm run build && sudo systemctl restart oikos
+
+[Unit]
+Description=oikos.pastday.co.kr - Oikos University Graduate School site (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=pastday
+Group=pastday
+WorkingDirectory=/home/pastday/oikos
+
+Environment=NODE_ENV=production
+# 외부에 직접 노출하지 않고 nginx 를 통해서만 접근한다.
+ExecStart=/usr/bin/node /home/pastday/oikos/node_modules/next/dist/bin/next start -p 3100 -H 127.0.0.1
+
+Restart=on-failure
+RestartSec=3
+
+# 최소 권한
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+# Next.js 가 런타임에 이미지 최적화 캐시를 쓰는 경로
+ReadWritePaths=/home/pastday/oikos/.next
+
+[Install]
+WantedBy=multi-user.target
