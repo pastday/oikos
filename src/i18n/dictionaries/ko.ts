@@ -30,6 +30,7 @@ export const ko = {
     mobileMenuLabel: "모바일 메뉴",
     languageLabel: "언어 선택",
     skipToContent: "본문으로 건너뛰기",
+    logoAlt: "오이코스대학교 로고",
   },
 
   home: {
@@ -94,7 +95,7 @@ export const ko = {
   meta: {
     homeTitle: "오이코스대학교 경영대학원 | 호텔·외식·와인경영 MBA·DBA",
     homeDescription:
-      "미국 오이코스대학교 경영대학원 호텔·외식·와인경영 전공의 MBA·DBA 과정 안내 및 입학상담 사이트입니다.",
+      "미국 오이코스대학교 경영대학원 호텔·외식·와인경영 전공의 MBA·DBA 과정 안내. 100% 온라인 과정, 석사 4학기·박사 6학기, 2026년 10월 개강. 교육과정과 입학안내를 확인하세요.",
     titleSuffix: "오이코스대학교 경영대학원",
     pageDescription:
       "미국 오이코스대학교 경영대학원 호텔·외식·와인경영 전공 안내.",

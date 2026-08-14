@@ -53,7 +53,7 @@ export function MobileMenu({
   }, [isOpen]);
 
   return (
-    <div className="lg:hidden">
+    <div className="xl:hidden">
       <button
         type="button"
         aria-label={isOpen ? closeLabel : openLabel}

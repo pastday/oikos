@@ -31,6 +31,7 @@ export const en: Dictionary = {
     mobileMenuLabel: "Mobile menu",
     languageLabel: "Select language",
     skipToContent: "Skip to main content",
+    logoAlt: "Oikos University logo",
   },
 
   home: {
@@ -96,7 +97,7 @@ export const en: Dictionary = {
   meta: {
     homeTitle: "Oikos University Graduate School | MBA & DBA",
     homeDescription:
-      "Information on the MBA and DBA programs in Hotel, Foodservice and Wine Management at Oikos University Graduate School of Business, and admissions consultation.",
+      "MBA and DBA programs in Hotel, Foodservice and Wine Management at Oikos University Graduate School of Business. 100% online, 4 semesters for the MBA and 6 for the DBA, starting October 2026.",
     titleSuffix: "Oikos University Graduate School",
     pageDescription:
       "Hotel, Foodservice and Wine Management at Oikos University Graduate School of Business.",
