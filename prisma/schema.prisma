@@ -1,0 +1,295 @@
+// Oikos University 홈페이지 데이터 모델
+//
+// 설계 원칙
+//  - 이 시스템은 LMS/학사관리 시스템이 아니다. 홍보 홈페이지 + CMS + 상담관리에 필요한 데이터만 관리한다.
+//  - 한국어/영어 콘텐츠는 자동 번역하지 않고 동일 Entity의 Ko/En 필드로 각각 관리한다.
+//  - 한국어 핵심 필드는 필수, 영어 필드 및 부가 정보는 nullable 로 두어 콘텐츠를 단계적으로 입력할 수 있게 한다.
+//  - 원본 자료에 불일치가 있는 값(학점, 과목 수 등)은 임의로 확정하지 않기 위해 nullable 로 둔다.
+//
+// 자세한 결정 배경은 docs/decisions.md 참고.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// 관리자 권한. 향후 확장 가능하도록 enum 으로 분리한다. (CLAUDE.md 14항)
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+/// 교수 구분. (CLAUDE.md 7항 - 교수진 관리)
+enum FacultyType {
+  CHIEF_PROFESSOR // 주임교수
+  PROFESSOR // 교수
+  VISITING_PROFESSOR // 객원교수
+}
+
+/// 과정 구분. 홈페이지 공식 표기는 MBA / DBA 로 통일한다.
+/// 원본 문서에 혼재하는 DM / Doctor of Management 는 별도 타입으로 만들지 않는다. (docs/decisions.md 2항)
+enum ProgramType {
+  MBA
+  DBA
+}
+
+/// 교과목 구분.
+enum CourseCategory {
+  MAJOR // 전공
+  COMMON // 공통
+  CHAPEL // 채플
+  OTHER // 기타
+}
+
+/// 상담신청·설명회신청 공통 처리 상태.
+/// 두 폼의 상태 흐름이 동일하므로 enum 중복을 피하고 하나를 재사용한다.
+enum InquiryStatus {
+  NEW // 신규
+  IN_PROGRESS // 상담중
+  COMPLETED // 완료
+}
+
+// ---------------------------------------------------------------------------
+// 관리자
+// ---------------------------------------------------------------------------
+
+/// 관리자 계정.
+/// 비밀번호는 반드시 해시(bcrypt)만 저장한다. 평문 저장 금지. (CLAUDE.md 18항)
+/// 인증 로직 자체는 5단계에서 구현한다. 여기서는 데이터 구조만 정의한다.
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         AdminRole @default(ADMIN)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("admin_users")
+}
+
+// ---------------------------------------------------------------------------
+// 홈페이지 콘텐츠
+// ---------------------------------------------------------------------------
+
+/// 관리자가 수정 가능한 고정 콘텐츠 영역.
+/// 예: pageKey="about" / sectionKey="graduate-school"
+///     pageKey="program" / sectionKey="major-introduction"
+/// bodyKo/bodyEn 은 PostgreSQL text 타입으로 매핑되어 길이 제한이 사실상 없다.
+/// 향후 Rich Text / HTML 저장에도 그대로 사용할 수 있다.
+model PageSection {
+  id          String   @id @default(cuid())
+  pageKey     String
+  sectionKey  String
+  titleKo     String?
+  titleEn     String?
+  bodyKo      String?
+  bodyEn      String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([pageKey, sectionKey])
+  @@map("page_sections")
+}
+
+// ---------------------------------------------------------------------------
+// 교수진
+// ---------------------------------------------------------------------------
+
+/// 교수진 정보. 연락처 등은 모든 교수에게 존재하지 않으므로 nullable.
+model Faculty {
+  id              String      @id @default(cuid())
+  type            FacultyType
+  nameKo          String
+  nameEn          String?
+  titleKo         String?
+  titleEn         String?
+  majorKo         String?
+  majorEn         String?
+  careerKo        String?
+  careerEn        String?
+  lectureFieldsKo String?
+  lectureFieldsEn String?
+  photoUrl        String?
+  email           String?
+  phone           String?
+  sortOrder       Int         @default(0)
+  isPublished     Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  /// 교수 구분별 목록 조회 + 표시순서 정렬용
+  @@index([type, sortOrder])
+  @@map("faculties")
+}
+
+// ---------------------------------------------------------------------------
+// MBA / DBA 과정
+// ---------------------------------------------------------------------------
+
+/// MBA / DBA 과정 정보.
+/// 학점·학기·과목 수는 원본 문서에 불일치가 있어 임의 확정하지 않기 위해 모두 nullable 이다.
+/// 값은 관리자가 CMS에서 직접 입력한다. (하드코딩 금지 - CLAUDE.md 9항)
+model Program {
+  id                       String      @id @default(cuid())
+  type                     ProgramType @unique
+  nameKo                   String
+  nameEn                   String?
+  descriptionKo            String?
+  descriptionEn            String?
+  durationSemesters        Int?
+  totalCredits             Int?
+  majorCredits             Int?
+  commonCredits            Int?
+  chapelCourses            Int?
+  classMethodKo            String?
+  classMethodEn            String?
+  graduationRequirementsKo String?
+  graduationRequirementsEn String?
+  careerKo                 String?
+  careerEn                 String?
+  isPublished              Boolean     @default(true)
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  courses Course[]
+
+  @@map("programs")
+}
+
+/// 교과목. 학사관리 수준이 아니라 홈페이지 표시용 CMS 수준으로만 관리한다. (CLAUDE.md 8항)
+/// 원본 문서상 과목 수·학점 불일치가 있어 실제 데이터는 이번 단계에서 seed 하지 않는다.
+model Course {
+  id            String         @id @default(cuid())
+  programId     String
+  semester      Int
+  credits       Int?
+  titleKo       String
+  titleEn       String?
+  descriptionKo String?
+  descriptionEn String?
+  category      CourseCategory @default(MAJOR)
+  sortOrder     Int            @default(0)
+  isPublished   Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  /// 과정별 → 학기별 → 표시순서 조회용. foreign key 인덱스 역할도 겸한다.
+  @@index([programId, semester, sortOrder])
+  @@map("courses")
+}
+
+// ---------------------------------------------------------------------------
+// FAQ
+// ---------------------------------------------------------------------------
+
+model FAQ {
+  id          String   @id @default(cuid())
+  questionKo  String
+  questionEn  String?
+  answerKo    String
+  answerEn    String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("faqs")
+}
+
+// ---------------------------------------------------------------------------
+// 입학상담 / 설명회 신청
+// ---------------------------------------------------------------------------
+
+/// 방문자 입학상담 신청. 개인정보를 포함하므로 취급에 주의한다.
+model Consultation {
+  id                String        @id @default(cuid())
+  name              String
+  phone             String
+  email             String
+  interestedProgram ProgramType?
+  message           String?
+  status            InquiryStatus @default(NEW)
+  privacyAgreed     Boolean       @default(false)
+  /// 신청서를 제출한 사이트 언어. "ko" 또는 "en"
+  locale            String        @default("ko")
+  adminMemo         String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  /// 관리자 상담목록의 상태 필터 + 최신순 정렬용 (CLAUDE.md 12항)
+  @@index([status, createdAt])
+  @@map("consultations")
+}
+
+/// 설명회 신청. 초기에는 복잡한 예약 시스템을 만들지 않으므로
+/// preferredSession 은 자유 입력 문자열로 둔다. (CLAUDE.md 13항)
+model SeminarApplication {
+  id               String        @id @default(cuid())
+  name             String
+  phone            String
+  email            String
+  preferredSession String?
+  attendeeCount    Int           @default(1)
+  memo             String?
+  privacyAgreed    Boolean       @default(false)
+  locale           String        @default("ko")
+  status           InquiryStatus @default(NEW)
+  adminMemo        String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@map("seminar_applications")
+}
+
+// ---------------------------------------------------------------------------
+// 파일 / 사이트 설정
+// ---------------------------------------------------------------------------
+
+/// 업로드 파일 메타정보. 실제 업로드 기능은 8단계에서 구현한다.
+/// path 는 스토리지 종류에 의존하지 않는 상대 경로로 저장해
+/// 향후 로컬 → 클라우드 Object Storage 전환이 쉽도록 한다. (CLAUDE.md 15항)
+model Media {
+  id           String   @id @default(cuid())
+  originalName String
+  storedName   String   @unique
+  mimeType     String
+  size         Int
+  path         String
+  altKo        String?
+  altEn        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("media")
+}
+
+/// 사이트 전역 설정. (대표 전화·이메일, 본교/FICB URL, 모집학기 등)
+/// 언어 무관 값은 value, 한/영문 구분이 필요한 값은 valueKo/valueEn 을 사용한다.
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?
+  valueKo   String?
+  valueEn   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

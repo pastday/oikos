@@ -96,12 +96,106 @@
 | import alias | `@/*` | 1단계 |
 | 패키지 매니저 | npm | 1단계 |
 | Node.js | v20.20.2 (Next 16 요구사항 20.9+ 충족) | 1단계 |
+| Prisma | 7.9.1 (`prisma`, `@prisma/client`) | 2단계 |
+| DB 드라이버 | `@prisma/adapter-pg` 7.9.1 (Prisma 7 필수) | 2단계 |
+| Prisma 설정 | `prisma.config.ts` + `dotenv` | 2단계 |
+| Prisma Client 출력 | `src/generated/prisma` (Git 미포함) | 2단계 |
+
+---
+
+## 2단계 결정사항 — DB / 데이터 모델 (2026-08-14)
+
+### DB 및 ORM
+
+- **PostgreSQL** 을 사용한다. 개발환경에서도 SQLite 등으로 대체하지 않는다.
+- **Docker / Docker Compose 는 사용하지 않는다.** 로컬에 직접 설치한 PostgreSQL 을 사용한다.
+- **Prisma ORM** 을 사용한다. (Prisma 7.9.1)
+- Prisma 7 부터 **driver adapter 가 필수**이므로 `@prisma/adapter-pg` 를 함께 사용한다.
+  Prisma 6 방식(어댑터 없이 내장 엔진)은 7 에서 더 이상 동작하지 않는다.
+- Prisma 7 은 `.env` 를 자동으로 읽지 않는다. `prisma.config.ts` 에서 `dotenv/config` 로 명시적으로 로드한다.
+
+### 포트 5433 사용 (중요)
+
+이 개발 PC 의 **5432 포트는 다른 프로젝트(`dajungrime`)의 Docker PostgreSQL 컨테이너가 점유** 중이다.
+해당 컨테이너는 이 프로젝트와 무관하므로 중지하거나 변경하지 않는다.
+따라서 Oikos 용 로컬 PostgreSQL 클러스터는 **5433 포트**를 사용한다.
+
+### DB 계정
+
+- Database: `oikos_dev`
+- App user: `oikos_app`
+- `postgres` superuser 를 애플리케이션 연결 계정으로 사용하지 않는다.
+- `oikos_app` 에는 superuser 를 주지 않고 `LOGIN` + `CREATEDB` 만 부여한다.
+  `CREATEDB` 는 `prisma migrate dev` 가 shadow database 를 만들 때 필요하다.
+- 개발용 비밀번호는 `.env` 에만 존재하며 코드·문서·Git 에 기록하지 않는다.
+- DB 구성은 `scripts/setup-local-db.sh` 로 재현한다. 이 스크립트는 `.env` 에서 접속정보를 읽으므로
+  비밀번호를 담지 않아 Git 에 커밋해도 안전하다.
+
+### 다국어 데이터 저장 방식 (1단계 미결 항목 #1 해결)
+
+- **동일 Entity 안에 `Ko` / `En` 접미사 필드를 두는 방식**으로 통일한다.
+- 별도 translation 테이블이나 `(locale, ...)` 행 분리 방식은 사용하지 않는다.
+  → 언어가 2개로 고정되어 있고, 관리자 화면에서 한/영을 나란히 편집하는 UX 에 적합하며,
+    조회 시 join 이 필요 없어 단순하다.
+- 자동 번역 구조는 사용하지 않는다.
+
+### 필드 필수/선택 규칙
+
+- 한국어 핵심 식별 필드(`nameKo`, `titleKo`, `questionKo`, `answerKo`)는 **필수**.
+- 대응하는 영어 필드는 **nullable**. 콘텐츠를 한국어부터 단계적으로 입력할 수 있게 한다.
+- 연락처·사진 등 부가 정보는 nullable.
+- **학점·학기·과목 수 관련 숫자 필드는 전부 nullable** 로 둔다.
+  원본 문서에 불일치가 있어 임의로 확정하지 않기 위한 의도적 선택이다. (`CLAUDE.md` 23항)
+
+### 모델 및 enum
+
+모델 10개: `AdminUser`, `PageSection`, `Faculty`, `Program`, `Course`, `FAQ`,
+`Consultation`, `SeminarApplication`, `Media`, `SiteSetting`
+
+enum 5개: `AdminRole`, `FacultyType`, `ProgramType`, `CourseCategory`, `InquiryStatus`
+
+- 관리자 role 은 `SUPER_ADMIN` / `ADMIN` 2단계. (`CLAUDE.md` 14항)
+- `ProgramType` 은 `MBA` / `DBA` 만 둔다. `DM` / `Doctor of Management` 는 별도 타입으로 만들지 않는다. (위 2항)
+- 상담 상태는 `NEW` / `IN_PROGRESS` / `COMPLETED`.
+- **상담신청과 설명회신청의 상태 흐름이 동일**하므로 enum 을 중복 정의하지 않고 하나를 공유한다.
+  이름은 두 곳에서 함께 쓰이는 것을 반영해 `ConsultationStatus` 대신 **`InquiryStatus`** 로 한다.
+
+### 인덱스
+
+성능이 필요한 곳에만 최소한으로 둔다.
+
+| 대상 | 인덱스 | 목적 |
+| --- | --- | --- |
+| `AdminUser.email` | unique | 로그인 조회 |
+| `Program.type` | unique | 과정당 1행 보장 |
+| `PageSection(pageKey, sectionKey)` | unique | 콘텐츠 영역 식별 |
+| `SiteSetting.key` | unique | 설정 조회 |
+| `Media.storedName` | unique | 저장 파일명 충돌 방지 |
+| `Faculty(type, sortOrder)` | index | 교수 구분별 목록 정렬 |
+| `Course(programId, semester, sortOrder)` | index | 교육과정 표시 + FK 인덱스 겸용 |
+| `FAQ(sortOrder)` | index | FAQ 정렬 |
+| `Consultation(status, createdAt)` | index | 관리자 상담목록 필터 + 최신순 |
+| `SeminarApplication(status, createdAt)` | index | 설명회 신청목록 필터 + 최신순 |
+
+### Seed
+
+- 이번 단계에서는 **어떤 실제 데이터도 seed 하지 않는다.**
+- 특히 교과목·학점·등록금은 원본 문서에 불일치가 있어 확정 전까지 입력하지 않는다. (`CLAUDE.md` 23항)
+- 모든 모델이 독립적이고 `Course` 만 `Program` 에 종속되므로,
+  향후 seed 는 `Program` → `Course` 순서만 지키면 되어 작성이 단순하다.
+
+### 기타
+
+- Prisma Client 는 `src/generated/prisma` 에 생성되며 Git 에 커밋하지 않는다. (빌드 시 재생성)
+- `src/lib/prisma.ts` 에 globalThis 싱글턴을 두어 dev hot reload 시 커넥션 누수를 막는다.
+- `prisma init` 이 함께 생성한 에이전트용 skill 파일(`.agents/`, `.windsurf/`, `.claude/`,
+  `skills-lock.json`)은 이 프로젝트에서 사용하지 않으므로 제거했다.
 
 ---
 
 ## 이후 단계에서 확정해야 할 미결 항목
 
-1. 다국어 저장 방식 — 필드 접미사(`nameKo`/`nameEn`) vs 행 분리(`locale`) 혼용 기준 → **2단계**
+1. ~~다국어 저장 방식~~ → **2단계에서 확정 (Ko/En 필드 접미사 방식)**
 2. 메뉴 ↔ 실제 라우트 매핑표 (메뉴 30여 개를 라우트 10~12개로 정리) → **3단계**
 3. i18n 구현 방식 — `next-intl` 도입 vs 자체 구현 → **3단계**
 4. 콘텐츠 편집기 — 리치텍스트 에디터 도입 여부 및 XSS sanitize 방침 → **6단계**
