@@ -72,7 +72,27 @@ certbot 이 `sites-available/oikos` 에 TLS 설정과 HTTP→HTTPS 리다이렉�
 
 ```bash
 curl -I https://oikos.pastday.co.kr/
+sudo certbot certificates
 ```
+
+> ⚠️ **certbot 실행 후에는 이 저장소의 nginx 설정 파일을 서버로 다시 복사하지 않는다.**
+> certbot 이 서버의 `/etc/nginx/sites-available/oikos` 에 직접 TLS 블록을 추가하므로,
+> 저장소 파일로 덮어쓰면 인증서 설정이 사라지고 HTTPS 가 끊긴다.
+> nginx 설정을 바꿔야 한다면 서버 파일을 직접 수정하거나,
+> 저장소 파일을 고친 뒤 TLS 블록을 유지한 채 필요한 부분만 옮긴다.
+
+#### 자동 갱신
+
+Let's Encrypt 인증서는 90일마다 갱신해야 하며, certbot 패키지가 설치한 타이머가 자동으로 처리한다.
+
+```bash
+systemctl list-timers | grep certbot     # 타이머 동작 확인
+sudo certbot renew --dry-run             # 갱신 시뮬레이션
+```
+
+갱신은 `/.well-known/acme-challenge/` 경로로 이루어진다.
+nginx 설정의 숨김 파일 차단 규칙이 이 경로를 막지 않도록
+`location ~ /\.(?!well-known)` 형태로 예외를 두었다. 이 규칙을 되돌리지 않는다.
 
 ---
 
