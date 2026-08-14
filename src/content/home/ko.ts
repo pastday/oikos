@@ -1,4 +1,7 @@
+import { formatIntake } from "../program-facts";
 import type { HomeContent } from "./types";
+
+const intakeKo = formatIntake("ko");
 
 /**
  * 한국어 메인 페이지 콘텐츠.
@@ -28,7 +31,7 @@ export const homeKo: HomeContent = {
   facts: [
     { label: "석사 (MBA)", value: "4학기" },
     { label: "박사 (DBA)", value: "6학기" },
-    { label: "개강", value: "2026년 10월" },
+    { label: "개강", value: intakeKo },
     { label: "주임교수", value: "김동준" },
   ],
 
@@ -182,13 +185,13 @@ export const homeKo: HomeContent = {
 
   admission: {
     eyebrow: "입학안내",
-    title: "2026년 10월 개강",
+    title: `${intakeKo} 개강`,
     description: "모집요강과 입학절차를 확인하실 수 있습니다.",
     items: [
       { label: "MBA", value: "4학기" },
       { label: "DBA", value: "6학기" },
       { label: "수업방식", value: "100% 온라인" },
-      { label: "개강", value: "2026년 10월" },
+      { label: "개강", value: intakeKo },
     ],
     ctaGuide: "모집요강 보기",
     ctaConsultation: "입학상담 신청",

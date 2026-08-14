@@ -1,4 +1,7 @@
+import { formatIntake } from "../program-facts";
 import type { HomeContent } from "./types";
+
+const intakeEn = formatIntake("en");
 
 /**
  * 영어 메인 페이지 콘텐츠.
@@ -23,7 +26,7 @@ export const homeEn: HomeContent = {
   facts: [
     { label: "Master's (MBA)", value: "4 Semesters" },
     { label: "Doctorate (DBA)", value: "6 Semesters" },
-    { label: "Starts", value: "October 2026" },
+    { label: "Starts", value: intakeEn },
     { label: "Chief Professor", value: "Dong-Joon Kim" },
   ],
 
@@ -177,14 +180,14 @@ export const homeEn: HomeContent = {
 
   admission: {
     eyebrow: "Admissions",
-    title: "Starting October 2026",
+    title: `Starting ${intakeEn}`,
     description:
       "Review the admissions guide and application process.",
     items: [
       { label: "MBA", value: "4 semesters" },
       { label: "DBA", value: "6 semesters" },
       { label: "Format", value: "100% online" },
-      { label: "Starts", value: "October 2026" },
+      { label: "Starts", value: intakeEn },
     ],
     ctaGuide: "View admissions guide",
     ctaConsultation: "Request Consultation",
