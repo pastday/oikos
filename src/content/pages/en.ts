@@ -5,7 +5,10 @@ import {
   formatIntake,
   formatKrw,
   mbaFacts,
+  n,
 } from "../program-facts";
+import type { ProgramType } from "@/generated/prisma/enums";
+import type { ProgramNumbers } from "@/lib/cms/types";
 import type { PageContent } from "./types";
 
 const intakeEn = formatIntake("en");
@@ -18,7 +21,13 @@ const krw = (amount: number) => formatKrw(amount, "en");
  * 다만 학교명·학위명·기관명·교과목명은 원본 자료의 표현을 유지하고,
  * 원본에 없는 행정적·법적 표현을 새로 만들지 않는다.
  */
-export const pagesEn: PageContent = {
+export function createPagesEn(
+  numbers: Record<ProgramType, ProgramNumbers>,
+): PageContent {
+  const mba = numbers.MBA;
+  const dba = numbers.DBA;
+
+  return {
   // -------------------------------------------------------------------------
   about: {
     intro: {
@@ -96,23 +105,23 @@ export const pagesEn: PageContent = {
       description:
         "The faculty overseeing the curriculum of the Hotel, Foodservice & Wine Management major.",
     },
-    chief: {
-      sectionTitle: "Chief Professor",
-      name: "Dong-Joon Kim",
-      nameAlt: "김동준",
-      initials: "DK",
-      role: "Chief Professor",
-      major: "Hotel, Foodservice & Wine Management",
-      affiliation: "Online Graduate School of Business",
-      details: [
-        { label: "Position", value: "Chief Professor" },
-        { label: "Major", value: "Hotel, Foodservice & Wine Management" },
-        { label: "Korean name", value: "김동준" },
-      ],
+    groupTitles: {
+      CHIEF_PROFESSOR: "Chief Professor",
+      PROFESSOR: "Professors",
+      VISITING_PROFESSOR: "Visiting Professors",
+    },
+    labels: {
+      major: "Major",
+      career: "Career",
+      lectureFields: "Teaching areas",
+    },
+    emptyNotice: {
+      title: "Faculty",
+      body: "Faculty information is being prepared and will be published here once confirmed.",
     },
     pendingNotice: {
       title: "Professors & Visiting Professors",
-      body: "The list of professors and visiting professors is being prepared and will be published here once confirmed.",
+      body: "The list of additional professors and visiting professors is being prepared and will be published here once confirmed.",
     },
     contactNotice:
       "Individual faculty contact details are not published. Please use the consultation request for questions about the programs.",
@@ -123,7 +132,7 @@ export const pagesEn: PageContent = {
     intro: {
       eyebrow: "MBA",
       title: "Master of Business Administration (MBA)",
-      description: `${mbaFacts.semesters} semesters · ${mbaFacts.totalCredits} credits · a fully online master's program centered on theory coursework.`,
+      description: `${n(mba.durationSemesters)} semesters · ${n(mba.totalCredits)} credits · a fully online master's program centered on theory coursework.`,
     },
     overview: {
       title: "Program Overview",
@@ -135,19 +144,19 @@ export const pagesEn: PageContent = {
     summary: {
       title: "Duration & Credits",
       items: [
-        { label: "Duration", value: `${mbaFacts.semesters} semesters` },
+        { label: "Duration", value: `${n(mba.durationSemesters)} semesters` },
         {
           label: "Per semester",
           value: `${mbaFacts.coursesPerSemester} courses / ${mbaFacts.creditsPerSemester} credits`,
         },
-        { label: "Total credits", value: `${mbaFacts.totalCredits}` },
+        { label: "Total credits", value: `${n(mba.totalCredits)}` },
         {
           label: "Credit breakdown",
-          value: `${mbaFacts.majorCredits} major · ${mbaFacts.commonCredits} common`,
+          value: `${n(mba.majorCredits)} major · ${n(mba.commonCredits)} common`,
         },
         {
           label: "Chapel",
-          value: `${mbaFacts.chapelCourses} courses`,
+          value: `${n(mba.chapelCourses)} courses`,
           note: "required separately from credits",
         },
         { label: "Format", value: "100% online" },
@@ -186,20 +195,18 @@ export const pagesEn: PageContent = {
       creditsUnit: "credits",
       creditsUnknown: "credits not stated",
       formatLabel: "Format",
-      altTitleNote:
-        "The source material records two different English titles for this course.",
       descriptionPending: "The course description is being prepared.",
       note: "Courses may change depending on semester circumstances.",
     },
     graduation: {
       title: "Graduation Requirements",
       items: [
-        { label: "Total credits", value: `${mbaFacts.totalCredits}` },
-        { label: "Major", value: `${mbaFacts.majorCredits} credits` },
-        { label: "Common", value: `${mbaFacts.commonCredits} credits` },
+        { label: "Total credits", value: `${n(mba.totalCredits)}` },
+        { label: "Major", value: `${n(mba.majorCredits)} credits` },
+        { label: "Common", value: `${n(mba.commonCredits)} credits` },
         {
           label: "Chapel",
-          value: `${mbaFacts.chapelCourses} courses (separate)`,
+          value: `${n(mba.chapelCourses)} courses (separate)`,
         },
       ],
     },
@@ -210,7 +217,7 @@ export const pagesEn: PageContent = {
     intro: {
       eyebrow: "DBA",
       title: "Doctor of Business Administration (DBA)",
-      description: `${dbaFacts.semesters} semesters · ${dbaFacts.totalCredits} credits · a fully online professional doctoral program.`,
+      description: `${n(dba.durationSemesters)} semesters · ${n(dba.totalCredits)} credits · a fully online professional doctoral program.`,
     },
     overview: {
       title: "Program Overview",
@@ -222,19 +229,19 @@ export const pagesEn: PageContent = {
     summary: {
       title: "Duration & Credits",
       items: [
-        { label: "Duration", value: `${dbaFacts.semesters} semesters` },
+        { label: "Duration", value: `${n(dba.durationSemesters)} semesters` },
         {
           label: "Per semester",
           value: `${dbaFacts.coursesPerSemester} courses / ${dbaFacts.creditsPerSemester} credits`,
         },
-        { label: "Total credits", value: `${dbaFacts.totalCredits}` },
+        { label: "Total credits", value: `${n(dba.totalCredits)}` },
         {
           label: "Credit breakdown",
-          value: `${dbaFacts.majorCredits} major · ${dbaFacts.commonCredits} common`,
+          value: `${n(dba.majorCredits)} major · ${n(dba.commonCredits)} common`,
         },
         {
           label: "Chapel",
-          value: `${dbaFacts.chapelCourses} courses`,
+          value: `${n(dba.chapelCourses)} courses`,
           note: "required separately from credits",
         },
         {
@@ -324,20 +331,18 @@ export const pagesEn: PageContent = {
       creditsUnit: "credits",
       creditsUnknown: "credits not stated",
       formatLabel: "Format",
-      altTitleNote:
-        "The source material records two different English titles for this course.",
       descriptionPending: "The course description is being prepared.",
       note: "Courses may change depending on semester circumstances.",
     },
     graduation: {
       title: "Graduation Requirements",
       items: [
-        { label: "Total credits", value: `${dbaFacts.totalCredits}` },
-        { label: "Major", value: `${dbaFacts.majorCredits} credits` },
-        { label: "Common", value: `${dbaFacts.commonCredits} credits` },
+        { label: "Total credits", value: `${n(dba.totalCredits)}` },
+        { label: "Major", value: `${n(dba.majorCredits)} credits` },
+        { label: "Common", value: `${n(dba.commonCredits)} credits` },
         {
           label: "Chapel",
-          value: `${dbaFacts.chapelCourses} courses (separate)`,
+          value: `${n(dba.chapelCourses)} courses (separate)`,
         },
       ],
       note: `Semester ${dbaFacts.thesisSemester} is dedicated to the dissertation.`,
@@ -359,12 +364,12 @@ export const pagesEn: PageContent = {
         {
           code: "MBA",
           name: "Master of Business Administration",
-          summary: `${mbaFacts.semesters} semesters · ${mbaFacts.totalCredits} credits`,
+          summary: `${n(mba.durationSemesters)} semesters · ${n(mba.totalCredits)} credits`,
         },
         {
           code: "DBA",
           name: "Doctor of Business Administration",
-          summary: `${dbaFacts.semesters} semesters · ${dbaFacts.totalCredits} credits`,
+          summary: `${n(dba.durationSemesters)} semesters · ${n(dba.totalCredits)} credits`,
         },
       ],
     },
@@ -438,8 +443,8 @@ export const pagesEn: PageContent = {
       items: [
         { label: "Starts", value: intakeEn },
         { label: "Format", value: "100% online" },
-        { label: "MBA", value: `${mbaFacts.semesters} semesters` },
-        { label: "DBA", value: `${dbaFacts.semesters} semesters` },
+        { label: "MBA", value: `${n(mba.durationSemesters)} semesters` },
+        { label: "DBA", value: `${n(dba.durationSemesters)} semesters` },
       ],
     },
     eligibility: {
@@ -544,11 +549,11 @@ export const pagesEn: PageContent = {
       },
       {
         question: "How many semesters is the MBA program?",
-        answer: `The MBA runs for ${mbaFacts.semesters} semesters with a total of ${mbaFacts.totalCredits} credits (${mbaFacts.majorCredits} major, ${mbaFacts.commonCredits} common). ${mbaFacts.chapelCourses} chapel courses are required separately from credits.`,
+        answer: `The MBA runs for ${n(mba.durationSemesters)} semesters with a total of ${n(mba.totalCredits)} credits (${n(mba.majorCredits)} major, ${n(mba.commonCredits)} common). ${n(mba.chapelCourses)} chapel courses are required separately from credits.`,
       },
       {
         question: "How many semesters is the DBA program?",
-        answer: `The DBA runs for ${dbaFacts.semesters} semesters with a total of ${dbaFacts.totalCredits} credits (${dbaFacts.majorCredits} major, ${dbaFacts.commonCredits} common). ${dbaFacts.chapelCourses} chapel courses are required separately, and semester ${dbaFacts.thesisSemester} is dedicated to the dissertation.`,
+        answer: `The DBA runs for ${n(dba.durationSemesters)} semesters with a total of ${n(dba.totalCredits)} credits (${n(dba.majorCredits)} major, ${n(dba.commonCredits)} common). ${n(dba.chapelCourses)} chapel courses are required separately, and semester ${dbaFacts.thesisSemester} is dedicated to the dissertation.`,
       },
       {
         question: "How many courses are taken each semester?",
@@ -785,4 +790,5 @@ export const pagesEn: PageContent = {
     faq: "FAQ",
     faculty: "Faculty",
   },
-};
+  };
+}

@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-17 · 8단계 완료
+> 마지막 갱신: 2026-08-17 · 9단계 완료
 
 ---
 
@@ -20,8 +20,8 @@
 | 6 | 입학상담 · 설명회 신청 → DB 저장 | ✅ 완료 |
 | 7 | 관리자 로그인 / 권한 (Auth.js) | ✅ 완료 |
 | 8 | 관리자 상담·설명회 관리 | ✅ 완료 |
-| 9 | **관리자 CMS (교수진 · MBA/DBA · 교과목)** | ⏭ 다음 |
-| 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | 예정 |
+| 9 | 관리자 CMS (교수진 · MBA/DBA · 교과목) | ✅ 완료 |
+| 10 | **관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ)** | ⏭ 다음 |
 | 11 | 파일 업로드 | 예정 |
 | 12 | 테스트 / SEO / 보안 점검 | 예정 |
 
@@ -104,7 +104,9 @@ src/
       page.tsx             대시보드
       consultations/       입학상담 목록 · 상세
       seminars/            설명회 신청 목록 · 상세
-      inquiry-actions.ts   상태·메모 저장 서버 액션
+      faculty/  programs/  courses/    ★ CMS (목록 · 등록 · 수정 · 삭제)
+      inquiry-actions.ts   상담 상태·메모 저장 서버 액션
+      cms-actions.ts       ★ 교수진·과정·교과목 저장/삭제 서버 액션
   app/api/auth/[...nextauth]/   Auth.js 엔드포인트
   auth.ts                ★ Auth.js 설정 (Credentials + bcrypt + JWT)
   components/
@@ -112,22 +114,26 @@ src/
     home/                메인 페이지 섹션 10개
     page/                상세 페이지 공통 (PageHero · Section · Accordion · CourseList · ProgramPage · RelatedLinks)
     form/                신청 폼 공통 입력·피드백 컴포넌트
-    admin/               사이드바 · 공통 UI(ui.tsx) · 검색상자 · 상태/메모 폼
+    admin/               사이드바 · 공통 UI · 검색상자 · CMS 입력 컴포넌트(form.tsx) · 각 CMS 폼
   types/next-auth.d.ts   session.user.role 타입 확장
   content/
-    program-facts.ts     ★ 학기·학점·등록금·개강 등 수치의 단일 출처
+    program-facts.ts     등록금·개강월 등 **아직 DB 로 못 옮긴** 수치
+                         (학기·학점은 9단계에서 Program 테이블로 이동)
     home/                메인 콘텐츠 (ko/en)
     pages/               상세 페이지 콘텐츠 (ko/en)
-    courses/             교과목 20과목 카탈로그 + 과정별 편성
+    courses/             교과목 카탈로그 — **이관 원본. 화면에서 읽지 않는다**
   i18n/                  locale 정의 + UI 문자열 사전 (ko/en)
   lib/                   navigation · metadata · site-links · cn · prisma
     validation/inquiry.ts  ★ 신청 폼 검증 규칙의 단일 출처 (zod)
     auth-guard.ts          ★ requireAdmin() / requireSuperAdmin()
     admin/inquiry.ts       ★ 상태 라벨 · 쿼리 파싱 · 페이지네이션 계산
     admin/format.ts        관리자 날짜(KST) 표시
+    cms/queries.ts         ★ 공개 화면용 CMS 조회 (locale fallback 포함)
+    cms/revalidate.ts      ★ 저장 시 무효화할 공개 경로
+    cms/validation.ts      CMS 입력 검증 (zod)
   generated/prisma/      Prisma Client (Git 미포함, 빌드 시 생성)
 prisma/                  schema.prisma + migrations
-scripts/                 setup-local-db.sh · create-admin.ts
+scripts/                 setup-local-db.sh · create-admin.ts · seed-cms-content.ts
 deploy/                  nginx · systemd · 배포 문서
 docs/source/             원본 문서 (Git 미포함)
 assets/source/           원본 이미지 (Git 미포함)
@@ -148,15 +154,20 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-마이그레이션 `20260814124541_init` 로 테이블 10개가 생성되어 있다. **8단계까지 schema 변경 없음.**
+마이그레이션 2개: `20260814124541_init` (테이블 10개) +
+`20260817155549_allow_nullable_course_semester` (9단계).
 Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken` 테이블은 만들지 않았다.
 
-- **쓰기**: `Consultation`, `SeminarApplication` (신청 폼) / `AdminUser` (로그인 시 `lastLoginAt`)
-- **읽기**: `AdminUser` (로그인 인증), `Consultation`·`SeminarApplication` (대시보드 집계 · 목록 · 상세)
+- **쓰기**: `Consultation`·`SeminarApplication` (신청 폼) / `AdminUser` (`lastLoginAt`) /
+  `Faculty`·`Program`·`Course` (관리자 CMS)
+- **읽기**: `AdminUser` (로그인) / `Consultation`·`SeminarApplication` (관리자) /
+  **`Faculty`·`Program`·`Course` (공개 페이지)**
+
+> ⚠️ 9단계부터 **공개 페이지가 DB 를 읽으므로 빌드 시 DB 연결이 필요하다.**
+> 방문자 요청 때가 아니라 빌드·재생성 시점에만 조회한다.
 - **관리자 수정**: `Consultation`·`SeminarApplication` 의 `status` / `adminMemo` **만** 바꾼다.
   신청자가 입력한 값은 관리자도 고치지 않는다. **삭제 기능은 없다.**
-- 사용자 페이지는 전부 정적 생성(SSG)이다. 폼 페이지도 DB 를 **읽지** 않으므로 SSG 로 남아 있고,
-  제출만 Server Action 으로 서버에서 처리한다.
+- 사용자 페이지는 여전히 정적 생성(SSG)이다. 관리자가 CMS 에서 저장할 때만 해당 경로를 다시 만든다.
 - **관리자 화면(`/admin/*`)은 동적 렌더링(ƒ)이다.** 세션 쿠키와 DB 를 읽기 때문이다.
 
 모델: `AdminUser` `PageSection` `Faculty` `Program` `Course` `FAQ` `Consultation` `SeminarApplication` `Media` `SiteSetting`
@@ -322,24 +333,86 @@ DB 는 `timestamp without time zone` 이고 Prisma 가 **UTC** 로 넣는다. �
 
 ---
 
-## 다음 단계 (9단계) 시작 시 참고
+## 9단계에서 만든 것 (교수진 · 과정 · 교과목 CMS)
 
-**목표**: 관리자 CMS — 교수진 · MBA/DBA 과정 · 교과목
+| 관리자 경로 | 기능 |
+| --- | --- |
+| `/admin/faculty` `/new` `/[id]/edit` | 교수진 — 목록 · 등록 · 수정 · 삭제 |
+| `/admin/programs` `/[type]` | 과정 — 목록 · 수정 (생성/삭제 없음) |
+| `/admin/courses` `/new` `/[id]/edit` | 교과목 — 목록(필터) · 등록 · 수정 · 삭제 |
 
-이미 준비되어 있는 것:
+### ★ 출처가 바뀌었다
 
-- 관리자 인증 · 보호 layout · 사이드바 (콘텐츠 메뉴는 "예정" 배지로 자리만 잡아 둠)
-- `Faculty` `Program` `Course` 테이블 (전부 비어 있음)
-- 재사용할 공통 UI: `src/components/admin/ui.tsx` (페이지 헤더 · 빈 상태 · 페이지네이션 · 상세 행 · 저장 메시지)
-- 재사용할 인증: `requireAdmin()` — **새 서버 액션에서도 반드시 다시 호출할 것**
+**`Faculty` · `Program` · `Course` 는 이제 DB 가 유일한 출처다.**
+`src/content/` 의 해당 파일을 고쳐도 홈페이지는 바뀌지 않는다. 관리자 CMS 에서 수정한다.
+
+DB 를 읽는 공개 화면: 메인(과정 카드·주임교수·교육과정 Preview), `/[locale]/faculty`,
+`/[locale]/programs`, `/[locale]/programs/{mba,dba}`, 그리고 **입학안내·FAQ 의 학점 문구**.
+
+### 이관 (`npm run seed:cms`)
+
+정적 콘텐츠 → DB 일회성 이관. **이미 있는 항목은 건드리지 않으므로 다시 실행해도 안전하다.**
+배포마다 자동 실행되지 않는다(`prisma db seed` 에 연결하지 않음).
+
+이관 결과: Program 2 / Faculty 1 / Course 33 (MBA 14 · DBA 19)
+
+### 원본 불일치를 그대로 옮겼다
+
+| 항목 | 건수 | DB | 화면 |
+| --- | --- | --- | --- |
+| 학기차 미지정 | 15 | `semester = null` | "그 밖의 전공과목" · "공통과목" |
+| 학점 미표기 | 1 | `credits = null` | "학점 미표기" |
+| 영문 과목명 없음 | 2 | `titleEn = null` | 영문 페이지에 한국어 원표기 |
+| 교과 내용 없음 | 3 | `description = null` | "교과 내용은 준비 중입니다." |
+
+**임의로 채우지 않는다.** CMS 입력 화면에도 "원본에 없으면 비워 두세요" 안내를 넣었다.
+
+### 캐시 — 정적 유지 + 저장 시 revalidate
+
+공개 페이지는 정적이고, 관리자가 저장할 때 필요한 경로만 무효화한다. (`src/lib/cms/revalidate.ts`)
+
+> ⚠️ **경로는 `/ko/faculty` 가 아니라 `/[locale]/faculty` 라우트 패턴으로 넘겨야 한다.**
+> 실제 주소를 넘기면 무효화가 되지 않는다. 새 CMS 를 붙일 때 반드시 이 파일에 경로를 추가할 것.
+
+### 겪은 함정 3가지
+
+1. `revalidatePath` 에 실제 주소를 넘기면 동작하지 않는다 → 라우트 패턴 + `"page"` 사용.
+2. `[locale]/layout.tsx` 의 `dynamicParams = false` 가 있으면 무효화된 페이지가 **404** 가 된다
+   → 제거했다. 지원하지 않는 locale 은 `isLocale` 검사가 이미 404 로 처리한다.
+3. 이니셜 아바타를 만들 때 `Dong-Joon Kim` 을 하이픈까지 나누면 `DJ` 가 된다 → 공백으로만 나눠 `DK`.
+
+---
+
+## 다음 단계 (10단계) 시작 시 참고
+
+**목표**: 페이지 콘텐츠 · 입학안내 · FAQ CMS (`PageSection` `FAQ` 테이블)
+
+9단계에서 만든 구조를 그대로 재사용하면 된다.
+
+```
+src/lib/cms/queries.ts      공개 화면용 조회 + locale fallback (pickLocale)
+src/lib/cms/validation.ts   zod 스키마 + CmsFormState + formDataToObject
+src/lib/cms/revalidate.ts   ★ 새 CMS 를 붙이면 여기에 무효화 경로를 추가
+src/components/admin/form.tsx   LangSection(한국어/English) · TextField · TextAreaField …
+src/components/admin/cms-ui.tsx PublishBadge · DeleteForm · Th/Td
+src/app/admin/(protected)/cms-actions.ts   저장/삭제 액션 (requireAdmin 필수)
+```
+
+새 CMS 를 붙이는 순서:
+
+1. `validation.ts` 에 zod 스키마 추가
+2. `cms-actions.ts` 에 저장/삭제 액션 추가 — **반드시 `requireAdmin()` 을 먼저 호출**
+3. `revalidate.ts` 에 무효화할 공개 경로 추가 (라우트 패턴으로)
+4. `queries.ts` 에 공개 조회 함수 추가
+5. 관리자 페이지 작성 (`form.tsx` 의 `LangSection` 으로 한/영 구분)
+6. 공개 페이지를 DB 조회로 교체하고, 정적 콘텐츠 파일은 이관 원본으로만 남긴다
 
 정해야 할 것:
 
 - 리치텍스트 에디터 도입 여부와 XSS sanitize 방침 (`decisions.md` 미결 4번)
-- `src/content/` 의 기존 문구를 seed 로 넣을지, 관리자가 처음부터 입력할지
-  (현재 사용자 화면은 `src/content/` 의 TS 파일을 읽는다. DB 로 옮기면 이 경로도 바꿔야 한다)
-- 한/영을 나란히 편집하는 UI 형태 (2단계에서 Ko/En 필드 방식으로 확정됨)
-- 교수 사진 업로드가 필요하면 파일 업로드 단계와 순서를 조정할 것
+  9단계는 plain text + `whitespace-pre-line` 로 처리했다. 같은 방식으로 갈지 결정 필요.
+- `PageSection` 의 `pageKey`/`sectionKey` 명명 규칙
+- 등록금·개강월(`program-facts.ts` 잔여분)을 `SiteSetting` 으로 옮길지
 
 ---
 
@@ -387,6 +460,7 @@ npx tsc --noEmit             # 타입 검사
 npm run lint                 # ESLint
 npx prisma studio            # DB 확인 (브라우저)
 npm run admin:create         # 관리자 계정 생성 (.env 의 SEED_ADMIN_* 사용)
+npm run seed:cms             # 정적 콘텐츠 → DB 이관 (이미 있으면 건드리지 않음)
 npx prisma migrate dev       # 스키마 변경 후 마이그레이션
 
 systemctl status oikos       # 운영 서비스 상태

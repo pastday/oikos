@@ -174,7 +174,9 @@ model Program {
 model Course {
   id            String         @id @default(cuid())
   programId     String
-  semester      Int
+  /// 원본 문서에 학기차가 명시되지 않은 과목이 있다. (공통과목, 학기차 없이 나열된 전공과목)
+  /// 임의로 학기를 배정하지 않기 위해 nullable 로 둔다. 화면에서는 "그 밖의 전공과목" 등으로 묶는다.
+  semester      Int?
   credits       Int?
   titleKo       String
   titleEn       String?

@@ -54,19 +54,27 @@ export type AboutContent = {
   };
 };
 
+/**
+ * 교수진 페이지의 **문구만** 담는다.
+ * 교수 개개인의 정보는 9단계부터 DB(`Faculty`)에서 읽는다.
+ */
 export type FacultyContent = {
   intro: PageIntro;
-  chief: {
-    sectionTitle: string;
-    name: string;
-    nameAlt: string;
-    initials: string;
-    role: string;
-    major: string;
-    affiliation: string;
-    details: LabeledItem[];
+  /** 교수 구분별 섹션 제목 */
+  groupTitles: {
+    CHIEF_PROFESSOR: string;
+    PROFESSOR: string;
+    VISITING_PROFESSOR: string;
   };
-  /** 원본 자료에 다른 교수 명단이 없다. 없는 교수를 만들지 않고 안내만 둔다. */
+  /** 교수 카드 안의 항목 라벨 */
+  labels: {
+    major: string;
+    career: string;
+    lectureFields: string;
+  };
+  /** 공개된 교수가 한 명도 없을 때 */
+  emptyNotice: NoticeBlock;
+  /** 원본 자료에 아직 다른 교수 명단이 없다는 안내. 없는 교수를 만들지 않는다. */
   pendingNotice: NoticeBlock;
   contactNotice: string;
 };
@@ -100,7 +108,6 @@ export type ProgramPageContent = {
     creditsUnit: string;
     creditsUnknown: string;
     formatLabel: string;
-    altTitleNote: string;
     descriptionPending: string;
     note: string;
   };

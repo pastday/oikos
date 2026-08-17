@@ -20,26 +20,18 @@ export type Pillar = {
   description: string;
 };
 
+/**
+ * 과정 카드의 **문구**만 담는다.
+ * 학위명·학기 수·학점은 DB(`Program`)에서 읽어 화면에서 합친다.
+ */
 export type ProgramSummary = {
   /** 화면 표기는 프로젝트 결정에 따라 MBA / DBA 를 사용한다. */
   code: "MBA" | "DBA";
-  /** 원본 문서상의 학위 표기 */
-  degreeName: string;
   tagline: string;
-  duration: string;
-  totalCredits: string;
-  creditBreakdown: string;
-  chapel: string;
+  /** 원본 자료에 근거한 부가 안내 (예: 논문학기) */
   note?: string;
   href: string;
   cta: string;
-};
-
-export type CoursePreview = {
-  /** 해당 언어에서 앞에 표시할 교과목명 */
-  title: string;
-  /** 보조로 함께 노출하는 다른 언어 교과목명 */
-  subtitle: string;
 };
 
 export type HomeContent = {
@@ -70,7 +62,14 @@ export type HomeContent = {
     eyebrow: string;
     title: string;
     description: string;
-    labels: { duration: string; credits: string };
+    labels: {
+      duration: string;
+      credits: string;
+      /** "{major}" / "{common}" 자리에 학점이 들어간다 */
+      breakdownTemplate: string;
+      /** "{n}" 자리에 과목 수가 들어간다 */
+      chapelTemplate: string;
+    };
     items: ProgramSummary[];
   };
   online: {
@@ -84,7 +83,6 @@ export type HomeContent = {
     eyebrow: string;
     title: string;
     description: string;
-    courses: CoursePreview[];
     note: string;
     cta: string;
   };
@@ -92,13 +90,6 @@ export type HomeContent = {
     eyebrow: string;
     title: string;
     description: string;
-    chief: {
-      name: string;
-      nameEn: string;
-      initials: string;
-      title: string;
-      affiliation: string;
-    };
     cta: string;
   };
   degree: {

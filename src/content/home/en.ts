@@ -79,30 +79,25 @@ export const homeEn: HomeContent = {
     title: "MBA · DBA Programs",
     description:
       "Professional degree programs designed for working practitioners who study alongside their careers.",
-    labels: { duration: "Duration", credits: "Total credits" },
+    labels: {
+      duration: "Semesters",
+      credits: "Total credits",
+      breakdownTemplate: "{major} major · {common} common",
+      chapelTemplate: "{n} chapel courses (separate)",
+    },
     items: [
       {
         code: "MBA",
-        degreeName: "Master of Business Administration",
         tagline: "A master's program centered on theory coursework",
-        duration: "4 semesters",
-        totalCredits: "36 credits",
-        creditBreakdown: "24 major · 12 common",
-        chapel: "3 chapel courses required separately",
         href: "/en/programs/mba",
-        cta: "View MBA details",
+        cta: "View the MBA",
       },
       {
         code: "DBA",
-        degreeName: "Doctor of Business Administration",
-        tagline: "A doctoral program for working professionals",
-        duration: "6 semesters",
-        totalCredits: "45 credits",
-        creditBreakdown: "30 major · 15 common",
-        chapel: "4 chapel courses required separately",
-        note: "The 6th semester is the dissertation semester",
+        tagline: "A professional doctoral program",
+        note: "Semester 6 is the dissertation semester",
         href: "/en/programs/dba",
-        cta: "View DBA details",
+        cta: "View the DBA",
       },
     ],
   },
@@ -126,32 +121,6 @@ export const homeEn: HomeContent = {
     title: "Selected Courses",
     description:
       "Theory courses spanning hotels, foodservice, wine and the tourism industry.",
-    courses: [
-      {
-        title: "Global Structure and Development of the Tourism Industry",
-        subtitle: "글로벌 관광산업의 구조와 전개",
-      },
-      {
-        title: "Global Wine Culture and Historical Development",
-        subtitle: "세계 와인 문화와 역사적 발전",
-      },
-      {
-        title: "Hospitality Service Systems: Hotels, Resorts, and Foodservice",
-        subtitle: "호텔, 리조트, 외식 서비스 시스템의 이해",
-      },
-      {
-        title: "Wine Brands and the Mechanism of Destination Formation",
-        subtitle: "와인 브랜드와 관광지 형성의 메카니즘",
-      },
-      {
-        title: "Concepts and Applications of Gastronomic Wine Tourism",
-        subtitle: "미식 와인 관광의 개념과 적용",
-      },
-      {
-        title: "Systematic Understanding of MICE and Conventions",
-        subtitle: "MICE 컨벤션의 체계적 이해",
-      },
-    ],
     note: "Courses may change depending on semester circumstances.",
     cta: "View full curriculum",
   },
@@ -160,13 +129,6 @@ export const homeEn: HomeContent = {
     eyebrow: "Faculty",
     title: "Chief Professor",
     description: "The chief professor overseeing the major's curriculum.",
-    chief: {
-      name: "Dong-Joon Kim",
-      nameEn: "김동준",
-      initials: "DK",
-      title: "Chief Professor",
-      affiliation: "Hotel, Foodservice & Wine Management",
-    },
     cta: "Meet the Faculty",
   },
 

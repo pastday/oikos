@@ -84,27 +84,22 @@ export const homeKo: HomeContent = {
     title: "MBA · DBA 과정",
     description:
       "일하면서 학위과정을 병행하려는 실무 전문가에 맞춘 전문형 학위과정입니다.",
-    labels: { duration: "학기", credits: "총 취득학점" },
+    labels: {
+      duration: "학기",
+      credits: "총 취득학점",
+      breakdownTemplate: "전공 {major}학점 · 공통 {common}학점",
+      chapelTemplate: "채플 {n}과목 별도",
+    },
     items: [
       {
         code: "MBA",
-        degreeName: "경영학석사",
         tagline: "이론강의 중심의 석사과정",
-        duration: "4학기제",
-        totalCredits: "36학점",
-        creditBreakdown: "전공 24학점 · 공통 12학점",
-        chapel: "채플 3과목 별도",
         href: "/ko/programs/mba",
         cta: "MBA 자세히 보기",
       },
       {
         code: "DBA",
-        degreeName: "경영학박사",
         tagline: "실무 전문형 박사과정",
-        duration: "6학기제",
-        totalCredits: "45학점",
-        creditBreakdown: "전공 30학점 · 공통 15학점",
-        chapel: "채플 4과목 별도",
         note: "6학기는 논문학기",
         href: "/ko/programs/dba",
         cta: "DBA 자세히 보기",
@@ -131,32 +126,6 @@ export const homeKo: HomeContent = {
     title: "주요 교과목",
     description:
       "호텔·외식·와인과 관광산업을 아우르는 이론 교과목으로 구성되어 있습니다.",
-    courses: [
-      {
-        title: "글로벌 관광산업의 구조와 전개",
-        subtitle: "Global Structure and Development of the Tourism Industry",
-      },
-      {
-        title: "세계 와인 문화와 역사적 발전",
-        subtitle: "Global Wine Culture and Historical Development",
-      },
-      {
-        title: "호텔, 리조트, 외식 서비스 시스템의 이해",
-        subtitle: "Hospitality Service Systems: Hotels, Resorts, and Foodservice",
-      },
-      {
-        title: "와인 브랜드와 관광지 형성의 메카니즘",
-        subtitle: "Wine Brands and the Mechanism of Destination Formation",
-      },
-      {
-        title: "미식 와인 관광의 개념과 적용",
-        subtitle: "Concepts and Applications of Gastronomic Wine Tourism",
-      },
-      {
-        title: "MICE 컨벤션의 체계적 이해",
-        subtitle: "Systematic Understanding of MICE and Conventions",
-      },
-    ],
     note: "교과목은 학기 사정에 따라 변경될 수 있습니다.",
     cta: "전체 교육과정 보기",
   },
@@ -165,13 +134,6 @@ export const homeKo: HomeContent = {
     eyebrow: "교수진",
     title: "주임교수",
     description: "전공 교육과정을 총괄하는 주임교수입니다.",
-    chief: {
-      name: "김동준",
-      nameEn: "Dong-Joon Kim",
-      initials: "DK",
-      title: "주임교수",
-      affiliation: "호텔·외식·와인경영 전공",
-    },
     cta: "교수진 보기",
   },
 

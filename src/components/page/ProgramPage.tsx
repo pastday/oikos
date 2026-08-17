@@ -1,26 +1,25 @@
-import { getCourses, type Curriculum } from "@/content/courses";
 import type { ProgramPageContent } from "@/content/pages";
-import type { Locale } from "@/i18n/config";
+import type { ProgramCurriculum } from "@/lib/cms/types";
 import { CourseList } from "./CourseList";
 import { PageHero } from "./PageHero";
 import { FactGrid, Prose, Section } from "./Section";
 
 /**
  * MBA / DBA 상세 페이지 본문.
- * 두 과정의 구성이 같아 한 컴포넌트로 두고 콘텐츠와 편성표만 주입한다.
+ * 두 과정의 구성이 같아 한 컴포넌트로 두고 문구와 교육과정만 주입한다.
+ *
+ * 교육과정(`curriculum`)은 DB 의 `Course` 에서 읽어 온 것이다.
+ * 학기차가 지정되지 않은 과목은 "그 밖의 전공과목" 으로 따로 묶여 들어온다.
  */
 export function ProgramPage({
-  locale,
   content,
   curriculum,
 }: {
-  locale: Locale;
   content: ProgramPageContent;
-  curriculum: Curriculum;
+  curriculum: ProgramCurriculum;
 }) {
   const labels = content.curriculum;
-  const additional = getCourses(locale, curriculum.additionalMajor);
-  const common = getCourses(locale, curriculum.common);
+  const { additionalMajor, common } = curriculum;
 
   return (
     <>
@@ -107,7 +106,7 @@ export function ProgramPage({
                     )}
                   </h4>
                   <CourseList
-                    courses={getCourses(locale, group.courseKeys)}
+                    courses={group.courses}
                     labels={labels}
                     idPrefix={`s${group.semester}`}
                   />
@@ -116,28 +115,32 @@ export function ProgramPage({
             </div>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-navy">
-              {labels.additionalTitle}
-            </h3>
-            <p className="mt-2 text-sm text-muted">{labels.additionalNote}</p>
-            <div className="mt-4">
-              <CourseList
-                courses={additional}
-                labels={labels}
-                idPrefix="add"
-              />
+          {additionalMajor.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-navy">
+                {labels.additionalTitle}
+              </h3>
+              <p className="mt-2 text-sm text-muted">{labels.additionalNote}</p>
+              <div className="mt-4">
+                <CourseList
+                  courses={additionalMajor}
+                  labels={labels}
+                  idPrefix="add"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div>
-            <h3 className="text-lg font-semibold text-navy">
-              {labels.commonTitle}
-            </h3>
-            <div className="mt-4">
-              <CourseList courses={common} labels={labels} idPrefix="common" />
+          {common.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-navy">
+                {labels.commonTitle}
+              </h3>
+              <div className="mt-4">
+                <CourseList courses={common} labels={labels} idPrefix="common" />
+              </div>
             </div>
-          </div>
+          )}
 
           <p className="text-xs text-muted">{labels.note}</p>
         </div>

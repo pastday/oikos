@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Container } from "@/components/layout/Container";
 import type { HomeContent } from "@/content/home";
+import { buildProgramCardFacts } from "@/lib/cms/present";
+import type { ProgramView } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
 import { SectionHeading } from "./SectionHeading";
 
@@ -10,10 +12,24 @@ import { SectionHeading } from "./SectionHeading";
  * 화면 표기는 프로젝트 결정에 따라 MBA / DBA 를 사용한다.
  * 원본 문서에는 박사 학위명이 '경영학박사(Doctor of Management)' 로 기재되어 있어
  * DM / DBA 표기 불일치가 존재한다. 자세한 내용은 docs/decisions.md 참고.
- * 학점·학기 수치는 원본 문서 값을 그대로 사용하며 임의로 조정하지 않는다.
+ * 학위명과 학점·학기 수치는 DB(`Program`)에서 읽는다.
+ * 비공개 과정은 카드에서 제외되며, 둘 다 비공개면 이 섹션 자체를 그리지 않는다.
  */
-export function ProgramCards({ content }: { content: HomeContent }) {
+export function ProgramCards({
+  content,
+  programs: programViews,
+}: {
+  content: HomeContent;
+  programs: ProgramView[];
+}) {
   const { programs } = content;
+
+  const cards = programs.items.flatMap((item) => {
+    const view = programViews.find((program) => program.type === item.code);
+    return view ? [{ item, view, facts: buildProgramCardFacts(view, programs.labels) }] : [];
+  });
+
+  if (cards.length === 0) return null;
 
   return (
     <section className="bg-surface py-16 lg:py-24">
@@ -26,7 +42,7 @@ export function ProgramCards({ content }: { content: HomeContent }) {
         />
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
-          {programs.items.map((program) => {
+          {cards.map(({ item: program, view, facts }) => {
             const isDoctorate = program.code === "DBA";
 
             return (
@@ -54,7 +70,7 @@ export function ProgramCards({ content }: { content: HomeContent }) {
                       isDoctorate ? "text-white/70" : "text-muted",
                     )}
                   >
-                    {program.degreeName}
+                    {view.name}
                   </span>
                 </div>
 
@@ -88,7 +104,7 @@ export function ProgramCards({ content }: { content: HomeContent }) {
                         isDoctorate ? "text-white" : "text-navy",
                       )}
                     >
-                      {program.duration}
+                      {facts.duration ?? "—"}
                     </dd>
                   </div>
                   <div>
@@ -106,7 +122,7 @@ export function ProgramCards({ content }: { content: HomeContent }) {
                         isDoctorate ? "text-white" : "text-navy",
                       )}
                     >
-                      {program.totalCredits}
+                      {facts.totalCredits ?? "—"}
                     </dd>
                   </div>
                   <div className="col-span-2">
@@ -115,7 +131,7 @@ export function ProgramCards({ content }: { content: HomeContent }) {
                         isDoctorate ? "text-white/75" : "text-foreground/70",
                       )}
                     >
-                      {program.creditBreakdown}
+                      {facts.breakdown}
                     </dd>
                     <dd
                       className={cn(
@@ -123,7 +139,7 @@ export function ProgramCards({ content }: { content: HomeContent }) {
                         isDoctorate ? "text-white/55" : "text-muted",
                       )}
                     >
-                      {program.chapel}
+                      {facts.chapel}
                       {program.note ? ` · ${program.note}` : ""}
                     </dd>
                   </div>

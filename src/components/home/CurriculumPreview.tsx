@@ -1,23 +1,30 @@
 import Link from "next/link";
 import { Container } from "@/components/layout/Container";
 import type { HomeContent } from "@/content/home";
+import type { CourseView } from "@/lib/cms/types";
 import type { Locale } from "@/i18n/config";
 import { localePath } from "@/lib/navigation";
 import { SectionHeading } from "./SectionHeading";
 
 /**
  * 교육과정 Preview.
- * 전체 교과목을 메인에 나열하지 않고 대표 6과목만 보여준다. (지시 12항)
- * 교과목명은 원본 문서 표기를 그대로 사용한다.
+ * 전체 교과목을 메인에 나열하지 않고 대표 몇 과목만 보여준다. (지시 12항)
+ * 과목은 DB(`Course`)에서 읽으므로 관리자가 교과목을 고치면 여기에도 반영된다.
+ *
+ * 보여줄 과목이 없으면 이 섹션 자체를 그리지 않는다.
  */
 export function CurriculumPreview({
   locale,
   content,
+  courses,
 }: {
   locale: Locale;
   content: HomeContent;
+  courses: CourseView[];
 }) {
   const { curriculum } = content;
+
+  if (courses.length === 0) return null;
 
   return (
     <section className="border-b border-line bg-background py-16 lg:py-24">
@@ -39,9 +46,9 @@ export function CurriculumPreview({
         </div>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {curriculum.courses.map((course, index) => (
+          {courses.map((course, index) => (
             <li
-              key={course.title}
+              key={course.id}
               className="group rounded-lg border border-line bg-surface p-6 transition-colors hover:border-navy/30"
             >
               <span className="font-serif text-sm font-bold text-gold">
@@ -51,7 +58,7 @@ export function CurriculumPreview({
                 {course.title}
               </h3>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                {course.subtitle}
+                {course.titleAlt}
               </p>
             </li>
           ))}

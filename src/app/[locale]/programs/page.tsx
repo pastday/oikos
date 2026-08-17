@@ -6,6 +6,8 @@ import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { Prose, Section } from "@/components/page/Section";
 import { getHomeContent } from "@/content/home";
 import { getPageContent } from "@/content/pages";
+import { getProgramNumbers, getPublishedPrograms } from "@/lib/cms/queries";
+import { buildProgramCardFacts } from "@/lib/cms/present";
 import { getDictionary } from "@/i18n";
 import { isLocale } from "@/i18n/config";
 import { buildPageMetadata } from "@/lib/metadata";
@@ -43,7 +45,15 @@ export default async function ProgramsPage({ params }: PageProps) {
 
   const dict = getDictionary(locale);
   const home = getHomeContent(locale);
-  const pages = getPageContent(locale);
+  const programViews = await getPublishedPrograms(locale);
+
+  const cards = home.programs.items.flatMap((item) => {
+    const view = programViews.find((program) => program.type === item.code);
+    return view
+      ? [{ item, view, facts: buildProgramCardFacts(view, home.programs.labels) }]
+      : [];
+  });
+  const pages = getPageContent(locale, await getProgramNumbers());
 
   return (
     <>
@@ -64,7 +74,7 @@ export default async function ProgramsPage({ params }: PageProps) {
 
       <Section tone="surface">
         <div className="grid gap-6 lg:grid-cols-2">
-          {home.programs.items.map((program) => {
+          {cards.map(({ item: program, view, facts }) => {
             const isDoctorate = program.code === "DBA";
 
             return (
@@ -92,7 +102,7 @@ export default async function ProgramsPage({ params }: PageProps) {
                       isDoctorate ? "text-white/70" : "text-muted",
                     )}
                   >
-                    {program.degreeName}
+                    {view.name}
                   </span>
                 </div>
 
@@ -126,7 +136,7 @@ export default async function ProgramsPage({ params }: PageProps) {
                         isDoctorate ? "text-white" : "text-navy",
                       )}
                     >
-                      {program.duration}
+                      {facts.duration ?? "—"}
                     </dd>
                   </div>
                   <div>
@@ -144,7 +154,7 @@ export default async function ProgramsPage({ params }: PageProps) {
                         isDoctorate ? "text-white" : "text-navy",
                       )}
                     >
-                      {program.totalCredits}
+                      {facts.totalCredits ?? "—"}
                     </dd>
                   </div>
                   <div className="col-span-2">
@@ -153,7 +163,7 @@ export default async function ProgramsPage({ params }: PageProps) {
                         isDoctorate ? "text-white/75" : "text-foreground/70"
                       }
                     >
-                      {program.creditBreakdown}
+                      {facts.breakdown}
                     </dd>
                     <dd
                       className={cn(
@@ -161,7 +171,7 @@ export default async function ProgramsPage({ params }: PageProps) {
                         isDoctorate ? "text-white/55" : "text-muted",
                       )}
                     >
-                      {program.chapel}
+                      {facts.chapel}
                       {program.note ? ` · ${program.note}` : ""}
                     </dd>
                   </div>

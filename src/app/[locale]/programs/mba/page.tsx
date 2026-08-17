@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProgramPage } from "@/components/page/ProgramPage";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
-import { mbaCurriculum } from "@/content/courses";
 import { getPageContent } from "@/content/pages";
+import {
+  getProgramCurriculum,
+  getProgramNumbers,
+  getPublishedProgram,
+} from "@/lib/cms/queries";
 import { isLocale } from "@/i18n/config";
 import { buildPageMetadata } from "@/lib/metadata";
 
@@ -17,7 +21,7 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
 
-  const content = getPageContent(locale).mba;
+  const content = getPageContent(locale, await getProgramNumbers()).mba;
 
   return buildPageMetadata({
     locale,
@@ -27,19 +31,26 @@ export async function generateMetadata({
   });
 }
 
-export default async function MbaPage({ params }: PageProps) {
+/**
+ * MBA 과정 상세.
+ *
+ * 과정 수치와 교육과정은 DB 에서 읽는다.
+ * 관리자가 과정을 **비공개로 바꾸면 이 페이지는 404** 가 된다.
+ * 비공개인데 상세 화면만 살아 있으면 방문자에게 혼란스럽기 때문이다.
+ */
+export default async function MBAPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const pages = getPageContent(locale);
+  const program = await getPublishedProgram("MBA", locale);
+  if (!program) notFound();
+
+  const pages = getPageContent(locale, await getProgramNumbers());
+  const curriculum = await getProgramCurriculum(program.id, locale);
 
   return (
     <>
-      <ProgramPage
-        locale={locale}
-        content={pages.mba}
-        curriculum={mbaCurriculum}
-      />
+      <ProgramPage content={pages.mba} curriculum={curriculum} />
       <RelatedLinks
         locale={locale}
         title={pages.related.title}

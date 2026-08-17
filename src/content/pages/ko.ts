@@ -5,7 +5,10 @@ import {
   formatIntake,
   formatKrw,
   mbaFacts,
+  n,
 } from "../program-facts";
+import type { ProgramType } from "@/generated/prisma/enums";
+import type { ProgramNumbers } from "@/lib/cms/types";
 import type { PageContent } from "./types";
 
 const intakeKo = formatIntake("ko");
@@ -23,7 +26,13 @@ const krw = (amount: number) => formatKrw(amount, "ko");
  * 원본에 없는 내용을 사실처럼 추가하지 않는다.
  * 인증·인가 관련 표현은 원본보다 강하게 바꾸지 않는다.
  */
-export const pagesKo: PageContent = {
+export function createPagesKo(
+  numbers: Record<ProgramType, ProgramNumbers>,
+): PageContent {
+  const mba = numbers.MBA;
+  const dba = numbers.DBA;
+
+  return {
   // -------------------------------------------------------------------------
   about: {
     intro: {
@@ -101,23 +110,23 @@ export const pagesKo: PageContent = {
       description:
         "호텔·외식·와인경영 전공의 교육과정을 총괄하는 교수진입니다.",
     },
-    chief: {
-      sectionTitle: "주임교수",
-      name: "김동준",
-      nameAlt: "Dong-Joon Kim",
-      initials: "DK",
-      role: "주임교수",
-      major: "호텔·외식·와인경영 전공",
-      affiliation: "온라인 경영대학원",
-      details: [
-        { label: "구분", value: "주임교수" },
-        { label: "전공", value: "호텔·외식·와인경영" },
-        { label: "영문 표기", value: "Dong-Joon Kim" },
-      ],
+    groupTitles: {
+      CHIEF_PROFESSOR: "주임교수",
+      PROFESSOR: "교수진",
+      VISITING_PROFESSOR: "객원교수",
+    },
+    labels: {
+      major: "전공",
+      career: "주요 경력",
+      lectureFields: "강의 분야",
+    },
+    emptyNotice: {
+      title: "교수진 안내",
+      body: "교수진 정보는 현재 준비 중입니다. 확정되는 대로 이 영역에 게재됩니다.",
     },
     pendingNotice: {
       title: "교수진 · 객원교수",
-      body: "교수진과 객원교수 명단은 현재 준비 중입니다. 확정되는 대로 이 영역에 게재됩니다.",
+      body: "추가 교수진과 객원교수 명단은 현재 준비 중입니다. 확정되는 대로 이 영역에 게재됩니다.",
     },
     contactNotice:
       "교수 개인 연락처는 공개하지 않습니다. 과정에 대한 문의는 입학상담을 이용해 주세요.",
@@ -128,7 +137,7 @@ export const pagesKo: PageContent = {
     intro: {
       eyebrow: "MBA",
       title: "경영학석사 (MBA)",
-      description: `${mbaFacts.semesters}학기제 · 총 ${mbaFacts.totalCredits}학점 · 100% 온라인으로 진행되는 이론강의 중심의 석사과정입니다.`,
+      description: `${n(mba.durationSemesters)}학기제 · 총 ${n(mba.totalCredits)}학점 · 100% 온라인으로 진행되는 이론강의 중심의 석사과정입니다.`,
     },
     overview: {
       title: "과정 개요",
@@ -140,19 +149,19 @@ export const pagesKo: PageContent = {
     summary: {
       title: "학위기간 및 학점",
       items: [
-        { label: "학위 기간", value: `${mbaFacts.semesters}학기제` },
+        { label: "학위 기간", value: `${n(mba.durationSemesters)}학기제` },
         {
           label: "학기 당 수강",
           value: `${mbaFacts.coursesPerSemester}과목 ${mbaFacts.creditsPerSemester}학점`,
         },
-        { label: "총 취득학점", value: `${mbaFacts.totalCredits}학점` },
+        { label: "총 취득학점", value: `${n(mba.totalCredits)}학점` },
         {
           label: "학점 구성",
-          value: `전공 ${mbaFacts.majorCredits}학점 · 공통 ${mbaFacts.commonCredits}학점`,
+          value: `전공 ${n(mba.majorCredits)}학점 · 공통 ${n(mba.commonCredits)}학점`,
         },
         {
           label: "채플",
-          value: `${mbaFacts.chapelCourses}과목`,
+          value: `${n(mba.chapelCourses)}과목`,
           note: "학점과 별도",
         },
         { label: "수업방식", value: "100% 온라인" },
@@ -191,17 +200,16 @@ export const pagesKo: PageContent = {
       creditsUnit: "학점",
       creditsUnknown: "학점 미표기",
       formatLabel: "구분",
-      altTitleNote: "원본 자료에 영문 과목명이 두 가지로 기재되어 있습니다.",
       descriptionPending: "교과 내용은 준비 중입니다.",
       note: "교과목은 학기 사정에 따라 변경될 수 있습니다.",
     },
     graduation: {
       title: "졸업 관련 안내",
       items: [
-        { label: "총 취득학점", value: `${mbaFacts.totalCredits}학점` },
-        { label: "전공", value: `${mbaFacts.majorCredits}학점` },
-        { label: "공통", value: `${mbaFacts.commonCredits}학점` },
-        { label: "채플", value: `${mbaFacts.chapelCourses}과목 (별도)` },
+        { label: "총 취득학점", value: `${n(mba.totalCredits)}학점` },
+        { label: "전공", value: `${n(mba.majorCredits)}학점` },
+        { label: "공통", value: `${n(mba.commonCredits)}학점` },
+        { label: "채플", value: `${n(mba.chapelCourses)}과목 (별도)` },
       ],
     },
   },
@@ -211,7 +219,7 @@ export const pagesKo: PageContent = {
     intro: {
       eyebrow: "DBA",
       title: "경영학박사 (DBA)",
-      description: `${dbaFacts.semesters}학기제 · 총 ${dbaFacts.totalCredits}학점 · 100% 온라인으로 진행되는 실무 전문형 박사과정입니다.`,
+      description: `${n(dba.durationSemesters)}학기제 · 총 ${n(dba.totalCredits)}학점 · 100% 온라인으로 진행되는 실무 전문형 박사과정입니다.`,
     },
     overview: {
       title: "과정 개요",
@@ -223,19 +231,19 @@ export const pagesKo: PageContent = {
     summary: {
       title: "학위기간 및 학점",
       items: [
-        { label: "학위 기간", value: `${dbaFacts.semesters}학기제` },
+        { label: "학위 기간", value: `${n(dba.durationSemesters)}학기제` },
         {
           label: "학기 당 수강",
           value: `${dbaFacts.coursesPerSemester}과목 ${dbaFacts.creditsPerSemester}학점`,
         },
-        { label: "총 취득학점", value: `${dbaFacts.totalCredits}학점` },
+        { label: "총 취득학점", value: `${n(dba.totalCredits)}학점` },
         {
           label: "학점 구성",
-          value: `전공 ${dbaFacts.majorCredits}학점 · 공통 ${dbaFacts.commonCredits}학점`,
+          value: `전공 ${n(dba.majorCredits)}학점 · 공통 ${n(dba.commonCredits)}학점`,
         },
         {
           label: "채플",
-          value: `${dbaFacts.chapelCourses}과목`,
+          value: `${n(dba.chapelCourses)}과목`,
           note: "학점과 별도",
         },
         {
@@ -313,17 +321,16 @@ export const pagesKo: PageContent = {
       creditsUnit: "학점",
       creditsUnknown: "학점 미표기",
       formatLabel: "구분",
-      altTitleNote: "원본 자료에 영문 과목명이 두 가지로 기재되어 있습니다.",
       descriptionPending: "교과 내용은 준비 중입니다.",
       note: "교과목은 학기 사정에 따라 변경될 수 있습니다.",
     },
     graduation: {
       title: "졸업 관련 안내",
       items: [
-        { label: "총 취득학점", value: `${dbaFacts.totalCredits}학점` },
-        { label: "전공", value: `${dbaFacts.majorCredits}학점` },
-        { label: "공통", value: `${dbaFacts.commonCredits}학점` },
-        { label: "채플", value: `${dbaFacts.chapelCourses}과목 (별도)` },
+        { label: "총 취득학점", value: `${n(dba.totalCredits)}학점` },
+        { label: "전공", value: `${n(dba.majorCredits)}학점` },
+        { label: "공통", value: `${n(dba.commonCredits)}학점` },
+        { label: "채플", value: `${n(dba.chapelCourses)}과목 (별도)` },
       ],
       note: `${dbaFacts.thesisSemester}학기는 논문학기로 운영됩니다.`,
     },
@@ -344,12 +351,12 @@ export const pagesKo: PageContent = {
         {
           code: "MBA",
           name: "경영학석사",
-          summary: `${mbaFacts.semesters}학기제 · 총 ${mbaFacts.totalCredits}학점`,
+          summary: `${n(mba.durationSemesters)}학기제 · 총 ${n(mba.totalCredits)}학점`,
         },
         {
           code: "DBA",
           name: "경영학박사",
-          summary: `${dbaFacts.semesters}학기제 · 총 ${dbaFacts.totalCredits}학점`,
+          summary: `${n(dba.durationSemesters)}학기제 · 총 ${n(dba.totalCredits)}학점`,
         },
       ],
     },
@@ -420,8 +427,8 @@ export const pagesKo: PageContent = {
       items: [
         { label: "개강", value: intakeKo },
         { label: "수업방식", value: "100% 온라인" },
-        { label: "MBA", value: `${mbaFacts.semesters}학기` },
-        { label: "DBA", value: `${dbaFacts.semesters}학기` },
+        { label: "MBA", value: `${n(mba.durationSemesters)}학기` },
+        { label: "DBA", value: `${n(dba.durationSemesters)}학기` },
       ],
     },
     eligibility: {
@@ -524,11 +531,11 @@ export const pagesKo: PageContent = {
       },
       {
         question: "MBA 과정은 몇 학기인가요?",
-        answer: `경영학석사(MBA) 과정은 ${mbaFacts.semesters}학기제이며 총 ${mbaFacts.totalCredits}학점(전공 ${mbaFacts.majorCredits}학점, 공통 ${mbaFacts.commonCredits}학점)을 취득합니다. 채플 ${mbaFacts.chapelCourses}과목은 학점과 별도입니다.`,
+        answer: `경영학석사(MBA) 과정은 ${n(mba.durationSemesters)}학기제이며 총 ${n(mba.totalCredits)}학점(전공 ${n(mba.majorCredits)}학점, 공통 ${n(mba.commonCredits)}학점)을 취득합니다. 채플 ${n(mba.chapelCourses)}과목은 학점과 별도입니다.`,
       },
       {
         question: "DBA 과정은 몇 학기인가요?",
-        answer: `경영학박사(DBA) 과정은 ${dbaFacts.semesters}학기제이며 총 ${dbaFacts.totalCredits}학점(전공 ${dbaFacts.majorCredits}학점, 공통 ${dbaFacts.commonCredits}학점)을 취득합니다. 채플 ${dbaFacts.chapelCourses}과목은 학점과 별도이며, ${dbaFacts.thesisSemester}학기는 논문학기로 운영됩니다.`,
+        answer: `경영학박사(DBA) 과정은 ${n(dba.durationSemesters)}학기제이며 총 ${n(dba.totalCredits)}학점(전공 ${n(dba.majorCredits)}학점, 공통 ${n(dba.commonCredits)}학점)을 취득합니다. 채플 ${n(dba.chapelCourses)}과목은 학점과 별도이며, ${dbaFacts.thesisSemester}학기는 논문학기로 운영됩니다.`,
       },
       {
         question: "한 학기에 몇 과목을 수강하나요?",
@@ -759,4 +766,5 @@ export const pagesKo: PageContent = {
     faq: "FAQ",
     faculty: "교수진",
   },
-};
+  };
+}

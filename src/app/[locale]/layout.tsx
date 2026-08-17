@@ -13,12 +13,20 @@ import { buildAlternates, siteUrl } from "@/lib/metadata";
  * Next.js i18n 라우팅의 표준 방식대로 [locale] 세그먼트의 layout 을 root layout 으로 사용한다.
  */
 
-// 지원하는 locale 만 미리 생성하고, 그 외 값(/jp, /fr 등)은 404 로 처리한다.
+// 지원하는 locale 은 빌드 시 미리 생성한다.
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-export const dynamicParams = false;
+/**
+ * `dynamicParams = false` 를 두지 않는다.
+ *
+ * 그 설정이 있으면 관리자가 CMS 에서 저장한 뒤 `revalidatePath` 로 무효화한 페이지를
+ * Next.js 가 다시 만들지 못하고 **404 를 돌려준다.** (실제로 겪었다)
+ *
+ * 지원하지 않는 locale(/jp 등)은 이 layout 과 각 페이지의 `isLocale` 검사가
+ * 이미 404 로 처리하므로 이 설정 없이도 동작이 같다.
+ */
 
 type LocaleLayoutProps = {
   children: React.ReactNode;

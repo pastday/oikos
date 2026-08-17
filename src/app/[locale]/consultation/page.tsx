@@ -7,6 +7,7 @@ import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { Section } from "@/components/page/Section";
 import { getPageContent } from "@/content/pages";
+import { getProgramNumbers } from "@/lib/cms/queries";
 import { isLocale } from "@/i18n/config";
 import { buildPageMetadata } from "@/lib/metadata";
 import { localePath } from "@/lib/navigation";
@@ -22,7 +23,7 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
 
-  const content = getPageContent(locale).consultation;
+  const content = getPageContent(locale, await getProgramNumbers()).consultation;
 
   return buildPageMetadata({
     locale,
@@ -36,7 +37,7 @@ export default async function ConsultationPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const pages = getPageContent(locale);
+  const pages = getPageContent(locale, await getProgramNumbers());
   const content = pages.consultation;
 
   return (

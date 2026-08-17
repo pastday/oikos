@@ -36,10 +36,10 @@ const navGroups: NavGroup[] = [
   {
     title: "콘텐츠 관리",
     items: [
+      { label: "교수진", href: "/admin/faculty" },
+      { label: "MBA · DBA 과정", href: "/admin/programs" },
+      { label: "교과목", href: "/admin/courses" },
       { label: "페이지 콘텐츠", plannedStage: "예정" },
-      { label: "교수진", plannedStage: "예정" },
-      { label: "MBA · DBA 과정", plannedStage: "예정" },
-      { label: "교과목", plannedStage: "예정" },
       { label: "입학안내", plannedStage: "예정" },
       { label: "FAQ", plannedStage: "예정" },
     ],
