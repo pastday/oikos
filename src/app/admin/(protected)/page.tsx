@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guard";
 import { cn } from "@/lib/cn";
@@ -54,21 +55,25 @@ async function loadCounts(): Promise<Counts | null> {
   }
 }
 
+/** 카드를 누르면 해당 조건으로 걸러진 관리 목록으로 이동한다. */
 function StatCard({
   label,
   value,
   hint,
+  href,
   emphasis,
 }: {
   label: string;
   value: number | null;
   hint: string;
+  href: string;
   emphasis?: boolean;
 }) {
   return (
-    <div
+    <Link
+      href={href}
       className={cn(
-        "rounded-lg border bg-background px-5 py-5",
+        "block rounded-lg border bg-background px-5 py-5 transition-colors hover:border-navy",
         emphasis && value !== null && value > 0
           ? "border-navy/30 bg-navy-tint"
           : "border-line",
@@ -79,7 +84,7 @@ function StatCard({
         {value ?? "—"}
       </p>
       <p className="mt-1 text-xs text-muted">{hint}</p>
-    </div>
+    </Link>
   );
 }
 
@@ -112,22 +117,26 @@ export default async function AdminDashboardPage() {
             label="신규 입학상담"
             value={counts?.consultationNew ?? null}
             hint="아직 확인하지 않은 신청"
+            href="/admin/consultations?status=NEW"
             emphasis
           />
           <StatCard
             label="상담중"
             value={counts?.consultationInProgress ?? null}
             hint="처리하고 있는 신청"
+            href="/admin/consultations?status=IN_PROGRESS"
           />
           <StatCard
             label="완료"
             value={counts?.consultationCompleted ?? null}
             hint="답변을 마친 신청"
+            href="/admin/consultations?status=COMPLETED"
           />
           <StatCard
             label="신규 설명회 신청"
             value={counts?.seminarNew ?? null}
             hint="아직 확인하지 않은 신청"
+            href="/admin/seminars?status=NEW"
             emphasis
           />
         </div>
@@ -136,9 +145,8 @@ export default async function AdminDashboardPage() {
       <section className="mt-8 rounded-lg border border-dashed border-line bg-surface px-5 py-5">
         <h2 className="text-sm font-semibold text-navy">다음 단계 안내</h2>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">
-          현재는 로그인과 현황 집계까지 구현되어 있습니다. 신청 <strong>목록 조회</strong>와{" "}
-          <strong>상태 변경</strong>은 9단계, 콘텐츠·교수진·교육과정·FAQ 관리는 8단계에서
-          추가됩니다.
+          입학상담·설명회 신청의 <strong>목록 조회 · 상태 변경 · 메모</strong>까지 사용할 수
+          있습니다. 콘텐츠·교수진·교육과정·FAQ 관리는 다음 단계에서 추가됩니다.
         </p>
       </section>
     </div>

@@ -27,26 +27,26 @@ const navGroups: NavGroup[] = [
     items: [{ label: "대시보드", href: "/admin" }],
   },
   {
-    title: "콘텐츠 관리",
+    title: "상담 관리",
     items: [
-      { label: "페이지 콘텐츠", plannedStage: "8단계" },
-      { label: "교수진", plannedStage: "8단계" },
-      { label: "MBA · DBA 과정", plannedStage: "8단계" },
-      { label: "교과목", plannedStage: "8단계" },
-      { label: "입학안내", plannedStage: "8단계" },
-      { label: "FAQ", plannedStage: "8단계" },
+      { label: "입학상담", href: "/admin/consultations" },
+      { label: "설명회 신청", href: "/admin/seminars" },
     ],
   },
   {
-    title: "상담 관리",
+    title: "콘텐츠 관리",
     items: [
-      { label: "입학상담", plannedStage: "9단계" },
-      { label: "설명회 신청", plannedStage: "9단계" },
+      { label: "페이지 콘텐츠", plannedStage: "예정" },
+      { label: "교수진", plannedStage: "예정" },
+      { label: "MBA · DBA 과정", plannedStage: "예정" },
+      { label: "교과목", plannedStage: "예정" },
+      { label: "입학안내", plannedStage: "예정" },
+      { label: "FAQ", plannedStage: "예정" },
     ],
   },
   {
     title: "시스템",
-    items: [{ label: "관리자 계정", plannedStage: "9단계" }],
+    items: [{ label: "관리자 계정", plannedStage: "예정" }],
   },
 ];
 
@@ -79,7 +79,13 @@ export function AdminNav() {
                 );
               }
 
-              const isActive = pathname === item.href;
+              // 상세 화면(/admin/consultations/xxx)에서도 상위 메뉴가 활성으로 보이게 한다.
+              // 대시보드(/admin)는 하위 경로를 모두 삼키므로 정확히 일치할 때만 활성이다.
+              const isActive =
+                item.href === "/admin"
+                  ? pathname === item.href
+                  : pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
 
               return (
                 <li key={item.label}>

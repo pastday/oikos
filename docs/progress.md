@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-17 · 7단계 완료
+> 마지막 갱신: 2026-08-17 · 8단계 완료
 
 ---
 
@@ -19,10 +19,11 @@
 | — | 운영 배포 + HTTPS | ✅ 완료 |
 | 6 | 입학상담 · 설명회 신청 → DB 저장 | ✅ 완료 |
 | 7 | 관리자 로그인 / 권한 (Auth.js) | ✅ 완료 |
-| 8 | **관리자 CMS (콘텐츠·교수진·교육과정·FAQ)** | ⏭ 다음 |
-| 9 | 관리자 상담관리 | 예정 |
-| 10 | 파일 업로드 | 예정 |
-| 11 | 테스트 / SEO / 보안 점검 | 예정 |
+| 8 | 관리자 상담·설명회 관리 | ✅ 완료 |
+| 9 | **관리자 CMS (교수진 · MBA/DBA · 교과목)** | ⏭ 다음 |
+| 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | 예정 |
+| 11 | 파일 업로드 | 예정 |
+| 12 | 테스트 / SEO / 보안 점검 | 예정 |
 
 **현재 서비스 중**: https://oikos.pastday.co.kr
 
@@ -100,6 +101,10 @@ src/
   app/admin/             ← 관리자 영역의 별도 root layout (한국어 고정, locale 라우팅 없음)
     login/               로그인 (보호 대상 아님 — redirect loop 방지)
     (protected)/         ★ layout 에서 requireAdmin(). 이 아래는 전부 인증 필요
+      page.tsx             대시보드
+      consultations/       입학상담 목록 · 상세
+      seminars/            설명회 신청 목록 · 상세
+      inquiry-actions.ts   상태·메모 저장 서버 액션
   app/api/auth/[...nextauth]/   Auth.js 엔드포인트
   auth.ts                ★ Auth.js 설정 (Credentials + bcrypt + JWT)
   components/
@@ -107,7 +112,7 @@ src/
     home/                메인 페이지 섹션 10개
     page/                상세 페이지 공통 (PageHero · Section · Accordion · CourseList · ProgramPage · RelatedLinks)
     form/                신청 폼 공통 입력·피드백 컴포넌트
-    admin/               관리자 사이드바
+    admin/               사이드바 · 공통 UI(ui.tsx) · 검색상자 · 상태/메모 폼
   types/next-auth.d.ts   session.user.role 타입 확장
   content/
     program-facts.ts     ★ 학기·학점·등록금·개강 등 수치의 단일 출처
@@ -118,6 +123,8 @@ src/
   lib/                   navigation · metadata · site-links · cn · prisma
     validation/inquiry.ts  ★ 신청 폼 검증 규칙의 단일 출처 (zod)
     auth-guard.ts          ★ requireAdmin() / requireSuperAdmin()
+    admin/inquiry.ts       ★ 상태 라벨 · 쿼리 파싱 · 페이지네이션 계산
+    admin/format.ts        관리자 날짜(KST) 표시
   generated/prisma/      Prisma Client (Git 미포함, 빌드 시 생성)
 prisma/                  schema.prisma + migrations
 scripts/                 setup-local-db.sh · create-admin.ts
@@ -141,11 +148,13 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-마이그레이션 `20260814124541_init` 로 테이블 10개가 생성되어 있다. **7단계까지 schema 변경 없음.**
+마이그레이션 `20260814124541_init` 로 테이블 10개가 생성되어 있다. **8단계까지 schema 변경 없음.**
 Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken` 테이블은 만들지 않았다.
 
 - **쓰기**: `Consultation`, `SeminarApplication` (신청 폼) / `AdminUser` (로그인 시 `lastLoginAt`)
-- **읽기**: `AdminUser` (로그인 인증), `Consultation`·`SeminarApplication` (관리자 대시보드 집계)
+- **읽기**: `AdminUser` (로그인 인증), `Consultation`·`SeminarApplication` (대시보드 집계 · 목록 · 상세)
+- **관리자 수정**: `Consultation`·`SeminarApplication` 의 `status` / `adminMemo` **만** 바꾼다.
+  신청자가 입력한 값은 관리자도 고치지 않는다. **삭제 기능은 없다.**
 - 사용자 페이지는 전부 정적 생성(SSG)이다. 폼 페이지도 DB 를 **읽지** 않으므로 SSG 로 남아 있고,
   제출만 Server Action 으로 서버에서 처리한다.
 - **관리자 화면(`/admin/*`)은 동적 렌더링(ƒ)이다.** 세션 쿠키와 DB 를 읽기 때문이다.
@@ -241,21 +250,96 @@ const admin = await requireSuperAdmin();  // ADMIN → /admin (관리자 계정�
 
 ---
 
-## 다음 단계 (8단계) 시작 시 참고
+## 8단계에서 만든 것 (관리자 상담 · 설명회 관리)
 
-**목표**: 관리자 CMS (콘텐츠 · 교수진 · 교육과정 · FAQ)
+| 경로 | 내용 |
+| --- | --- |
+| `/admin/consultations` | 입학상담 목록 (검색 · 필터 · 페이지) |
+| `/admin/consultations/[id]` | 입학상담 상세 + 상태/메모 저장 |
+| `/admin/seminars` | 설명회 신청 목록 |
+| `/admin/seminars/[id]` | 설명회 신청 상세 + 상태/메모 저장 |
+
+### 목록 기능
+
+| 항목 | 내용 |
+| --- | --- |
+| 정렬 | `createdAt DESC` 고정 (최근 신청이 위) |
+| 검색 | `?q=` — 이름 · 이메일 · 연락처 부분 일치 (대소문자 무시) |
+| 필터 | `?status=` / `?program=`(상담만) / `?locale=` |
+| 페이지 | `?page=` `?pageSize=` — 기본 20건, 최대 100건 |
+
+- **필터·검색·페이지는 전부 URL 쿼리다.** 북마크·공유가 되고 뒤로가기가 자연스럽다.
+  대시보드 카드도 이 쿼리로 바로 연결된다. (`/admin/consultations?status=NEW` 등)
+- **알 수 없는 쿼리 값은 오류로 만들지 않고 무시한다.** (`?status=HACK` → 전체 목록)
+- 요청한 page 가 마지막 페이지를 넘으면 마지막 페이지로 당겨 준다.
+
+### 상태 표시 문구
+
+enum(`InquiryStatus`)은 두 모델이 공유하지만 **표시 문구는 도메인에 맞춘다.**
+
+| enum | 입학상담 | 설명회 |
+| --- | --- | --- |
+| `NEW` | 신규 | 신규 |
+| `IN_PROGRESS` | **상담중** (CLAUDE.md 12항 표현) | **진행중** |
+| `COMPLETED` | 완료 | 완료 |
+
+배지는 색만으로 의미를 전달하지 않는다. 문구가 항상 함께 있다.
+
+### 관리자가 바꿀 수 있는 것
+
+**`status` 와 `adminMemo` 뿐이다.** 신청자가 입력한 값은 관리자도 수정하지 않는다.
+
+- 관리자 메모는 내부 기록이며 신청자에게 보이지 않는다. 최대 5000자.
+- **삭제 기능은 만들지 않았다.** 상담 기록을 실수로 지우는 사고를 막기 위함이다.
+  꼭 필요해지면 SUPER_ADMIN 전용으로 별도 검토한다.
+- 상태 변경 이력을 남기는 audit table 은 만들지 않았다. `updatedAt` 과 메모로 관리한다.
+- **ADMIN 과 SUPER_ADMIN 의 기능 차이는 없다.** 둘 다 조회·상태변경·메모가 가능하다.
+
+### 지킨 보안 규칙
+
+- 저장 서버 액션 안에서 **`requireAdmin()` 을 다시 호출한다.** layout 인증만 믿지 않는다.
+  서버 액션은 layout 을 거치지 않고 직접 호출될 수 있다. (인증 없이 직접 POST → DB 변경 없음을 확인)
+- `status` 는 서버에서 zod enum 으로 검증한다. 클라이언트 문자열을 그대로 넣지 않는다.
+- 신청자가 쓴 글(`message`, `memo`)을 **HTML 로 렌더링하지 않는다.** 줄바꿈만 CSS 로 살린다.
+- 없는 id 는 404. Prisma 오류 원문·stack trace 를 화면에 내보내지 않는다.
+
+### 날짜 표시
+
+DB 는 `timestamp without time zone` 이고 Prisma 가 **UTC** 로 넣는다. 저장값은 건드리지 않는다.
+화면에서만 `Intl.DateTimeFormat` 에 `timeZone: "Asia/Seoul"` 을 줘서 한국 시간으로 보여준다.
+서버 TZ 설정과 무관하게 결과가 같다.
+
+> ⚠️ 컬럼이 `timestamp without time zone` 이므로 **서버 OS timezone 은 UTC 로 유지해야 한다.**
+> KST 로 바꾸면 드라이버가 저장값을 다른 시각으로 해석할 수 있다.
+
+### 이 단계에서 겪은 함정
+
+- `Intl` 에 `hour12: false` 만 주면 자정이 **`24:17`** 로 나온다. `hourCycle: "h23"` 을 명시해야 한다.
+- Prisma 의 `contains` 는 **LIKE 와일드카드를 이스케이프하지 않는다.** 검색창에 `%` 를 넣으면
+  전체가 매칭됐다. `\` `%` `_` 를 이스케이프해서 넘긴다. (`buildSearchFilter`)
+- 넓은 표 안의 `sr-only` 요소는 `position:absolute` 인데 기준 조상이 없으면 스크롤 컨테이너를
+  벗어나 **문서 전체를 가로로 넓힌다.** 스크롤 wrapper 에 `relative` 를 줘야 한다.
+
+---
+
+## 다음 단계 (9단계) 시작 시 참고
+
+**목표**: 관리자 CMS — 교수진 · MBA/DBA 과정 · 교과목
 
 이미 준비되어 있는 것:
 
-- 관리자 인증 · 보호 layout · 사이드바 (메뉴 항목은 "8단계" 배지로 자리만 잡아 둠)
-- `PageSection` `Faculty` `Program` `Course` `FAQ` 테이블 (전부 비어 있음)
-- 콘텐츠는 현재 `src/content/` 의 TS 파일에 있다 → 이걸 DB 로 옮기는 것이 8단계의 핵심
+- 관리자 인증 · 보호 layout · 사이드바 (콘텐츠 메뉴는 "예정" 배지로 자리만 잡아 둠)
+- `Faculty` `Program` `Course` 테이블 (전부 비어 있음)
+- 재사용할 공통 UI: `src/components/admin/ui.tsx` (페이지 헤더 · 빈 상태 · 페이지네이션 · 상세 행 · 저장 메시지)
+- 재사용할 인증: `requireAdmin()` — **새 서버 액션에서도 반드시 다시 호출할 것**
 
 정해야 할 것:
 
 - 리치텍스트 에디터 도입 여부와 XSS sanitize 방침 (`decisions.md` 미결 4번)
 - `src/content/` 의 기존 문구를 seed 로 넣을지, 관리자가 처음부터 입력할지
+  (현재 사용자 화면은 `src/content/` 의 TS 파일을 읽는다. DB 로 옮기면 이 경로도 바꿔야 한다)
 - 한/영을 나란히 편집하는 UI 형태 (2단계에서 Ko/En 필드 방식으로 확정됨)
+- 교수 사진 업로드가 필요하면 파일 업로드 단계와 순서를 조정할 것
 
 ---
 
