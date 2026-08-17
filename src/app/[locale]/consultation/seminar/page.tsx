@@ -10,9 +10,10 @@ import { getPageContent } from "@/content/pages";
 import { isLocale } from "@/i18n/config";
 import { buildPageMetadata } from "@/lib/metadata";
 import { localePath } from "@/lib/navigation";
-import { ConsultationForm } from "./ConsultationForm";
+import { SeminarForm } from "./SeminarForm";
 
-const PAGE_PATH = "/consultation";
+/** 입학상담 하위 경로로 둔다. 한국어·영어가 같은 구조를 쓴다. */
+const PAGE_PATH = "/consultation/seminar";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -22,7 +23,7 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
 
-  const content = getPageContent(locale).consultation;
+  const content = getPageContent(locale).seminar;
 
   return buildPageMetadata({
     locale,
@@ -32,72 +33,50 @@ export async function generateMetadata({
   });
 }
 
-export default async function ConsultationPage({ params }: PageProps) {
+export default async function SeminarPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
   const pages = getPageContent(locale);
-  const content = pages.consultation;
+  const content = pages.seminar;
 
   return (
     <>
       <PageHero intro={content.intro} />
 
       <Section
-        title={content.guide.title}
-        description={content.guide.description}
-      >
-        <ul className="grid gap-4 lg:grid-cols-3">
-          {content.guide.items.map((item) => (
-            <li
-              key={item.title}
-              className="rounded-lg border border-line bg-background p-5"
-            >
-              <h3 className="text-[0.9375rem] font-semibold text-navy">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
-                {item.description}
-              </p>
-            </li>
-          ))}
-        </ul>
-
-        {/* 대표 전화·카카오톡 채널이 확정되지 않아 버튼을 만들지 않고 안내만 둔다. */}
-        <div className="mt-6">
-          <PendingNotice title={content.channelNotice.title}>
-            {content.channelNotice.body}
-          </PendingNotice>
-        </div>
-      </Section>
-
-      <Section
         title={content.form.title}
         description={content.form.description}
-        tone="surface"
       >
+        {/* 확정된 설명회 일정이 없으므로 날짜를 만들어 제시하지 않는다. */}
+        <div className="mb-8 max-w-3xl">
+          <PendingNotice title={content.scheduleNotice.title}>
+            {content.scheduleNotice.body}
+          </PendingNotice>
+        </div>
+
         <div className="max-w-3xl">
-          <ConsultationForm locale={locale} content={content.form} />
+          <SeminarForm locale={locale} content={content.form} />
         </div>
       </Section>
 
-      <section className="border-b border-line bg-background py-12 lg:py-14">
+      <section className="border-b border-line bg-surface py-12 lg:py-14">
         <Container>
-          <div className="flex flex-col gap-5 rounded-lg border border-line bg-surface px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div className="flex flex-col gap-5 rounded-lg border border-line bg-background px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
             <div className="max-w-xl">
               <h2 className="font-serif text-lg font-bold text-navy">
-                {content.seminarLink.title}
+                {content.consultationLink.title}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">
-                {content.seminarLink.description}
+                {content.consultationLink.description}
               </p>
             </div>
 
             <Link
-              href={localePath(locale, "/consultation/seminar")}
+              href={localePath(locale, "/consultation")}
               className="inline-flex shrink-0 justify-center rounded-md border border-navy px-6 py-3 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
             >
-              {content.seminarLink.cta}
+              {content.consultationLink.cta}
             </Link>
           </div>
         </Container>
@@ -111,8 +90,8 @@ export default async function ConsultationPage({ params }: PageProps) {
           { path: "/programs", label: pages.related.programs },
           { path: "/faq", label: pages.related.faq },
           {
-            path: "/consultation/seminar",
-            label: pages.related.seminar,
+            path: "/consultation",
+            label: pages.related.consultation,
             primary: true,
           },
         ]}

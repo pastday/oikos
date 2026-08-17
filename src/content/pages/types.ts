@@ -6,6 +6,11 @@
  * 이후 단계에서 PageSection 테이블로 옮긴다.
  */
 
+import type {
+  ConsultationErrorCode,
+  SeminarErrorCode,
+} from "@/lib/validation/inquiry";
+
 export type PageIntro = {
   eyebrow: string;
   title: string;
@@ -170,6 +175,89 @@ export type FaqContent = {
   note: string;
 };
 
+// ---------------------------------------------------------------------------
+// 입학상담 · 설명회 신청 (6단계)
+// ---------------------------------------------------------------------------
+
+export type FormFieldText = {
+  label: string;
+  placeholder?: string;
+  /** 입력 요령 안내. 없으면 표시하지 않는다. */
+  hint?: string;
+};
+
+/**
+ * 두 신청 폼이 공통으로 쓰는 문구.
+ * `errors` 는 서버가 돌려준 오류 코드를 사람이 읽을 문구로 바꾸는 표다.
+ * 코드가 늘면 Record 타입 때문에 한국어·영어 양쪽에서 컴파일 오류가 난다.
+ */
+export type InquiryFormText<Code extends string> = {
+  requiredMark: string;
+  optionalMark: string;
+  submit: string;
+  submitting: string;
+  privacy: {
+    label: string;
+    /** 수집 항목·이용 목적. 확인된 사실만 적는다. */
+    summary: string;
+    /** 개인정보 처리방침 전문이 아직 없다는 안내. */
+    pendingNotice: string;
+  };
+  invalidAlert: string;
+  serverError: string;
+  success: { title: string; description: string };
+  errors: Record<Code, string>;
+};
+
+export type ConsultationContent = {
+  intro: PageIntro;
+  guide: {
+    title: string;
+    description: string;
+    items: { title: string; description: string }[];
+  };
+  /** 대표 전화·카카오톡 채널이 확정되지 않아 가짜 링크를 만들지 않는다. */
+  channelNotice: NoticeBlock;
+  form: {
+    title: string;
+    description: string;
+    fields: {
+      name: FormFieldText;
+      phone: FormFieldText;
+      email: FormFieldText;
+      interestedProgram: FormFieldText & {
+        placeholder: string;
+        options: { value: "MBA" | "DBA"; label: string }[];
+      };
+      message: FormFieldText;
+    };
+    text: InquiryFormText<ConsultationErrorCode>;
+    successLinks: { path: string; label: string }[];
+  };
+  seminarLink: { title: string; description: string; cta: string };
+};
+
+export type SeminarContent = {
+  intro: PageIntro;
+  /** 확정된 설명회 일정이 없다는 안내. 없는 날짜를 만들지 않는다. */
+  scheduleNotice: NoticeBlock;
+  form: {
+    title: string;
+    description: string;
+    fields: {
+      name: FormFieldText;
+      phone: FormFieldText;
+      email: FormFieldText;
+      preferredSession: FormFieldText;
+      attendeeCount: FormFieldText;
+      memo: FormFieldText;
+    };
+    text: InquiryFormText<SeminarErrorCode>;
+    successLinks: { path: string; label: string }[];
+  };
+  consultationLink: { title: string; description: string; cta: string };
+};
+
 export type PageContent = {
   about: AboutContent;
   faculty: FacultyContent;
@@ -178,12 +266,15 @@ export type PageContent = {
   degree: DegreeContent;
   admission: AdmissionContent;
   faq: FaqContent;
+  consultation: ConsultationContent;
+  seminar: SeminarContent;
   /** 페이지 하단 관련 링크 문구 */
   related: {
     title: string;
     about: string;
     admission: string;
     consultation: string;
+    seminar: string;
     programs: string;
     mba: string;
     dba: string;

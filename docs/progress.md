@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-14 · 커밋 `3587489`
+> 마지막 갱신: 2026-08-17 · 6단계 완료
 
 ---
 
@@ -17,8 +17,8 @@
 | 4 | 메인 홈페이지 시안 (A안) | ✅ 완료 |
 | 5 | 사용자 상세 페이지 7종 | ✅ 완료 |
 | — | 운영 배포 + HTTPS | ✅ 완료 |
-| 6 | **입학상담 · 설명회 신청 → DB 저장** | ⏭ 다음 |
-| 7 | 관리자 로그인 / 권한 (Auth.js) | 예정 |
+| 6 | 입학상담 · 설명회 신청 → DB 저장 | ✅ 완료 |
+| 7 | **관리자 로그인 / 권한 (Auth.js)** | ⏭ 다음 |
 | 8 | 관리자 CMS (콘텐츠·교수진·교육과정·FAQ) | 예정 |
 | 9 | 관리자 상담관리 | 예정 |
 | 10 | 파일 업로드 | 예정 |
@@ -94,12 +94,14 @@ sudo systemctl restart oikos          # ← 이 단계를 빠뜨리면 예전 �
 src/
   app/[locale]/          ← [locale]/layout.tsx 가 root layout (html lang 을 locale 별로 바꾸기 위함)
     page.tsx             메인 (Hero + 9개 섹션)
-    about  faculty  degree  admission  faq  consultation
+    about  faculty  degree  admission  faq
+    consultation/        상담 폼 + actions.ts(서버 액션) + seminar/ (설명회 폼)
     programs/  programs/mba  programs/dba
   components/
     layout/              Header(2행) · Footer · MobileMenu · LanguageSwitcher · Container
     home/                메인 페이지 섹션 10개
     page/                상세 페이지 공통 (PageHero · Section · Accordion · CourseList · ProgramPage · RelatedLinks)
+    form/                신청 폼 공통 입력·피드백 컴포넌트
   content/
     program-facts.ts     ★ 학기·학점·등록금·개강 등 수치의 단일 출처
     home/                메인 콘텐츠 (ko/en)
@@ -107,6 +109,7 @@ src/
     courses/             교과목 20과목 카탈로그 + 과정별 편성
   i18n/                  locale 정의 + UI 문자열 사전 (ko/en)
   lib/                   navigation · metadata · site-links · cn · prisma
+    validation/inquiry.ts  ★ 신청 폼 검증 규칙의 단일 출처 (zod)
   generated/prisma/      Prisma Client (Git 미포함, 빌드 시 생성)
 prisma/                  schema.prisma + migrations
 deploy/                  nginx · systemd · 배포 문서
@@ -129,34 +132,81 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-**마이그레이션 `20260814124541_init` 로 테이블 10개가 이미 생성되어 있으나, 아직 어떤 화면도 DB 를 조회하지 않는다.**
-모든 페이지가 빌드 시점 정적 생성(SSG)이라 DB 가 꺼져 있어도 사이트는 정상 동작한다.
+마이그레이션 `20260814124541_init` 로 테이블 10개가 생성되어 있다. **6단계 기준 schema 변경 없음.**
+
+- **쓰기**: `Consultation`, `SeminarApplication` — 입학상담·설명회 신청 폼이 저장한다.
+- **읽기**: 아직 없다. 관리자 화면(7~9단계)이 첫 조회 대상이 된다.
+- 모든 페이지가 여전히 빌드 시점 정적 생성(SSG)이다. 폼 페이지도 DB 를 **읽지** 않으므로 SSG 로 남아 있고,
+  제출만 Server Action 으로 서버에서 처리한다. 따라서 DB 가 꺼져 있어도 페이지 자체는 뜬다(제출만 실패).
 
 모델: `AdminUser` `PageSection` `Faculty` `Program` `Course` `FAQ` `Consultation` `SeminarApplication` `Media` `SiteSetting`
 enum: `AdminRole` `FacultyType` `ProgramType` `CourseCategory` `InquiryStatus`
 
 ---
 
-## 다음 단계 (6단계) 시작 시 참고
+## 6단계에서 만든 것 (입학상담 · 설명회 신청)
 
-**목표**: 입학상담 신청 + 설명회 신청 → PostgreSQL 저장
+| 경로 | 내용 |
+| --- | --- |
+| `/[locale]/consultation` | 상담 안내 + 입학상담 신청 폼 |
+| `/[locale]/consultation/seminar` | 설명회 신청 폼 |
+
+```
+src/lib/validation/inquiry.ts          zod 스키마 + 오류 코드 + 스팸 필드 이름 (한 곳에 모음)
+src/app/[locale]/consultation/
+  actions.ts                           서버 액션 2개 (DB 쓰기는 여기서만)
+  ConsultationForm.tsx                 client
+  seminar/page.tsx  seminar/SeminarForm.tsx
+src/components/form/
+  Fields.tsx                           TextField · TextAreaField · SelectField · CheckboxField · SpamGuardFields
+  FormFeedback.tsx                     SubmitButton · FormAlert · SuccessPanel · PendingNotice
+src/content/pages/{types,ko,en}.ts     폼 라벨·오류 문구·안내 문구 (기존 콘텐츠 모듈에 추가)
+```
+
+핵심 규칙 (자세한 배경은 `decisions.md` 6단계 항목):
+
+- **DB 쓰기는 서버 액션에서만.** 브라우저는 Prisma 를 건드리지 않는다.
+- **저장 여부는 서버 검증만으로 결정한다.** `<form noValidate>` 로 브라우저 기본 검증을 껐다.
+- **스키마에는 문구가 아니라 오류 코드가 들어간다.** 문구는 locale 콘텐츠에서 찾는다.
+- `status` / `adminMemo` 는 사용자 입력에서 받지 않는다. 주입해도 무시된다(확인 완료).
+- 성공하면 폼을 결과 화면으로 교체한다. 오류면 입력값을 보존한다.
+
+### 이 단계에서 남긴 TODO
+
+- **개인정보 처리방침 전문이 없다.** 동의 체크박스 아래에 "전문 준비 중" 안내만 있다.
+  7단계에서 처리방침 페이지를 만들고 링크로 교체할 것.
+- 대표 전화·카카오톡 채널 미확정 → 상담 페이지에 "확정 중" 안내만 있고 버튼은 만들지 않았다.
+- 설명회 일정 미확정 → `preferredSession` 은 자유 입력(선택). 일정이 확정되면 select 로 바꾼다.
+- 신규 접수 시 관리자 알림 메일 — 아직 없음. 필요 여부 미정.
+- rate limit / CAPTCHA — 운영 배포 단계에서 재검토.
+
+---
+
+## 다음 단계 (7단계) 시작 시 참고
+
+**목표**: 관리자 로그인 / 권한 (Auth.js + bcrypt)
 
 이미 준비되어 있는 것:
 
-- `Consultation` / `SeminarApplication` 테이블과 `InquiryStatus` enum
-- `src/lib/prisma.ts` 싱글턴 (adapter 연결 완료)
-- `/[locale]/consultation` 라우트 (현재는 골격 페이지)
-- 사이트 전역의 "입학상담 신청" CTA 가 모두 이 경로를 가리킨다
+- `AdminUser` 테이블 + `AdminRole` enum (`SUPER_ADMIN` / `ADMIN`)
+- `.env.example` 에 `AUTH_SECRET` · `AUTH_URL` · `SEED_ADMIN_*` 자리
+- 인증 방식은 `decisions.md` 4항에서 이미 확정 (Auth.js + Credentials + bcrypt, OAuth 없음)
 
-새로 정해야 할 것:
+관리자 화면이 조회하게 될 데이터 구조 (6단계에서 저장되는 값):
 
-- 폼 제출 방식 (Server Action vs Route Handler)
-- 서버 측 입력값 검증 방법 — 외부 라이브러리(zod 등) 도입 여부를 먼저 판단할 것
-- 개인정보처리방침 페이지 본문 (동의 체크박스의 대상 문서가 아직 없다)
-- 스팸 방지 (honeypot / rate limit)
-- 신규 접수 시 관리자 알림 메일 여부
-- 상담 신청 성공/실패 화면
-- 이 페이지는 DB 를 쓰므로 **정적 생성에서 제외**된다는 점을 고려할 것
+```
+Consultation        id, name, phone, email, interestedProgram(MBA|DBA|null),
+                    message, status(NEW|IN_PROGRESS|COMPLETED), privacyAgreed,
+                    locale("ko"|"en"), adminMemo(null), createdAt, updatedAt
+SeminarApplication  id, name, phone, email, preferredSession(nullable),
+                    attendeeCount(1~10), memo(nullable), status, privacyAgreed,
+                    locale, adminMemo(null), createdAt, updatedAt
+```
+
+- 두 테이블 모두 `@@index([status, createdAt])` 가 있으므로 **상태 필터 + 최신순** 조회가 인덱스를 탄다.
+- 신규 접수는 전부 `status = NEW` 로 들어온다. 대시보드의 "신규 건수" 는 이 값을 센다.
+- `adminMemo` 는 관리자만 쓰는 필드다. 현재 전부 `null` 이다.
+- 관리자 화면은 DB 를 읽으므로 **정적 생성 대상이 아니다.** 사용자 페이지와 달리 동적 렌더링이 된다.
 
 ---
 

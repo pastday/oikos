@@ -558,11 +558,200 @@ export const pagesKo: PageContent = {
   },
 
   // -------------------------------------------------------------------------
+  consultation: {
+    intro: {
+      eyebrow: "입학상담",
+      title: "입학상담 신청",
+      description:
+        "과정 선택, 지원 자격, 등록 절차에 대해 궁금한 점을 남겨 주시면 확인 후 연락드립니다.",
+    },
+    guide: {
+      title: "상담 안내",
+      description:
+        "아래 내용을 참고해 신청해 주시면 더 정확한 안내를 드릴 수 있습니다.",
+      items: [
+        {
+          title: "무엇을 물어보면 되나요",
+          description:
+            "과정 선택, 수업 방식, 교육과정, 졸업요건, 등록금, 입학 절차 등 어떤 내용이든 좋습니다.",
+        },
+        {
+          title: "어떻게 답변드리나요",
+          description:
+            "남겨 주신 연락처와 이메일로 답변드립니다. 두 가지 모두 정확하게 적어 주세요.",
+        },
+        {
+          title: "언제 연락드리나요",
+          description:
+            "확인 후 순차적으로 연락드립니다. 답변 소요 기간은 확정되는 대로 이 영역에 안내합니다.",
+        },
+      ],
+    },
+    channelNotice: {
+      title: "전화상담 · 카카오톡 상담",
+      body: "대표 전화번호와 상담 채널은 현재 확정 중입니다. 준비되는 대로 이 영역에 안내하며, 그전까지는 아래 온라인 상담신청을 이용해 주세요.",
+    },
+    form: {
+      title: "상담신청",
+      description: "표시된 항목은 모두 입력해 주세요.",
+      fields: {
+        name: { label: "이름", placeholder: "홍길동" },
+        phone: {
+          label: "연락처",
+          placeholder: "010-0000-0000",
+          hint: "숫자와 -, +, ( ) 만 사용할 수 있습니다. 해외 번호는 국가번호를 포함해 주세요.",
+        },
+        email: { label: "이메일", placeholder: "name@example.com" },
+        interestedProgram: {
+          label: "관심 과정",
+          placeholder: "선택해 주세요",
+          options: [
+            { value: "MBA", label: "MBA (석사과정)" },
+            { value: "DBA", label: "DBA (박사과정)" },
+          ],
+        },
+        message: {
+          label: "문의내용",
+          placeholder: "궁금한 점을 자유롭게 적어 주세요.",
+        },
+      },
+      text: {
+        requiredMark: "필수",
+        optionalMark: "선택",
+        submit: "상담 신청하기",
+        submitting: "제출 중…",
+        privacy: {
+          label: "개인정보 수집 및 이용에 동의합니다.",
+          summary:
+            "수집 항목: 이름, 연락처, 이메일, 관심 과정, 문의내용 / 이용 목적: 입학상담 답변",
+          pendingNotice:
+            "개인정보 처리방침 전문과 보관 기간은 현재 준비 중입니다. 확정되는 대로 이 영역에서 확인하실 수 있습니다.",
+        },
+        invalidAlert: "입력하신 내용을 다시 확인해 주세요.",
+        serverError:
+          "상담 신청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        success: {
+          title: "상담 신청이 접수되었습니다.",
+          description: "확인 후 연락드리겠습니다.",
+        },
+        errors: {
+          nameRequired: "이름을 입력해 주세요.",
+          nameTooLong: "이름이 너무 깁니다.",
+          phoneRequired: "연락처를 입력해 주세요.",
+          phoneInvalid: "연락처 형식을 다시 확인해 주세요.",
+          emailRequired: "이메일을 입력해 주세요.",
+          emailInvalid: "유효한 이메일 주소를 입력해 주세요.",
+          emailTooLong: "이메일이 너무 깁니다.",
+          privacyRequired: "개인정보 수집에 동의해 주세요.",
+          programRequired: "관심 과정을 선택해 주세요.",
+          messageRequired: "문의내용을 입력해 주세요.",
+          messageTooShort: "문의내용을 조금 더 자세히 적어 주세요.",
+          messageTooLong: "문의내용이 너무 깁니다.",
+        },
+      },
+      successLinks: [
+        { path: "/admission", label: "입학안내 보기" },
+        { path: "/programs", label: "MBA · DBA 과정 보기" },
+      ],
+    },
+    seminarLink: {
+      title: "설명회 신청",
+      description:
+        "과정 설명회 참석을 희망하시면 별도로 신청하실 수 있습니다. 일정이 확정되면 신청하신 분께 먼저 안내드립니다.",
+      cta: "설명회 신청하기",
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  seminar: {
+    intro: {
+      eyebrow: "입학상담",
+      title: "설명회 신청",
+      description:
+        "과정 설명회 참석을 미리 신청하실 수 있습니다. 일정이 확정되면 신청하신 분께 먼저 안내드립니다.",
+    },
+    scheduleNotice: {
+      title: "설명회 일정 안내",
+      body: "확정된 설명회 일정이 아직 없습니다. 지금 신청해 두시면 일정이 확정되는 대로 남겨 주신 연락처로 안내드립니다.",
+    },
+    form: {
+      title: "설명회 신청",
+      description: "표시된 항목은 모두 입력해 주세요.",
+      fields: {
+        name: { label: "이름", placeholder: "홍길동" },
+        phone: {
+          label: "연락처",
+          placeholder: "010-0000-0000",
+          hint: "숫자와 -, +, ( ) 만 사용할 수 있습니다. 해외 번호는 국가번호를 포함해 주세요.",
+        },
+        email: { label: "이메일", placeholder: "name@example.com" },
+        preferredSession: {
+          label: "참석 희망 설명회",
+          placeholder: "예: 평일 저녁 온라인 설명회 희망",
+          hint: "확정된 일정이 없어 자유롭게 적어 주시면 됩니다. 희망하시는 시기나 방식을 적어 주세요.",
+        },
+        attendeeCount: {
+          label: "참석 인원",
+          hint: "1명부터 10명까지 신청하실 수 있습니다.",
+        },
+        memo: {
+          label: "메모",
+          placeholder: "미리 알고 싶은 내용이 있으면 적어 주세요.",
+        },
+      },
+      text: {
+        requiredMark: "필수",
+        optionalMark: "선택",
+        submit: "설명회 신청하기",
+        submitting: "제출 중…",
+        privacy: {
+          label: "개인정보 수집 및 이용에 동의합니다.",
+          summary:
+            "수집 항목: 이름, 연락처, 이메일, 참석 희망 설명회, 참석 인원, 메모 / 이용 목적: 설명회 일정 안내",
+          pendingNotice:
+            "개인정보 처리방침 전문과 보관 기간은 현재 준비 중입니다. 확정되는 대로 이 영역에서 확인하실 수 있습니다.",
+        },
+        invalidAlert: "입력하신 내용을 다시 확인해 주세요.",
+        serverError:
+          "설명회 신청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        success: {
+          title: "설명회 신청이 접수되었습니다.",
+          description: "일정이 확정되면 남겨 주신 연락처로 안내드리겠습니다.",
+        },
+        errors: {
+          nameRequired: "이름을 입력해 주세요.",
+          nameTooLong: "이름이 너무 깁니다.",
+          phoneRequired: "연락처를 입력해 주세요.",
+          phoneInvalid: "연락처 형식을 다시 확인해 주세요.",
+          emailRequired: "이메일을 입력해 주세요.",
+          emailInvalid: "유효한 이메일 주소를 입력해 주세요.",
+          emailTooLong: "이메일이 너무 깁니다.",
+          privacyRequired: "개인정보 수집에 동의해 주세요.",
+          sessionTooLong: "참석 희망 설명회 내용이 너무 깁니다.",
+          attendeeCountInvalid: "참석 인원은 1명에서 10명 사이로 입력해 주세요.",
+          memoTooLong: "메모가 너무 깁니다.",
+        },
+      },
+      successLinks: [
+        { path: "/consultation", label: "입학상담 신청하기" },
+        { path: "/admission", label: "입학안내 보기" },
+      ],
+    },
+    consultationLink: {
+      title: "입학상담",
+      description:
+        "설명회를 기다리지 않고 바로 문의하고 싶으시면 입학상담을 이용해 주세요.",
+      cta: "입학상담 신청하기",
+    },
+  },
+
+  // -------------------------------------------------------------------------
   related: {
     title: "함께 보기",
     about: "대학원 소개",
     admission: "입학안내",
     consultation: "입학상담 신청",
+    seminar: "설명회 신청",
     programs: "MBA · DBA 과정",
     mba: "MBA 과정",
     dba: "DBA 과정",

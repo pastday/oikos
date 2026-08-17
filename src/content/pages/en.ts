@@ -580,11 +580,204 @@ export const pagesEn: PageContent = {
   },
 
   // -------------------------------------------------------------------------
+  consultation: {
+    intro: {
+      eyebrow: "Consultation",
+      title: "Request a Consultation",
+      description:
+        "Tell us what you would like to know about choosing a program, eligibility, or the admissions process, and we will get back to you.",
+    },
+    guide: {
+      title: "Before You Submit",
+      description:
+        "A few notes that help us give you a more accurate answer.",
+      items: [
+        {
+          title: "What you can ask",
+          description:
+            "Anything about choosing a program, how classes are delivered, the curriculum, graduation requirements, tuition, or the admissions process.",
+        },
+        {
+          title: "How we reply",
+          description:
+            "We reply using the phone number and email address you provide, so please make sure both are correct.",
+        },
+        {
+          title: "When we reply",
+          description:
+            "We respond in the order requests are received. The expected response time will be posted here once it is confirmed.",
+        },
+      ],
+    },
+    channelNotice: {
+      title: "Phone and messenger consultation",
+      body: "Our main phone number and messenger channel are still being confirmed. They will be posted here once ready — until then, please use the online form below.",
+    },
+    form: {
+      title: "Consultation Request",
+      description: "Please complete every field marked as required.",
+      fields: {
+        name: { label: "Name", placeholder: "Your full name" },
+        phone: {
+          label: "Phone",
+          placeholder: "+82 10 0000 0000",
+          hint: "Digits and - + ( ) only. Please include your country code if you are outside Korea.",
+        },
+        email: { label: "Email", placeholder: "name@example.com" },
+        interestedProgram: {
+          label: "Program of interest",
+          placeholder: "Please select",
+          options: [
+            { value: "MBA", label: "MBA (Master's)" },
+            { value: "DBA", label: "DBA (Doctoral)" },
+          ],
+        },
+        message: {
+          label: "Your question",
+          placeholder: "Please tell us what you would like to know.",
+        },
+      },
+      text: {
+        requiredMark: "Required",
+        optionalMark: "Optional",
+        submit: "Submit request",
+        submitting: "Submitting…",
+        privacy: {
+          label: "I agree to the collection and use of my personal information.",
+          summary:
+            "Collected: name, phone, email, program of interest, and your question. Purpose: responding to your admissions inquiry.",
+          pendingNotice:
+            "The full privacy policy and retention period are still being prepared and will be published here once confirmed.",
+        },
+        invalidAlert: "Please review the highlighted fields.",
+        serverError:
+          "We could not submit your request. Please try again later.",
+        success: {
+          title: "Your consultation request has been submitted.",
+          description: "We will contact you after reviewing your request.",
+        },
+        errors: {
+          nameRequired: "Please enter your name.",
+          nameTooLong: "This name is too long.",
+          phoneRequired: "Please enter a phone number.",
+          phoneInvalid: "Please check the phone number format.",
+          emailRequired: "Please enter your email address.",
+          emailInvalid: "Please enter a valid email address.",
+          emailTooLong: "This email address is too long.",
+          privacyRequired:
+            "Please agree to the collection of your personal information.",
+          programRequired: "Please select a program.",
+          messageRequired: "Please enter your question.",
+          messageTooShort: "Please tell us a little more.",
+          messageTooLong: "This message is too long.",
+        },
+      },
+      successLinks: [
+        { path: "/admission", label: "View admissions" },
+        { path: "/programs", label: "View MBA · DBA programs" },
+      ],
+    },
+    seminarLink: {
+      title: "Information session",
+      description:
+        "You can also register for an information session. Registrants are notified first once a date is confirmed.",
+      cta: "Register for a session",
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  seminar: {
+    intro: {
+      eyebrow: "Consultation",
+      title: "Information Session",
+      description:
+        "Register in advance for a program information session. Registrants are notified first once a date is confirmed.",
+    },
+    scheduleNotice: {
+      title: "Session schedule",
+      body: "No session date has been confirmed yet. If you register now, we will contact you as soon as a date is set.",
+    },
+    form: {
+      title: "Session Registration",
+      description: "Please complete every field marked as required.",
+      fields: {
+        name: { label: "Name", placeholder: "Your full name" },
+        phone: {
+          label: "Phone",
+          placeholder: "+82 10 0000 0000",
+          hint: "Digits and - + ( ) only. Please include your country code if you are outside Korea.",
+        },
+        email: { label: "Email", placeholder: "name@example.com" },
+        preferredSession: {
+          label: "Session you would like to attend",
+          placeholder: "e.g. an online session on a weekday evening",
+          hint: "No dates are confirmed yet, so please describe the timing or format you would prefer.",
+        },
+        attendeeCount: {
+          label: "Number of attendees",
+          hint: "Between 1 and 10 people.",
+        },
+        memo: {
+          label: "Notes",
+          placeholder: "Anything you would like to know in advance.",
+        },
+      },
+      text: {
+        requiredMark: "Required",
+        optionalMark: "Optional",
+        submit: "Register",
+        submitting: "Submitting…",
+        privacy: {
+          label: "I agree to the collection and use of my personal information.",
+          summary:
+            "Collected: name, phone, email, preferred session, number of attendees, and notes. Purpose: informing you about session dates.",
+          pendingNotice:
+            "The full privacy policy and retention period are still being prepared and will be published here once confirmed.",
+        },
+        invalidAlert: "Please review the highlighted fields.",
+        serverError:
+          "We could not submit your request. Please try again later.",
+        success: {
+          title: "Your registration has been submitted.",
+          description:
+            "We will contact you as soon as a session date is confirmed.",
+        },
+        errors: {
+          nameRequired: "Please enter your name.",
+          nameTooLong: "This name is too long.",
+          phoneRequired: "Please enter a phone number.",
+          phoneInvalid: "Please check the phone number format.",
+          emailRequired: "Please enter your email address.",
+          emailInvalid: "Please enter a valid email address.",
+          emailTooLong: "This email address is too long.",
+          privacyRequired:
+            "Please agree to the collection of your personal information.",
+          sessionTooLong: "This entry is too long.",
+          attendeeCountInvalid:
+            "Please enter a number of attendees between 1 and 10.",
+          memoTooLong: "This note is too long.",
+        },
+      },
+      successLinks: [
+        { path: "/consultation", label: "Request a consultation" },
+        { path: "/admission", label: "View admissions" },
+      ],
+    },
+    consultationLink: {
+      title: "Admissions consultation",
+      description:
+        "If you would rather not wait for a session, you can send us your question directly.",
+      cta: "Request a consultation",
+    },
+  },
+
+  // -------------------------------------------------------------------------
   related: {
     title: "See also",
     about: "Graduate School",
     admission: "Admissions",
     consultation: "Request Consultation",
+    seminar: "Information Session",
     programs: "MBA · DBA Programs",
     mba: "MBA Program",
     dba: "DBA Program",
