@@ -394,6 +394,119 @@ honeypot 과 제출 시간은 **클라이언트가 보내는 값이라 위조할
 
 ---
 
+## 7단계 결정사항 — 관리자 인증 (2026-08-17)
+
+### Auth.js v5 (next-auth 5.0.0-beta.32) — 버전 고정
+
+- **정확한 버전으로 고정했다.** (`^` 없음) 아직 beta 라서 caret 범위를 두면
+  다음 beta 가 자동으로 들어와 인증이 깨질 수 있다. 올릴 때는 의도적으로 올린다.
+- v4(4.24.x)가 `latest` 지만 App Router 지원이 구식이다. Auth.js 공식 문서가 Next.js App Router 용으로
+  안내하는 것은 v5 이고 peerDependencies 도 `next: ^16.0.0` 을 명시한다. 그래서 v5 를 택했다.
+- **beta 의존성이라는 점은 인지하고 있다.** 운영 배포 전에 정식 릴리스 여부를 다시 확인할 것.
+
+### bcryptjs (bcrypt 아님)
+
+| | bcrypt 6.x | **bcryptjs 3.x (선택)** |
+| --- | --- | --- |
+| 구현 | 네이티브 C++ 애드온 | 순수 JavaScript |
+| 설치 | node-gyp 빌드 필요 | 빌드 불필요 |
+| Node 업그레이드 | 재빌드 필요 | 영향 없음 |
+| Docker(10단계) | 빌드 도구 설치 필요 | 그대로 동작 |
+
+이 서버는 sudo 를 쓸 수 없어 빌드 도구를 마음대로 설치하지 못한다.
+속도는 bcryptjs 가 느리지만 **cost 12 기준 해시 1회 약 0.22초**로 관리자 로그인에는 충분하다.
+(사용자 로그인이 아니라 관리자 몇 명이 쓰는 화면이다.)
+bcryptjs 3.x 는 타입 정의를 자체 포함하므로 `@types/bcryptjs` 도 필요 없다.
+
+### session 전략: JWT / Prisma Adapter 사용 안 함
+
+- **Credentials Provider 는 database session 을 지원하지 않는다.** 따라서 JWT 전략이 강제된다.
+- 그 결과 **Auth.js 용 `Account` / `Session` / `VerificationToken` 테이블이 필요 없고,
+  Prisma Adapter 도 설치하지 않았다.** `AdminUser` 는 OAuth 계정 저장소가 아니라
+  이 프로젝트의 도메인 모델이므로 어댑터 규격에 맞출 이유가 없다.
+- 세션 유효기간 8시간. 관리 도구이므로 짧게 잡았다.
+- `role` 은 로그인 시점에 JWT 에 심고 세션으로 내보낸다. 매 요청마다 DB 를 다시 조회하지 않는다.
+  → **권한을 바꾸면 해당 관리자가 다시 로그인해야 반영된다.** 9단계 계정관리 화면에서 감안할 것.
+
+### AdminUser schema 변경 없음
+
+기존 모델로 충분해 마이그레이션을 추가하지 않았다.
+
+### 라우트 구조
+
+```
+src/app/admin/layout.tsx              관리자 root layout (html/body). 인증 확인 없음
+src/app/admin/login/                  로그인 (보호 대상 아님)
+src/app/admin/(protected)/layout.tsx  ← 여기서 requireAdmin(). 아래 전부 보호됨
+src/app/admin/(protected)/page.tsx    대시보드 (/admin)
+```
+
+- 사용자 사이트의 root layout 은 `src/app/[locale]/layout.tsx` 이고 관리자는 별도 root layout 을 쓴다.
+  `src/app/layout.tsx` 가 없으므로 두 최상위 세그먼트가 각자 root layout 이 된다. (빌드로 확인함)
+- **로그인 페이지는 `(protected)` 밖에 둔다.** 안에 넣으면 로그인 페이지가 자기 자신으로
+  무한 redirect 한다.
+- **middleware 를 쓰지 않는다.** 이유:
+  1. matcher 를 잘못 쓰면 `/ko` `/en` 사용자 사이트 전체가 로그인으로 튕길 위험이 있다.
+  2. middleware 만으로는 권한 보호가 완결되지 않는다. 어차피 서버 컴포넌트에서 확인해야 한다.
+  layout 에서 확인하는 편이 확실하고 위험이 없다.
+
+### 로그인 실패를 구분해서 알리지 않는다
+
+없는 계정 / 틀린 비밀번호 / 비활성 계정 모두 같은 문구를 보여준다.
+계정이 존재하는지 알려주지 않기 위해서다.
+
+**응답 시간으로도 알 수 없게** 계정이 없을 때도 더미 bcrypt 해시와 한 번 비교한다.
+이것이 없으면 "계정 없음" 은 즉시 응답하고 "비밀번호 틀림" 은 0.2초 늦어져 차이가 드러난다.
+`src/auth.ts` 의 `DUMMY_PASSWORD_HASH` 는 어떤 계정의 비밀번호도 아니며 비밀값이 아니다.
+
+### trustHost: true (겪은 문제)
+
+Auth.js v5 는 콜백 URL 을 만들 때 요청 Host 를 신뢰해도 되는지 확인하고,
+Vercel 이 아닌 환경에서 설정이 없으면 **UntrustedHost 로 로그인이 500 으로 실패한다.**
+
+처음에는 1단계에서 넣어둔 `.env` 의 `AUTH_URL="http://localhost:3000"` 이 이를 가려주고 있었는데,
+개발 서버를 3200 포트로 띄우자 **로그인 성공 후 존재하지 않는 3000 포트로 리다이렉트**되어 실패했다.
+
+→ `.env` 의 `AUTH_URL` 을 주석 처리하고 `src/auth.ts` 에 `trustHost: true` 를 두었다.
+nginx 가 `server_name` 으로 호스트를 한정한 뒤 `Host` 를 그대로 넘기므로 앱에 임의의 Host 가 닿지 않는다.
+포트를 바꿔 띄워도 로그인이 정상 동작한다.
+
+> Auth.js v5 의 환경변수는 `AUTH_SECRET` 이다. v4 의 `NEXTAUTH_SECRET` / `NEXTAUTH_URL` 은 쓰지 않는다.
+
+### 초기 관리자 계정
+
+회원가입 화면을 만들지 않고 스크립트로만 만든다.
+
+```
+npm run admin:create                      # 신규 생성
+npm run admin:create -- --force-password  # 기존 계정 비밀번호 변경 (명시적으로만)
+```
+
+- 값은 `.env` 의 `SEED_ADMIN_EMAIL` / `SEED_ADMIN_NAME` / `SEED_ADMIN_PASSWORD` 에서 읽는다.
+  (1단계에 이미 `SEED_ADMIN_*` 이름이 있어 그대로 이어 쓰고 `_NAME` 만 추가했다.)
+- **이미 같은 이메일의 계정이 있으면 아무것도 하지 않는다.** upsert 를 쓰지 않는 이유는
+  운영에서 스크립트를 다시 돌렸을 때 비밀번호가 조용히 덮어써지는 사고를 막기 위해서다.
+- 비밀번호 평문은 화면·로그 어디에도 출력하지 않는다.
+- TS 스크립트 실행용으로 `tsx` 를 devDependency 로 추가했다. (운영 번들에는 들어가지 않는다)
+
+### 대시보드
+
+집계 숫자만 보여준다. 목록·상세·상태변경은 9단계.
+DB 조회가 실패해도 stack trace 가 노출되지 않도록 `null` 로 처리하고 안내 문구로 대체한다.
+
+### 사이드바 메뉴
+
+아직 만들지 않은 화면은 **링크로 만들지 않는다.** 404 링크를 잔뜩 두면 무엇이 동작하는지 알 수 없다.
+비활성 항목으로 표시하고 어느 단계에서 만들 예정인지 배지로 보여준다.
+
+### 알려진 사전 취약점 (이번 단계와 무관)
+
+`npm audit` 이 high 3건을 보고하지만 전부 **Prisma CLI → `@prisma/config` → `deepmerge-ts`** 경로이며
+7단계에서 추가한 패키지와 무관하다. `npm audit fix --force` 는 prisma 를 6.12 로 내리는 breaking change 라
+적용하지 않았다. Prisma 업데이트 시 재확인할 것.
+
+---
+
 ## 이후 단계에서 확정해야 할 미결 항목
 
 1. ~~다국어 저장 방식~~ → **2단계에서 확정 (Ko/En 필드 접미사 방식)**
@@ -401,7 +514,8 @@ honeypot 과 제출 시간은 **클라이언트가 보내는 값이라 위조할
 3. i18n 구현 방식 — `next-intl` 도입 vs 자체 구현 → **3단계**
 4. 콘텐츠 편집기 — 리치텍스트 에디터 도입 여부 및 XSS sanitize 방침 → **8단계**
 5. 업로드 파일 저장 경로 — `public/uploads/` 유지 vs 외부 경로 + 서빙 라우트 → **10단계**
-6. 개인정보처리방침 페이지 본문, 보관기간·파기 정책 → **7단계** (6단계에서 자리만 만들어 둠)
+6. 개인정보처리방침 페이지 본문, 보관기간·파기 정책 → **미해결.** 7단계는 관리자 인증만 다뤘다.
+   동의 체크박스 아래 "전문 준비 중" 안내가 그대로 남아 있다. 8단계 이후 처리 필요
 7. ~~상담 신청 스팸 방지~~ → **6단계에서 honeypot·제출시간·중복방지 적용.**
    rate limit / CAPTCHA 는 운영 배포 단계에서 재검토
 8. 신규 접수 시 관리자 알림 메일 여부 → **미정** (6단계 범위에서 제외)

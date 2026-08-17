@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-17 · 6단계 완료
+> 마지막 갱신: 2026-08-17 · 7단계 완료
 
 ---
 
@@ -18,8 +18,8 @@
 | 5 | 사용자 상세 페이지 7종 | ✅ 완료 |
 | — | 운영 배포 + HTTPS | ✅ 완료 |
 | 6 | 입학상담 · 설명회 신청 → DB 저장 | ✅ 완료 |
-| 7 | **관리자 로그인 / 권한 (Auth.js)** | ⏭ 다음 |
-| 8 | 관리자 CMS (콘텐츠·교수진·교육과정·FAQ) | 예정 |
+| 7 | 관리자 로그인 / 권한 (Auth.js) | ✅ 완료 |
+| 8 | **관리자 CMS (콘텐츠·교수진·교육과정·FAQ)** | ⏭ 다음 |
 | 9 | 관리자 상담관리 | 예정 |
 | 10 | 파일 업로드 | 예정 |
 | 11 | 테스트 / SEO / 보안 점검 | 예정 |
@@ -92,16 +92,23 @@ sudo systemctl restart oikos          # ← 이 단계를 빠뜨리면 예전 �
 
 ```
 src/
-  app/[locale]/          ← [locale]/layout.tsx 가 root layout (html lang 을 locale 별로 바꾸기 위함)
+  app/[locale]/          ← 사용자 사이트의 root layout (html lang 을 locale 별로 바꾸기 위함)
     page.tsx             메인 (Hero + 9개 섹션)
     about  faculty  degree  admission  faq
     consultation/        상담 폼 + actions.ts(서버 액션) + seminar/ (설명회 폼)
     programs/  programs/mba  programs/dba
+  app/admin/             ← 관리자 영역의 별도 root layout (한국어 고정, locale 라우팅 없음)
+    login/               로그인 (보호 대상 아님 — redirect loop 방지)
+    (protected)/         ★ layout 에서 requireAdmin(). 이 아래는 전부 인증 필요
+  app/api/auth/[...nextauth]/   Auth.js 엔드포인트
+  auth.ts                ★ Auth.js 설정 (Credentials + bcrypt + JWT)
   components/
     layout/              Header(2행) · Footer · MobileMenu · LanguageSwitcher · Container
     home/                메인 페이지 섹션 10개
     page/                상세 페이지 공통 (PageHero · Section · Accordion · CourseList · ProgramPage · RelatedLinks)
     form/                신청 폼 공통 입력·피드백 컴포넌트
+    admin/               관리자 사이드바
+  types/next-auth.d.ts   session.user.role 타입 확장
   content/
     program-facts.ts     ★ 학기·학점·등록금·개강 등 수치의 단일 출처
     home/                메인 콘텐츠 (ko/en)
@@ -110,8 +117,10 @@ src/
   i18n/                  locale 정의 + UI 문자열 사전 (ko/en)
   lib/                   navigation · metadata · site-links · cn · prisma
     validation/inquiry.ts  ★ 신청 폼 검증 규칙의 단일 출처 (zod)
+    auth-guard.ts          ★ requireAdmin() / requireSuperAdmin()
   generated/prisma/      Prisma Client (Git 미포함, 빌드 시 생성)
 prisma/                  schema.prisma + migrations
+scripts/                 setup-local-db.sh · create-admin.ts
 deploy/                  nginx · systemd · 배포 문서
 docs/source/             원본 문서 (Git 미포함)
 assets/source/           원본 이미지 (Git 미포함)
@@ -132,12 +141,14 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-마이그레이션 `20260814124541_init` 로 테이블 10개가 생성되어 있다. **6단계 기준 schema 변경 없음.**
+마이그레이션 `20260814124541_init` 로 테이블 10개가 생성되어 있다. **7단계까지 schema 변경 없음.**
+Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken` 테이블은 만들지 않았다.
 
-- **쓰기**: `Consultation`, `SeminarApplication` — 입학상담·설명회 신청 폼이 저장한다.
-- **읽기**: 아직 없다. 관리자 화면(7~9단계)이 첫 조회 대상이 된다.
-- 모든 페이지가 여전히 빌드 시점 정적 생성(SSG)이다. 폼 페이지도 DB 를 **읽지** 않으므로 SSG 로 남아 있고,
-  제출만 Server Action 으로 서버에서 처리한다. 따라서 DB 가 꺼져 있어도 페이지 자체는 뜬다(제출만 실패).
+- **쓰기**: `Consultation`, `SeminarApplication` (신청 폼) / `AdminUser` (로그인 시 `lastLoginAt`)
+- **읽기**: `AdminUser` (로그인 인증), `Consultation`·`SeminarApplication` (관리자 대시보드 집계)
+- 사용자 페이지는 전부 정적 생성(SSG)이다. 폼 페이지도 DB 를 **읽지** 않으므로 SSG 로 남아 있고,
+  제출만 Server Action 으로 서버에서 처리한다.
+- **관리자 화면(`/admin/*`)은 동적 렌더링(ƒ)이다.** 세션 쿠키와 DB 를 읽기 때문이다.
 
 모델: `AdminUser` `PageSection` `Faculty` `Program` `Course` `FAQ` `Consultation` `SeminarApplication` `Media` `SiteSetting`
 enum: `AdminRole` `FacultyType` `ProgramType` `CourseCategory` `InquiryStatus`
@@ -173,8 +184,7 @@ src/content/pages/{types,ko,en}.ts     폼 라벨·오류 문구·안내 문구 
 
 ### 이 단계에서 남긴 TODO
 
-- **개인정보 처리방침 전문이 없다.** 동의 체크박스 아래에 "전문 준비 중" 안내만 있다.
-  7단계에서 처리방침 페이지를 만들고 링크로 교체할 것.
+- **개인정보 처리방침 전문이 없다.** 동의 체크박스 아래에 "전문 준비 중" 안내만 있다. (7단계에서도 미해결)
 - 대표 전화·카카오톡 채널 미확정 → 상담 페이지에 "확정 중" 안내만 있고 버튼은 만들지 않았다.
 - 설명회 일정 미확정 → `preferredSession` 은 자유 입력(선택). 일정이 확정되면 select 로 바꾼다.
 - 신규 접수 시 관리자 알림 메일 — 아직 없음. 필요 여부 미정.
@@ -182,31 +192,70 @@ src/content/pages/{types,ko,en}.ts     폼 라벨·오류 문구·안내 문구 
 
 ---
 
-## 다음 단계 (7단계) 시작 시 참고
+## 7단계에서 만든 것 (관리자 인증)
 
-**목표**: 관리자 로그인 / 권한 (Auth.js + bcrypt)
+| 경로 | 내용 | 보호 |
+| --- | --- | --- |
+| `/admin/login` | 관리자 로그인 | 공개 (로그인 상태면 `/admin` 으로) |
+| `/admin` | 대시보드 (접수 현황 집계) | **인증 필요** |
+| `/api/auth/*` | Auth.js 엔드포인트 | — |
+
+- **Auth.js v5** (`next-auth` 5.0.0-beta.32, **정확한 버전 고정**) + Credentials + **bcryptjs** + JWT 세션
+- **Prisma Adapter 를 쓰지 않는다.** Credentials 는 DB 세션을 지원하지 않아 JWT 가 강제되고,
+  그래서 Auth.js 용 테이블도 필요 없다.
+- **middleware 를 쓰지 않는다.** `(protected)/layout.tsx` 에서 서버 측으로 확인한다.
+  matcher 실수로 사용자 사이트가 로그인으로 튕기는 사고를 원천적으로 막기 위해서다.
+
+### 관리자 계정 만들기
+
+```bash
+# .env 에 SEED_ADMIN_EMAIL / SEED_ADMIN_NAME / SEED_ADMIN_PASSWORD 를 넣고
+npm run admin:create
+```
+
+기존 계정이 있으면 **아무것도 하지 않는다.** 비밀번호를 바꾸려면 `-- --force-password` 를 붙인다.
+현재 로컬 개발 DB 에는 SUPER_ADMIN 계정이 1개 있다. (값은 `.env` 에만 있고 Git·문서에 없다)
+
+### 다음 단계에서 쓸 인증 helper
+
+```ts
+import { requireAdmin, requireSuperAdmin } from "@/lib/auth-guard";
+
+const admin = await requireAdmin();       // 비로그인 → /admin/login
+const admin = await requireSuperAdmin();  // ADMIN → /admin (관리자 계정관리 화면용)
+// admin: { id, email, name, role }
+```
+
+- 새 관리자 화면은 `src/app/admin/(protected)/` 아래에 만들면 인증이 자동으로 걸린다.
+- 다만 **데이터를 바꾸는 서버 액션에서는 layout 을 믿지 말고 액션 안에서 다시 `requireAdmin()` 을 부른다.**
+  서버 액션은 layout 을 거치지 않고 직접 호출될 수 있다.
+- `role` 은 JWT 에 들어 있어 **권한을 바꾸면 재로그인해야 반영된다.**
+
+### 이 단계에서 겪은 함정
+
+- `AUTH_URL` 을 고정해두면 다른 포트로 띄웠을 때 로그인 후 그 주소로 튕겨 실패한다.
+  → 주석 처리하고 `trustHost: true` 를 썼다. (`decisions.md` 7단계 항목 참고)
+- Auth.js v5 환경변수는 `AUTH_SECRET`. v4 의 `NEXTAUTH_SECRET` 이 아니다.
+- JWT 타입 확장은 `next-auth/jwt` 가 아니라 **`@auth/core/jwt`** 에 걸어야 병합된다.
+  (`next-auth/jwt` 는 재export 만 한다)
+
+---
+
+## 다음 단계 (8단계) 시작 시 참고
+
+**목표**: 관리자 CMS (콘텐츠 · 교수진 · 교육과정 · FAQ)
 
 이미 준비되어 있는 것:
 
-- `AdminUser` 테이블 + `AdminRole` enum (`SUPER_ADMIN` / `ADMIN`)
-- `.env.example` 에 `AUTH_SECRET` · `AUTH_URL` · `SEED_ADMIN_*` 자리
-- 인증 방식은 `decisions.md` 4항에서 이미 확정 (Auth.js + Credentials + bcrypt, OAuth 없음)
+- 관리자 인증 · 보호 layout · 사이드바 (메뉴 항목은 "8단계" 배지로 자리만 잡아 둠)
+- `PageSection` `Faculty` `Program` `Course` `FAQ` 테이블 (전부 비어 있음)
+- 콘텐츠는 현재 `src/content/` 의 TS 파일에 있다 → 이걸 DB 로 옮기는 것이 8단계의 핵심
 
-관리자 화면이 조회하게 될 데이터 구조 (6단계에서 저장되는 값):
+정해야 할 것:
 
-```
-Consultation        id, name, phone, email, interestedProgram(MBA|DBA|null),
-                    message, status(NEW|IN_PROGRESS|COMPLETED), privacyAgreed,
-                    locale("ko"|"en"), adminMemo(null), createdAt, updatedAt
-SeminarApplication  id, name, phone, email, preferredSession(nullable),
-                    attendeeCount(1~10), memo(nullable), status, privacyAgreed,
-                    locale, adminMemo(null), createdAt, updatedAt
-```
-
-- 두 테이블 모두 `@@index([status, createdAt])` 가 있으므로 **상태 필터 + 최신순** 조회가 인덱스를 탄다.
-- 신규 접수는 전부 `status = NEW` 로 들어온다. 대시보드의 "신규 건수" 는 이 값을 센다.
-- `adminMemo` 는 관리자만 쓰는 필드다. 현재 전부 `null` 이다.
-- 관리자 화면은 DB 를 읽으므로 **정적 생성 대상이 아니다.** 사용자 페이지와 달리 동적 렌더링이 된다.
+- 리치텍스트 에디터 도입 여부와 XSS sanitize 방침 (`decisions.md` 미결 4번)
+- `src/content/` 의 기존 문구를 seed 로 넣을지, 관리자가 처음부터 입력할지
+- 한/영을 나란히 편집하는 UI 형태 (2단계에서 Ko/En 필드 방식으로 확정됨)
 
 ---
 
@@ -253,6 +302,7 @@ npm run build                # 운영 빌드
 npx tsc --noEmit             # 타입 검사
 npm run lint                 # ESLint
 npx prisma studio            # DB 확인 (브라우저)
+npm run admin:create         # 관리자 계정 생성 (.env 의 SEED_ADMIN_* 사용)
 npx prisma migrate dev       # 스키마 변경 후 마이그레이션
 
 systemctl status oikos       # 운영 서비스 상태
