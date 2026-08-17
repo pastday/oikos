@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-17 · 9단계 완료
+> 마지막 갱신: 2026-08-17 · 9단계 완료 (세션 종료)
 
 ---
 
@@ -26,6 +26,76 @@
 | 12 | 테스트 / SEO / 보안 점검 | 예정 |
 
 **현재 서비스 중**: https://oikos.pastday.co.kr
+(⚠️ 운영에는 **5단계까지만** 올라가 있다. 아래 "운영 배포 미반영" 참고)
+
+---
+
+## 다음 세션 시작 지점
+
+**바로 이어서 하면 되는 상태다.** 작업 중이던 것도, 반쯤 만든 것도 없다.
+
+| 항목 | 상태 |
+| --- | --- |
+| Git | `main` = `origin/main`, working tree clean, 마지막 커밋 `828111d` |
+| 로컬 DB | AdminUser 1 / Faculty 1 / Program 2 / Course 33 / 상담·설명회 0 |
+| 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
+| 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
+
+### 시작할 때 할 일
+
+```bash
+cd /home/pastday/oikos
+git pull                     # 다른 곳에서 건드렸을 수도 있으니 먼저
+npm run dev                  # 개발 서버 3000
+```
+
+관리자 화면을 보려면 `http://localhost:3000/admin/login` 에서 `.env` 의
+`SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` 로 로그인한다.
+(계정이 없으면 `npm run admin:create`)
+
+### 다음 작업
+
+**10단계 — 페이지 콘텐츠 · 입학안내 · FAQ CMS.**
+아래 "다음 단계 (10단계) 시작 시 참고" 절에 재사용할 구조와 순서를 적어 두었다.
+
+---
+
+## 운영 배포 미반영 (중요)
+
+**6~9단계에서 만든 것이 아직 운영 서버에 하나도 올라가 있지 않다.**
+로컬에서만 완성된 상태이며, `https://oikos.pastday.co.kr` 은 5단계 화면을 서비스 중이다.
+
+2026-08-17 확인 결과 (운영 3100 직접 요청):
+
+| 경로 | 응답 | 뜻 |
+| --- | --- | --- |
+| `/ko` `/ko/faculty` | 200 | 5단계 화면 |
+| `/ko/consultation` | 200 이지만 **"개발 중인 페이지입니다" 골격** | 6단계 폼 미반영 |
+| `/ko/consultation/seminar` | 404 | 6단계 미반영 |
+| `/admin` `/admin/login` | 404 | 7~9단계 미반영 |
+
+운영 프로세스는 2026-08-14 에 뜬 그대로다. (`systemctl restart` 를 한 번도 하지 않았다)
+
+올리지 않은 이유는 각 단계 지시에서 "운영 배포는 하지 않는다" 로 범위를 제한했기 때문이다.
+교수 검수 후 올릴 때는 **아래 순서를 반드시 지켜야 한다.**
+
+```bash
+cd /home/pastday/oikos
+git pull
+npm ci
+npx prisma migrate deploy    # ← 9단계 마이그레이션 적용 (semester nullable)
+npm run seed:cms             # ← 교수진·과정·교과목을 운영 DB 로 이관
+npm run admin:create         # ← 운영용 관리자 계정 (운영 .env 값 사용)
+npm run build                # ← 빌드 시 DB 연결이 필요하다 (공개 페이지가 DB 를 읽는다)
+sudo systemctl restart oikos
+```
+
+운영에서 추가로 준비해야 할 것:
+
+- 운영 `.env` 에 **`AUTH_SECRET`** 필요. 없으면 관리자 로그인이 실패한다.
+  (`openssl rand -base64 32`. 로컬 값을 그대로 쓰지 않는다)
+- 운영 `.env` 의 `SEED_ADMIN_*` 은 로컬과 다른 실제 계정으로 설정한다.
+- `sudo` 는 이 세션에서 쓸 수 없다. **사용자가 일반 터미널에서 직접 실행해야 한다.**
 
 ---
 
@@ -438,14 +508,16 @@ src/app/admin/(protected)/cms-actions.ts   저장/삭제 액션 (requireAdmin �
 ### 자료가 들어오면 할 일
 
 - FICB 공식 URL → `src/lib/site-links.ts` 의 `href` 채우기 (현재 "링크 준비중" 표시)
-- 교수 프로필 사진 → 현재 이니셜 아바타(DK) 대체
+- 교수 프로필 사진 → 현재 이니셜 아바타(DK) 대체.
+  9단계 CMS 에 `photoUrl` 직접 입력은 있으나 **파일 업로드는 11단계**다
 - 배경 이미지 → 현재 Hero 는 gradient. 모집 이미지의 캠퍼스 사진은 출처 불명이라 사용하지 않았다
 - 총장 인사말 / 교수진 명단 → 각 페이지의 "준비 중" 안내 대체
 
 ### 기술적으로 나중에 정할 것
 
-- 콘텐츠 편집기 — 리치텍스트 도입 여부와 XSS sanitize 방침 (8단계)
-- 업로드 파일 저장 경로 — `public/uploads/` 유지 vs 외부 경로 + 서빙 라우트 (10단계)
+- 콘텐츠 편집기 — 리치텍스트 도입 여부와 XSS sanitize 방침 (10단계에서 결정)
+  9단계는 plain text + `whitespace-pre-line` 으로 처리했다
+- 업로드 파일 저장 경로 — `public/uploads/` 유지 vs 외부 경로 + 서빙 라우트 (11단계)
 - 다크모드 지원 여부 (현재 라이트 테마 고정)
 - 디자인 B안 (배경 영상/이미지 기반) — 전체 기능 완료 후 별도 단계
 
