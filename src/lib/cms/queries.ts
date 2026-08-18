@@ -2,12 +2,17 @@ import { cache } from "react";
 import type { ProgramType } from "@/generated/prisma/enums";
 import type { Locale } from "@/i18n/config";
 import { prisma } from "@/lib/prisma";
+import { admissionNumberKeys } from "./page-catalog";
 import {
   pickLocale,
   pickLocaleOptional,
+  toParagraphs,
+  type AdmissionNumbers,
   type CourseView,
   type FacultyGroup,
   type FacultyView,
+  type FaqView,
+  type PageSectionMap,
   type ProgramCurriculum,
   type ProgramNumbers,
   type ProgramView,
@@ -391,3 +396,111 @@ export const getProgramCurriculum = cache(
     };
   },
 );
+
+// ---------------------------------------------------------------------------
+// 페이지 콘텐츠 (10단계)
+// ---------------------------------------------------------------------------
+
+/**
+ * 한 페이지의 공개된 섹션을 `sectionKey` 로 찾을 수 있게 돌려준다.
+ *
+ * **DB 에 행이 없는 섹션은 결과에 아예 없다.** 화면은 값이 없으면 그 섹션을 그리지 않는다.
+ * 정적 콘텐츠 파일을 fallback 으로 함께 읽지 않는 이유는 9단계와 같다.
+ * 두 출처가 갈라지면 관리자가 고친 내용과 화면이 달라져 더 나쁘다.
+ * (다만 페이지 상단 intro 만은 예외다. 아래 `getPageIntro` 주석 참고)
+ */
+export const getPageSections = cache(
+  async (pageKey: string, locale: Locale): Promise<PageSectionMap> => {
+    const rows = await prisma.pageSection.findMany({
+      where: { pageKey, isPublished: true },
+      orderBy: { sortOrder: "asc" },
+      include: {
+        items: {
+          where: { isPublished: true },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
+      },
+    });
+
+    const map: PageSectionMap = {};
+
+    for (const row of rows) {
+      map[row.sectionKey] = {
+        title: pickLocaleOptional(locale, row.titleKo, row.titleEn),
+        subtitle: pickLocaleOptional(locale, row.subtitleKo, row.subtitleEn),
+        paragraphs: toParagraphs(
+          pickLocaleOptional(locale, row.bodyKo, row.bodyEn),
+        ),
+        highlight: pickLocaleOptional(
+          locale,
+          row.highlightKo,
+          row.highlightEn,
+        ),
+        note: pickLocaleOptional(locale, row.noteKo, row.noteEn),
+        items: row.items.map((item) => ({
+          id: item.id,
+          label: pickLocaleOptional(locale, item.labelKo, item.labelEn),
+          value: pickLocaleOptional(locale, item.valueKo, item.valueEn),
+          variant: item.variant,
+        })),
+      };
+    }
+
+    return map;
+  },
+);
+
+// ---------------------------------------------------------------------------
+// FAQ
+// ---------------------------------------------------------------------------
+
+/**
+ * 공개된 FAQ.
+ *
+ * `sortOrder` 가 같은 항목이 있어도 순서가 흔들리지 않도록 `createdAt` 을 2차 기준으로 둔다.
+ * (정렬 기준이 하나뿐이면 같은 값일 때 DB 가 돌려주는 순서가 매번 달라질 수 있다)
+ */
+export const getPublishedFaqs = cache(
+  async (locale: Locale): Promise<FaqView[]> => {
+    const rows = await prisma.fAQ.findMany({
+      where: { isPublished: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      question: pickLocale(locale, row.questionKo, row.questionEn),
+      answer: pickLocale(locale, row.answerKo, row.answerEn),
+    }));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// 입학안내 수치
+// ---------------------------------------------------------------------------
+
+/**
+ * 등록금·수수료·개강 시점.
+ *
+ * 값이 비어 있거나 숫자로 읽을 수 없으면 `null` 이다. 화면은 "-" 로 표시한다.
+ * 원본 자료에 금액이 없는 항목이 실제로 있어 비어 있는 상태가 정상이다.
+ */
+export const getAdmissionNumbers = cache(async (): Promise<AdmissionNumbers> => {
+  const rows = await prisma.siteSetting.findMany({
+    where: { key: { in: admissionNumberKeys } },
+    select: { key: true, value: true },
+  });
+
+  const result: AdmissionNumbers = {};
+  for (const key of admissionNumberKeys) result[key] = null;
+
+  for (const row of rows) {
+    const raw = row.value?.trim();
+    if (!raw) continue;
+
+    const parsed = Number(raw);
+    result[row.key] = Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return result;
+});

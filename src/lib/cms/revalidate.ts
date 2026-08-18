@@ -57,3 +57,36 @@ export function revalidateCourse(type: ProgramType): void {
   revalidate(HOME);
   revalidate(`/[locale]/programs/${type.toLowerCase()}`);
 }
+
+// ---------------------------------------------------------------------------
+// 페이지 콘텐츠 · FAQ · 입학안내 수치 (10단계)
+// ---------------------------------------------------------------------------
+
+/**
+ * 페이지 콘텐츠 변경.
+ *
+ * `pageKey` 는 공개 경로의 세그먼트와 같게 맞춰 두었다. (`about` → `/[locale]/about`)
+ * 그래서 여기서 경로를 표로 다시 적지 않는다. 두 곳에 적으면 갈라진다.
+ */
+export function revalidatePageContent(pageKey: string): void {
+  revalidate(`/[locale]/${pageKey}`);
+}
+
+/**
+ * FAQ 변경.
+ * 질문·답변은 FAQ 페이지에만 나온다. 메인이나 다른 페이지에는 노출되지 않는다.
+ */
+export function revalidateFaq(): void {
+  revalidate("/[locale]/faq");
+}
+
+/**
+ * 입학안내 수치(등록금·수수료·개강) 변경.
+ *
+ * 금액은 등록금 표뿐 아니라 **입학절차 설명과 비고 문구에도 들어간다.**
+ * 다만 그 문구는 관리자가 직접 쓴 텍스트이므로 수치를 바꿔도 자동으로 따라오지 않는다.
+ * 화면에서 값을 읽는 곳은 입학안내 한 페이지뿐이라 여기만 무효화한다.
+ */
+export function revalidateAdmissionNumbers(): void {
+  revalidate("/[locale]/admission");
+}

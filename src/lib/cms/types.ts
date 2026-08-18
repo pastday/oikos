@@ -105,3 +105,69 @@ export type ProgramCurriculum = {
   /** 공통과목 */
   common: CourseView[];
 };
+
+// ---------------------------------------------------------------------------
+// 페이지 콘텐츠 (10단계)
+// ---------------------------------------------------------------------------
+
+/** 섹션 안의 반복 항목. locale 하나로 이미 정리된 값만 담는다. */
+export type PageItemView = {
+  id: string;
+  label: string | null;
+  value: string | null;
+  variant: string | null;
+};
+
+/**
+ * 공개 화면이 쓰는 섹션.
+ *
+ * 모든 슬롯이 `string | null` 이다. 원본 자료에 없는 값을 만들지 않기 위해
+ * 비어 있는 상태를 정상으로 취급하며, **화면은 값이 없으면 그 부분을 그리지 않는다.**
+ * (10단계 원칙 5 — 일부 필드가 비어도 페이지가 깨지지 않아야 한다)
+ */
+export type PageSectionView = {
+  title: string | null;
+  subtitle: string | null;
+  /** 빈 줄로 나뉜 문단. 본문이 없으면 빈 배열이다. */
+  paragraphs: string[];
+  highlight: string | null;
+  note: string | null;
+  items: PageItemView[];
+};
+
+/** `sectionKey` → 섹션. 카탈로그에 있어도 DB 에 행이 없으면 키 자체가 없다. */
+export type PageSectionMap = Record<string, PageSectionView | undefined>;
+
+/**
+ * 본문 문단을 나눈다.
+ *
+ * **빈 줄(연속 줄바꿈)이 문단 구분자다.** 한 번의 줄바꿈은 문단 안의 줄바꿈이 아니라
+ * 같은 문단으로 이어 붙인다. 관리자가 편집기 폭 때문에 무심코 넣은 줄바꿈이
+ * 화면에서 문단으로 갈라지는 것을 막기 위해서다.
+ */
+export function toParagraphs(body: string | null): string[] {
+  if (!body) return [];
+
+  return body
+    .split(/\n\s*\n/)
+    .map((block) => block.replace(/\s*\n\s*/g, " ").trim())
+    .filter((block) => block.length > 0);
+}
+
+// ---------------------------------------------------------------------------
+
+export type FaqView = {
+  id: string;
+  question: string;
+  answer: string;
+};
+
+// ---------------------------------------------------------------------------
+
+/**
+ * 입학안내 수치.
+ *
+ * 값이 없을 수 있다. 원본 자료에 금액이 없는 항목(LMS 사용료)이 실제로 있고,
+ * 관리자가 아직 입력하지 않은 상태도 정상이다. 화면에서 "-" 로 표시한다.
+ */
+export type AdmissionNumbers = Record<string, number | null>;

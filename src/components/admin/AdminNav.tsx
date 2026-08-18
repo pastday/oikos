@@ -17,6 +17,13 @@ type NavItem = {
   href?: string;
   /** 어느 단계에서 만들 예정인지. 화면에 표시해 진행 상황을 알 수 있게 한다. */
   plannedStage?: string;
+  /**
+   * 이 경로들에서는 활성으로 보지 않는다.
+   *
+   * 입학안내(`/admin/pages/admission`)는 페이지 콘텐츠와 화면을 공유하므로
+   * 경로 앞부분이 겹친다. 그대로 두면 두 메뉴가 동시에 활성으로 보인다.
+   */
+  excludes?: string[];
 };
 
 type NavGroup = { title: string; items: NavItem[] };
@@ -39,9 +46,13 @@ const navGroups: NavGroup[] = [
       { label: "교수진", href: "/admin/faculty" },
       { label: "MBA · DBA 과정", href: "/admin/programs" },
       { label: "교과목", href: "/admin/courses" },
-      { label: "페이지 콘텐츠", plannedStage: "예정" },
-      { label: "입학안내", plannedStage: "예정" },
-      { label: "FAQ", plannedStage: "예정" },
+      {
+        label: "페이지 콘텐츠",
+        href: "/admin/pages",
+        excludes: ["/admin/pages/admission"],
+      },
+      { label: "입학안내", href: "/admin/pages/admission" },
+      { label: "FAQ", href: "/admin/faq" },
     ],
   },
   {
@@ -81,11 +92,18 @@ export function AdminNav() {
 
               // 상세 화면(/admin/consultations/xxx)에서도 상위 메뉴가 활성으로 보이게 한다.
               // 대시보드(/admin)는 하위 경로를 모두 삼키므로 정확히 일치할 때만 활성이다.
-              const isActive =
+              const matches =
                 item.href === "/admin"
                   ? pathname === item.href
                   : pathname === item.href ||
                     pathname.startsWith(`${item.href}/`);
+
+              const excluded = item.excludes?.some(
+                (prefix) =>
+                  pathname === prefix || pathname.startsWith(`${prefix}/`),
+              );
+
+              const isActive = matches && !excluded;
 
               return (
                 <li key={item.label}>

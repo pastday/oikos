@@ -83,25 +83,79 @@ model AdminUser {
 // ---------------------------------------------------------------------------
 
 /// 관리자가 수정 가능한 고정 콘텐츠 영역.
-/// 예: pageKey="about" / sectionKey="graduate-school"
-///     pageKey="program" / sectionKey="major-introduction"
-/// bodyKo/bodyEn 은 PostgreSQL text 타입으로 매핑되어 길이 제한이 사실상 없다.
-/// 향후 Rich Text / HTML 저장에도 그대로 사용할 수 있다.
+/// 예: pageKey="about" / sectionKey="school"
+///     pageKey="admission" / sectionKey="tuition"
+///
+/// 어떤 pageKey/sectionKey 가 실제로 존재하는지는 `src/lib/cms/page-catalog.ts` 가 정한다.
+/// 공개 페이지의 레이아웃이 고정되어 있어 관리자가 임의의 섹션을 새로 만들 수 없기 때문이다.
+/// (만들어도 그려 줄 화면이 없다)
+///
+/// 텍스트 슬롯은 5쌍이며 **모두 nullable** 이다. 섹션마다 쓰는 슬롯이 다르고,
+/// 원본 자료에 없는 값을 만들지 않기 위해 비워 둘 수 있어야 한다.
+/// 어느 슬롯이 화면 어디에 나오는지는 카탈로그가 섹션별로 설명한다.
+///
+///   title     섹션 제목
+///   subtitle  제목 아래 설명 한 줄 (intro 섹션에서는 상단 eyebrow)
+///   body      본문 문단. **빈 줄로 문단을 나눈다**
+///   highlight 강조 박스 문구
+///   note      하단 보조 안내
+///
+/// 반복되는 카드·팩트·절차·일정은 이 표에 담을 수 없으므로 `PageSectionItem` 에 둔다.
+/// 모두 PostgreSQL text 로 매핑되어 길이 제한이 사실상 없다.
 model PageSection {
-  id          String   @id @default(cuid())
-  pageKey     String
-  sectionKey  String
-  titleKo     String?
-  titleEn     String?
-  bodyKo      String?
-  bodyEn      String?
-  sortOrder   Int      @default(0)
-  isPublished Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String  @id @default(cuid())
+  pageKey      String
+  sectionKey   String
+  titleKo      String?
+  titleEn      String?
+  subtitleKo   String?
+  subtitleEn   String?
+  bodyKo       String?
+  bodyEn       String?
+  highlightKo  String?
+  highlightEn  String?
+  noteKo       String?
+  noteEn       String?
+  sortOrder    Int     @default(0)
+  isPublished  Boolean @default(true)
+
+  items PageSectionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([pageKey, sectionKey])
   @@map("page_sections")
+}
+
+/// 섹션 안에서 **반복되는 항목**.
+/// 교육목표 카드, 인가·인증 항목, 입학절차 단계, 학사일정, 팩트 그리드, 등록금 비고가 모두 이 형태다.
+///
+///   label  카드 제목 · 팩트 라벨 · 절차명 · 기관명
+///   value  카드 설명 · 팩트 값 · 기간 · 본문
+///
+/// 둘 다 nullable 이다. 등록금 비고처럼 value 만 쓰는 항목이 있다.
+/// `variant` 는 같은 목록 안에서 표시가 갈리는 경우에만 쓴다. (학사일정의 semester / break)
+/// 어떤 값이 허용되는지는 카탈로그가 섹션별로 정하며, 서버에서 그 목록으로 검증한다.
+model PageSectionItem {
+  id        String      @id @default(cuid())
+  sectionId String
+  section   PageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  labelKo String?
+  labelEn String?
+  valueKo String?
+  valueEn String?
+  variant String?
+
+  sortOrder   Int     @default(0)
+  isPublished Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sectionId, sortOrder])
+  @@map("page_section_items")
 }
 
 // ---------------------------------------------------------------------------

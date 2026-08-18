@@ -5,13 +5,15 @@ import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { FactGrid, Prose, Section } from "@/components/page/Section";
 import { getPageContent } from "@/content/pages";
-import { getProgramNumbers } from "@/lib/cms/queries";
+import { getPageSections, getProgramNumbers } from "@/lib/cms/queries";
+import { toPageIntro, toPairs } from "@/lib/cms/page-view";
 import { isLocale } from "@/i18n/config";
 import { buildPageMetadata } from "@/lib/metadata";
 import { localePath } from "@/lib/navigation";
 import { externalLinks } from "@/lib/site-links";
 
 const PAGE_PATH = "/about";
+const PAGE_KEY = "about";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -21,95 +23,136 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
 
-  const content = getPageContent(locale, await getProgramNumbers()).about;
+  const [sections, numbers] = await Promise.all([
+    getPageSections(PAGE_KEY, locale),
+    getProgramNumbers(),
+  ]);
+
+  const intro = toPageIntro(
+    sections.intro,
+    getPageContent(locale, numbers).about.intro,
+  );
 
   return buildPageMetadata({
     locale,
     path: PAGE_PATH,
-    title: content.intro.title,
-    description: content.intro.description,
+    title: intro.title,
+    description: intro.description,
   });
 }
 
+/**
+ * 대학원 소개.
+ *
+ * 10단계부터 **본문은 DB(`PageSection`)가 출처**다.
+ * 정적 콘텐츠 파일은 이관 원본이자 관련 링크·버튼 문구 같은 UI 문구용으로만 남는다.
+ * 섹션이 없거나 비어 있으면 그 부분을 그리지 않는다. 페이지는 깨지지 않는다.
+ */
 export default async function AboutPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const pages = getPageContent(locale, await getProgramNumbers());
+  const [sections, numbers] = await Promise.all([
+    getPageSections(PAGE_KEY, locale),
+    getProgramNumbers(),
+  ]);
+
+  const pages = getPageContent(locale, numbers);
   const content = pages.about;
   const oikosLink = externalLinks.find((link) => link.key === "oikos");
 
+  const president = sections.president;
+  const school = sections.school;
+  const philosophy = sections.philosophy;
+  const goals = sections.goals;
+  const university = sections.university;
+  const facts = university ? toPairs(university.items) : [];
+
   return (
     <>
-      <PageHero intro={content.intro} />
+      <PageHero intro={toPageIntro(sections.intro, content.intro)} />
 
       {/* 총장 인사말: 원본 자료에 본문이 없어 안내만 둔다. 임의로 작성하지 않는다. */}
-      <Section>
-        <div className="rounded-lg border border-dashed border-line bg-surface px-6 py-7">
-          <h2 className="text-base font-semibold text-navy">
-            {content.presidentNotice.title}
-          </h2>
-          <p className="mt-2 text-sm text-muted">
-            {content.presidentNotice.body}
-          </p>
-        </div>
-      </Section>
-
-      <Section title={content.school.title} tone="surface">
-        <Prose paragraphs={content.school.paragraphs} />
-      </Section>
-
-      <Section title={content.philosophy.title}>
-        <Prose paragraphs={content.philosophy.paragraphs} />
-      </Section>
-
-      <Section title={content.goals.title} tone="surface">
-        <ul className="grid gap-5 sm:grid-cols-2">
-          {content.goals.items.map((goal) => (
-            <li
-              key={goal.title}
-              className="rounded-lg border border-line bg-background p-6"
-            >
-              <h3 className="text-base font-semibold text-navy">
-                {goal.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
-                {goal.description}
+      {president && (president.title || president.paragraphs.length > 0) && (
+        <Section>
+          <div className="rounded-lg border border-dashed border-line bg-surface px-6 py-7">
+            {president.title && (
+              <h2 className="text-base font-semibold text-navy">
+                {president.title}
+              </h2>
+            )}
+            {president.paragraphs.map((paragraph) => (
+              <p key={paragraph.slice(0, 24)} className="mt-2 text-sm text-muted">
+                {paragraph}
               </p>
-            </li>
-          ))}
-        </ul>
-      </Section>
+            ))}
+          </div>
+        </Section>
+      )}
 
-      <Section title={content.university.title}>
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-          <Prose paragraphs={content.university.paragraphs} />
+      {school && school.paragraphs.length > 0 && (
+        <Section title={school.title ?? undefined} tone="surface">
+          <Prose paragraphs={school.paragraphs} />
+        </Section>
+      )}
 
-          <div>
-            <FactGrid items={content.university.facts} columns={2} />
+      {philosophy && philosophy.paragraphs.length > 0 && (
+        <Section title={philosophy.title ?? undefined}>
+          <Prose paragraphs={philosophy.paragraphs} />
+        </Section>
+      )}
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href={localePath(locale, "/degree")}
-                className="inline-flex rounded-md border border-navy px-5 py-2.5 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
+      {goals && goals.items.length > 0 && (
+        <Section title={goals.title ?? undefined} tone="surface">
+          <ul className="grid gap-5 sm:grid-cols-2">
+            {toPairs(goals.items).map((goal) => (
+              <li
+                key={goal.id}
+                className="rounded-lg border border-line bg-background p-6"
               >
-                {content.university.degreeLinkLabel}
-              </Link>
+                <h3 className="text-base font-semibold text-navy">
+                  {goal.label}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {goal.value}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
-              {oikosLink?.href && (
-                <a
-                  href={oikosLink.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex rounded-md border border-line px-5 py-2.5 text-sm font-semibold text-foreground/75 transition-colors hover:border-navy hover:text-navy"
+      {university && (
+        <Section title={university.title ?? undefined}>
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+            <Prose paragraphs={university.paragraphs} />
+
+            <div>
+              {facts.length > 0 && <FactGrid items={facts} columns={2} />}
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href={localePath(locale, "/degree")}
+                  className="inline-flex rounded-md border border-navy px-5 py-2.5 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
                 >
-                  {content.university.officialSiteLabel} ↗
-                </a>
-              )}
+                  {content.university.degreeLinkLabel}
+                </Link>
+
+                {oikosLink?.href && (
+                  <a
+                    href={oikosLink.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex rounded-md border border-line px-5 py-2.5 text-sm font-semibold text-foreground/75 transition-colors hover:border-navy hover:text-navy"
+                  >
+                    {content.university.officialSiteLabel} ↗
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </Section>
+        </Section>
+      )}
 
       <RelatedLinks
         locale={locale}

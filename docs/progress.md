@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-17 · 9단계 완료 (세션 종료)
+> 마지막 갱신: 2026-08-18 · 10단계 완료
 
 ---
 
@@ -21,12 +21,13 @@
 | 7 | 관리자 로그인 / 권한 (Auth.js) | ✅ 완료 |
 | 8 | 관리자 상담·설명회 관리 | ✅ 완료 |
 | 9 | 관리자 CMS (교수진 · MBA/DBA · 교과목) | ✅ 완료 |
-| 10 | **관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ)** | ⏭ 다음 |
-| 11 | 파일 업로드 | 예정 |
+| 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | ✅ 완료 |
+| 11 | **파일 업로드** | ⏭ 다음 |
 | 12 | 테스트 / SEO / 보안 점검 | 예정 |
 
-**현재 서비스 중**: https://oikos.pastday.co.kr
-(⚠️ 운영에는 **5단계까지만** 올라가 있다. 아래 "운영 배포 미반영" 참고)
+**현재 서비스 중**: https://oikos.pastday.co.kr — **9단계까지 반영됨**
+(10단계는 커밋 완료. 운영에 올리려면 `sudo systemctl restart oikos` 가 필요하다)
+(⚠️ 운영과 개발이 같은 디렉터리·같은 DB 를 쓴다. 아래 "운영 전환 체크리스트" 참고)
 
 ---
 
@@ -36,10 +37,12 @@
 
 | 항목 | 상태 |
 | --- | --- |
-| Git | `main` = `origin/main`, working tree clean, 마지막 커밋 `828111d` |
-| 로컬 DB | AdminUser 1 / Faculty 1 / Program 2 / Course 33 / 상담·설명회 0 |
+| Git | `main` = `origin/main`, working tree clean, 마지막 커밋 `c6f23b6` |
+| DB | AdminUser 1 / Faculty 1 / Program 2 / Course 33 / 상담·설명회 0 / PageSection 19 /
+  PageSectionItem 30 / FAQ 8 / SiteSetting 8 |
 | 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
 | 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
+| 운영 | **재시작 대기.** 디스크의 `.next` 는 10단계 빌드인데 프로세스는 9단계를 물고 있다 |
 
 ### 시작할 때 할 일
 
@@ -55,47 +58,81 @@ npm run dev                  # 개발 서버 3000
 
 ### 다음 작업
 
-**10단계 — 페이지 콘텐츠 · 입학안내 · FAQ CMS.**
-아래 "다음 단계 (10단계) 시작 시 참고" 절에 재사용할 구조와 순서를 적어 두었다.
+**11단계 — 파일 업로드.**
+교수 사진·모집요강 PDF·인증 이미지를 관리자가 올릴 수 있게 한다.
+지금은 `photoUrl` 에 URL 을 직접 넣는 것만 된다.
+저장 경로(`public/uploads/` vs 외부 경로 + 서빙 라우트)를 먼저 정해야 한다.
 
 ---
 
-## 운영 배포 미반영 (중요)
+## 운영 반영 상태 (2026-08-18 확인)
 
-**6~9단계에서 만든 것이 아직 운영 서버에 하나도 올라가 있지 않다.**
-로컬에서만 완성된 상태이며, `https://oikos.pastday.co.kr` 은 5단계 화면을 서비스 중이다.
+**6~9단계가 운영에 모두 반영되었다.** 8/14 에 뜬 채로 옛 빌드를 서비스하던 프로세스를
+`sudo systemctl restart oikos` 로 교체했다. (빌드 자체는 8/17 에 이미 최신이었고 재빌드는 불필요했다)
 
-2026-08-17 확인 결과 (운영 3100 직접 요청):
+재시작 후 검증 결과:
 
-| 경로 | 응답 | 뜻 |
-| --- | --- | --- |
-| `/ko` `/ko/faculty` | 200 | 5단계 화면 |
-| `/ko/consultation` | 200 이지만 **"개발 중인 페이지입니다" 골격** | 6단계 폼 미반영 |
-| `/ko/consultation/seminar` | 404 | 6단계 미반영 |
-| `/admin` `/admin/login` | 404 | 7~9단계 미반영 |
+| 경로 | 재시작 전 | 재시작 후 |
+| --- | :---: | :---: |
+| `/ko` `/en` `/ko/faculty` `/ko/about` `/ko/degree` `/ko/admission` `/ko/faq` | 200 | ✅ 200 |
+| `/ko/programs/mba` `/ko/programs/dba` | 200 | ✅ 200 |
+| `/ko/consultation` | 200 (개발 중 골격) | ✅ 200 (실제 폼) |
+| `/ko/consultation/seminar` | 404 | ✅ 200 |
+| `/admin` | 404 | ✅ 307 → `/admin/login` |
+| `/admin/login` | 404 | ✅ 200 |
 
-운영 프로세스는 2026-08-14 에 뜬 그대로다. (`systemctl restart` 를 한 번도 하지 않았다)
+관리자 로그인 end-to-end 확인 완료 (CSRF → 세션 쿠키 발급 → `/admin` 외 CMS 5개 경로 200).
+음성 테스트도 통과: 쿠키 없이 `/admin/*` 는 전부 로그인으로 307, 잘못된 자격증명은 세션 쿠키 0개.
 
-올리지 않은 이유는 각 단계 지시에서 "운영 배포는 하지 않는다" 로 범위를 제한했기 때문이다.
-교수 검수 후 올릴 때는 **아래 순서를 반드시 지켜야 한다.**
+`npm run seed:cms` 재실행 결과 **생성 0건 / 건너뜀 36건**이고, 실행 전후 전체 행을 덤프해
+비교한 결과 `updatedAt` 까지 완전히 동일했다. (재실행 안전성 확인)
+
+---
+
+## ⚠️ 운영 전환 체크리스트 (교수 검수 후 반드시 처리)
+
+지금 구조는 **개발 편의를 위해 운영과 개발이 하나로 붙어 있다.** 실제 운영 전환 시 분리해야 한다.
+
+### 1. 개발 / 운영 DB 분리 — **필수**
+
+`systemd` 유닛의 `WorkingDirectory` 가 `/home/pastday/oikos` 로 **개발 디렉터리와 같다.**
+`.env.production` 에는 `SITE_URL` 만 있고 `DATABASE_URL` 이 없어, 운영도 `.env` 의
+`oikos_dev` (localhost:5433) DB 를 그대로 읽는다. 즉 **개발 DB = 운영 DB** 다.
+
+그래서 지금은:
+
+- 로컬에서 만든 테스트 콘텐츠가 **즉시 운영 사이트에 노출된다.**
+- `npm run dev` / `npm run build` 가 운영이 읽는 `.next` 를 건드린다.
+- 파괴적 마이그레이션이나 `seed` 사고가 곧바로 운영 사고가 된다.
+
+→ **개발 중에는 운영 DB 에 대한 삭제·초기화·파괴적 migration 을 절대 하지 않는다.**
+→ 전환 시 별도 DB(`oikos_prod`)와 별도 배포 디렉터리를 만들고 `.env.production` 에
+   `DATABASE_URL` 을 넣는다.
+
+### 2. 운영 관리자 계정 교체 — **필수**
+
+현재 유일한 SUPER_ADMIN 의 이메일 도메인이 `@oikos.local` 로 **수신 불가한 개발용 주소**이고,
+비밀번호도 `.env` 의 개발용 값이다.
+
+→ 운영 `.env` 의 `SEED_ADMIN_*` 을 실제 계정으로 바꾼 뒤 `npm run admin:create` 로 새로 만들고,
+   개발용 계정은 비활성화(`isActive = false`)하거나 삭제한다.
+→ 운영 `AUTH_SECRET` 도 로컬과 다른 값으로 재발급한다. (`openssl rand -base64 32`)
+
+### 3. 그 밖에
+
+- 개인정보 처리방침 전문 게재 (현재 "준비 중" 안내만 있음)
+- 신청 폼 rate limit / CAPTCHA 검토
+- `sudo` 는 이 세션에서 쓸 수 없다. **사용자가 일반 터미널에서 직접 실행해야 한다.**
+
+### 재배포 순서
 
 ```bash
 cd /home/pastday/oikos
-git pull
-npm ci
-npx prisma migrate deploy    # ← 9단계 마이그레이션 적용 (semester nullable)
-npm run seed:cms             # ← 교수진·과정·교과목을 운영 DB 로 이관
-npm run admin:create         # ← 운영용 관리자 계정 (운영 .env 값 사용)
-npm run build                # ← 빌드 시 DB 연결이 필요하다 (공개 페이지가 DB 를 읽는다)
-sudo systemctl restart oikos
+git pull && npm ci
+npx prisma migrate deploy    # 스키마 변경이 있을 때만
+npm run build                # 빌드 시 DB 연결이 필요하다 (공개 페이지가 DB 를 읽는다)
+sudo systemctl restart oikos # ← 빠뜨리면 예전 화면이 계속 보인다
 ```
-
-운영에서 추가로 준비해야 할 것:
-
-- 운영 `.env` 에 **`AUTH_SECRET`** 필요. 없으면 관리자 로그인이 실패한다.
-  (`openssl rand -base64 32`. 로컬 값을 그대로 쓰지 않는다)
-- 운영 `.env` 의 `SEED_ADMIN_*` 은 로컬과 다른 실제 계정으로 설정한다.
-- `sudo` 는 이 세션에서 쓸 수 없다. **사용자가 일반 터미널에서 직접 실행해야 한다.**
 
 ---
 
@@ -146,11 +183,7 @@ sudo systemctl restart oikos
 
 ### 재배포 절차
 
-```bash
-cd /home/pastday/oikos
-git pull && npm ci && npm run build
-sudo systemctl restart oikos          # ← 이 단계를 빠뜨리면 예전 화면이 계속 보인다
-```
+위 "운영 전환 체크리스트 → 재배포 순서" 에 적어 두었다. 두 곳에 적으면 갈라지므로 한 곳만 유지한다.
 
 > ⚠️ `deploy/nginx/oikos.pastday.co.kr.conf` 를 서버로 **다시 복사하지 않는다.**
 > certbot 이 서버 파일에 TLS 블록을 직접 넣어두었기 때문에 덮어쓰면 HTTPS 가 끊긴다.
@@ -175,6 +208,8 @@ src/
       consultations/       입학상담 목록 · 상세
       seminars/            설명회 신청 목록 · 상세
       faculty/  programs/  courses/    ★ CMS (목록 · 등록 · 수정 · 삭제)
+      pages/               ★ 페이지 콘텐츠 CMS (섹션 · 반복 항목 · 입학안내 수치)
+      faq/                 ★ FAQ CMS
       inquiry-actions.ts   상담 상태·메모 저장 서버 액션
       cms-actions.ts       ★ 교수진·과정·교과목 저장/삭제 서버 액션
   app/api/auth/[...nextauth]/   Auth.js 엔드포인트
@@ -187,10 +222,11 @@ src/
     admin/               사이드바 · 공통 UI · 검색상자 · CMS 입력 컴포넌트(form.tsx) · 각 CMS 폼
   types/next-auth.d.ts   session.user.role 타입 확장
   content/
-    program-facts.ts     등록금·개강월 등 **아직 DB 로 못 옮긴** 수치
-                         (학기·학점은 9단계에서 Program 테이블로 이동)
+    program-facts.ts     금액 표기 함수(formatKrw)와 **이관 원본** 수치
+                         (학기·학점 → 9단계 Program, 등록금·개강 → 10단계 SiteSetting)
     home/                메인 콘텐츠 (ko/en)
-    pages/               상세 페이지 콘텐츠 (ko/en)
+    pages/               상세 페이지 콘텐츠 — about·degree·admission·faq 는 **이관 원본**.
+                         화면이 아직 읽는 것은 표 열 제목·링크 라벨·폼 문구뿐이다
     courses/             교과목 카탈로그 — **이관 원본. 화면에서 읽지 않는다**
   i18n/                  locale 정의 + UI 문자열 사전 (ko/en)
   lib/                   navigation · metadata · site-links · cn · prisma
@@ -201,9 +237,11 @@ src/
     cms/queries.ts         ★ 공개 화면용 CMS 조회 (locale fallback 포함)
     cms/revalidate.ts      ★ 저장 시 무효화할 공개 경로
     cms/validation.ts      CMS 입력 검증 (zod)
+    cms/page-catalog.ts    ★ 페이지 콘텐츠 CMS 의 구조 정의 (어떤 섹션·슬롯·항목이 있는지)
+    cms/page-view.ts       섹션 → 화면용 변환 (값 없을 때 규칙)
   generated/prisma/      Prisma Client (Git 미포함, 빌드 시 생성)
 prisma/                  schema.prisma + migrations
-scripts/                 setup-local-db.sh · create-admin.ts · seed-cms-content.ts
+scripts/                 setup-local-db.sh · create-admin.ts · seed-cms-content.ts · seed-page-content.ts
 deploy/                  nginx · systemd · 배포 문서
 docs/source/             원본 문서 (Git 미포함)
 assets/source/           원본 이미지 (Git 미포함)
@@ -224,14 +262,15 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-마이그레이션 2개: `20260814124541_init` (테이블 10개) +
-`20260817155549_allow_nullable_course_semester` (9단계).
+마이그레이션 3개: `20260814124541_init` (테이블 10개) +
+`20260817155549_allow_nullable_course_semester` (9단계) +
+`20260818125024_add_page_section_items` (10단계 — 순수 additive).
 Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken` 테이블은 만들지 않았다.
 
 - **쓰기**: `Consultation`·`SeminarApplication` (신청 폼) / `AdminUser` (`lastLoginAt`) /
-  `Faculty`·`Program`·`Course` (관리자 CMS)
+  `Faculty`·`Program`·`Course`·**`PageSection`·`PageSectionItem`·`FAQ`·`SiteSetting`** (관리자 CMS)
 - **읽기**: `AdminUser` (로그인) / `Consultation`·`SeminarApplication` (관리자) /
-  **`Faculty`·`Program`·`Course` (공개 페이지)**
+  **`Faculty`·`Program`·`Course`·`PageSection`·`PageSectionItem`·`FAQ`·`SiteSetting` (공개 페이지)**
 
 > ⚠️ 9단계부터 **공개 페이지가 DB 를 읽으므로 빌드 시 DB 연결이 필요하다.**
 > 방문자 요청 때가 아니라 빌드·재생성 시점에만 조회한다.
@@ -453,36 +492,122 @@ DB 를 읽는 공개 화면: 메인(과정 카드·주임교수·교육과정 Pr
 
 ---
 
-## 다음 단계 (10단계) 시작 시 참고
+## 10단계에서 만든 것 (페이지 콘텐츠 · 입학안내 · FAQ CMS)
 
-**목표**: 페이지 콘텐츠 · 입학안내 · FAQ CMS (`PageSection` `FAQ` 테이블)
+| 관리자 경로 | 기능 |
+| --- | --- |
+| `/admin/pages` | 페이지 목록 (대학원 소개 · 학위 및 인증 · FAQ 안내문) |
+| `/admin/pages/[pageKey]` | 섹션 목록. `admission` 일 때만 위에 **입학안내 수치** 편집이 함께 나온다 |
+| `/admin/pages/[pageKey]/[sectionKey]` | 섹션 문구 편집 + 반복 항목 목록 |
+| `…/items/new` `…/items/[itemId]/edit` | 반복 항목 등록 · 수정 · 삭제 |
+| `/admin/faq` `/new` `/[id]/edit` | FAQ — 목록 · 등록 · 수정 · 삭제 · 공개여부 · 정렬 |
 
-9단계에서 만든 구조를 그대로 재사용하면 된다.
+메뉴는 [페이지 콘텐츠] · [입학안내] · [FAQ] 세 개다. 다만 **입학안내는 별도 화면이 아니라
+`/admin/pages/admission` 으로 가는 지름길**이다. 입학안내도 결국 같은 `PageSection` 이라
+편집 화면을 두 벌 만들 이유가 없었다. 등록금 수치 패널만 그 페이지에서 추가로 그린다.
+(AdminNav 의 `excludes` 는 두 메뉴가 동시에 활성으로 보이는 것을 막기 위한 것이다)
 
-```
-src/lib/cms/queries.ts      공개 화면용 조회 + locale fallback (pickLocale)
-src/lib/cms/validation.ts   zod 스키마 + CmsFormState + formDataToObject
-src/lib/cms/revalidate.ts   ★ 새 CMS 를 붙이면 여기에 무효화 경로를 추가
-src/components/admin/form.tsx   LangSection(한국어/English) · TextField · TextAreaField …
-src/components/admin/cms-ui.tsx PublishBadge · DeleteForm · Th/Td
-src/app/admin/(protected)/cms-actions.ts   저장/삭제 액션 (requireAdmin 필수)
-```
+### ★ 출처가 또 바뀌었다
 
-새 CMS 를 붙이는 순서:
+**`/about` `/degree` `/admission` `/faq` 의 문구는 이제 DB 가 출처다.**
+`src/content/pages/{ko,en}.ts` 를 고쳐도 홈페이지는 바뀌지 않는다. 관리자 CMS 에서 수정한다.
 
-1. `validation.ts` 에 zod 스키마 추가
-2. `cms-actions.ts` 에 저장/삭제 액션 추가 — **반드시 `requireAdmin()` 을 먼저 호출**
-3. `revalidate.ts` 에 무효화할 공개 경로 추가 (라우트 패턴으로)
-4. `queries.ts` 에 공개 조회 함수 추가
-5. 관리자 페이지 작성 (`form.tsx` 의 `LangSection` 으로 한/영 구분)
-6. 공개 페이지를 DB 조회로 교체하고, 정적 콘텐츠 파일은 이관 원본으로만 남긴다
+정적 파일에 **여전히 남아 화면에 쓰이는 것**은 UI 뼈대 문구뿐이다.
+등록금 표의 열 제목, 관련 링크 라벨, 외부 사이트 버튼 문구, 신청 폼 문구.
+(어떤 금액이 어느 열인지는 화면 구조라서 관리자가 바꿀 대상이 아니다)
 
-정해야 할 것:
+### 스키마 변경 — 순수 additive
 
-- 리치텍스트 에디터 도입 여부와 XSS sanitize 방침 (`decisions.md` 미결 4번)
-  9단계는 plain text + `whitespace-pre-line` 로 처리했다. 같은 방식으로 갈지 결정 필요.
-- `PageSection` 의 `pageKey`/`sectionKey` 명명 규칙
-- 등록금·개강월(`program-facts.ts` 잔여분)을 `SiteSetting` 으로 옮길지
+`20260818125024_add_page_section_items`
+
+- `page_sections` 에 nullable 컬럼 6개 추가: `subtitleKo/En` `highlightKo/En` `noteKo/En`
+- `page_section_items` 테이블 신설 (`sectionId` FK, `onDelete: Cascade`)
+
+`DROP` 도 타입 변경도 없다. 기존 데이터에 영향이 없음을 `migrate diff` 로 먼저 확인하고 적용했다.
+
+### 텍스트 슬롯 5쌍 + 반복 항목
+
+섹션 종류마다 컬럼을 따로 두지 않고 범용 슬롯을 공유한다.
+
+| 슬롯 | 보통 쓰임 | 예외 |
+| --- | --- | --- |
+| `title` | 섹션 제목 | intro 에서는 페이지 h1 |
+| `subtitle` | 제목 아래 설명 한 줄 | intro 에서는 상단 eyebrow |
+| `body` | 본문 문단 (**빈 줄로 문단 구분**) | intro 에서는 설명 한 문단 |
+| `highlight` | 강조 박스 | 현재 `degree/foreign-doctorate` 만 사용 |
+| `note` | 하단 보조 안내 | `degree/faq-link` 에서는 버튼 문구 |
+
+**어느 슬롯이 화면 어디에 나오는지는 `src/lib/cms/page-catalog.ts` 가 라벨로 설명한다.**
+관리자 화면에는 카탈로그의 라벨이 표시되므로 슬롯 이름을 알 필요가 없다.
+
+반복되는 카드·팩트·절차·일정·비고는 `PageSectionItem` 에 `label` / `value` / `variant` 로 담는다.
+
+### ★ 카탈로그가 구조의 단일 출처다
+
+`src/lib/cms/page-catalog.ts` 가 **어떤 `pageKey`/`sectionKey` 가 존재하는지** 정한다.
+공개 페이지 레이아웃이 고정되어 있어 관리자가 임의의 섹션을 만들어도 그려 줄 화면이 없다.
+그래서 서버 액션이 카탈로그에 없는 키를 거부하고, 카탈로그가 정의한 슬롯만 저장한다. (allowlist)
+
+**새 섹션을 CMS 로 열려면 카탈로그에 항목을 추가하고 공개 페이지에서 그 섹션을 읽으면 된다.**
+
+명명 규칙: `pageKey` 는 공개 경로 세그먼트와 같게(`about` → `/[locale]/about`),
+`sectionKey` 는 화면 순서대로 kebab-case. 덕분에 `revalidatePageContent()` 가
+경로 표를 따로 들고 있지 않아도 된다.
+
+### 값이 없을 때의 규칙 (원칙 5)
+
+- **섹션 행이 없으면 그 섹션을 그리지 않는다.** 페이지는 정상적으로 나온다.
+- 섹션은 있는데 슬롯이 비어 있으면 **그 부분만** 그리지 않는다. 정적 콘텐츠로 되돌리지 않는다.
+  되돌리면 관리자가 일부러 비운 문구가 되살아나 화면과 CMS 가 갈라진다.
+- **예외는 페이지 제목 하나뿐이다.** 비면 h1 과 검색엔진 제목이 사라지므로 이때만 정적 값을 쓴다.
+- 등록금 금액이 비어 있으면 표에 `-`. 원본에 금액이 없는 항목(LMS)이 실제로 있다.
+
+### 입학안내 수치는 SiteSetting
+
+`tuition.mba` `tuition.dba` `fee.admissionReview` `fee.lms` `fee.administrative`
+`intake.year` `intake.month` `exchangeRate.base`
+
+`Program` 이 아니라 `SiteSetting` 에 둔 이유: 수수료·개강월은 과정 공통이라 과정 테이블에
+넣으면 같은 값이 두 행에 중복된다. 등록금만 과정별로 나누면 입학안내 수치가 두 화면으로 갈라진다.
+저장은 문자열, 표기는 화면에서 `formatKrw` 로 한다. (한/영을 따로 입력받지 않는다)
+
+### ⚠️ 수치가 든 문구는 자동으로 따라오지 않는다
+
+FAQ 답변과 입학절차 설명에는 학점·학기·금액이 **문장 안에 확정 문자열로** 들어 있다.
+이관하면서 그렇게 굳혔다. (사용자 결정 — 치환 토큰 문법은 비개발자 운영자에게 위험하다)
+
+그래서 **과정 학점이나 등록금을 바꾸면 그 문구는 관리자가 직접 고쳐야 한다.**
+잊지 않도록 과정 편집 화면과 입학안내 수치 패널에 경고 배너를 두었다.
+`degree/degrees` 카드의 학기·학점만은 예외로 `Program` 에서 직접 읽는다.
+
+### 이관 (`npm run seed:pages`)
+
+정적 콘텐츠 → DB 일회성 이관. 9단계 `seed:cms` 와 별개 명령이다.
+
+이관 결과: PageSection 19 / PageSectionItem 30 / FAQ 8 / SiteSetting 8
+
+**멱등하다.** 섹션은 `(pageKey, sectionKey)` 로, FAQ 는 `questionKo` 로, SiteSetting 은 `key` 로
+찾아 이미 있으면 건너뛴다. 항목은 **섹션에 항목이 하나라도 있으면 그 섹션을 통째로 건너뛴다.**
+행 단위 자연키로 맞추면 관리자가 카드 문구를 고쳤을 때 원본 카드가 다시 생겨 중복이 된다.
+
+### 이관 정확성 검증
+
+정적 원본의 모든 문자열과 DB 를 대조했다. **한/영 각각 123개 문자열이 전부 일치**했고
+누락도 임의 추가도 0건이었다. 학사일정 `variant`(semester/break) 6건도 확인했다.
+
+렌더링 회귀는 더 확실하게 봤다. 변경 전(HEAD) 빌드와 변경 후 빌드의 **프리렌더 HTML 텍스트를
+12개 페이지에 대해 비교했고 전부 동일**했다. (ko/en × about·degree·admission·faq·faculty·programs)
+
+### 이 단계에서 겪은 함정
+
+1. **슬롯 스키마를 전부 필수로 두면 모든 섹션 저장이 실패한다.**
+   폼은 카탈로그가 정한 칸만 그리므로 나머지 슬롯은 FormData 에 **키 자체가 없다.**
+   `optionalLong` 은 키가 있어야 통과한다 → `absentAsNull` 로 "칸이 없는 것"도 null 로 본다.
+   타입 검사·빌드는 전부 통과했고 **실제로 저장 요청을 보내고 나서야 발견**했다.
+2. Server Action 을 curl 로 호출하려면 **`Origin` 헤더가 필요하다.** 없으면 Next 가 CSRF 로 막는다.
+   (`⚠ Missing origin header from a forwarded Server Actions request`)
+3. 개발 중 `npm run build` 는 **운영이 읽는 `.next` 를 덮어쓴다.** 같은 디렉터리이기 때문이다.
+   빌드 후에는 운영 프로세스와 디스크의 빌드가 어긋나므로 재시작이 필요하다.
 
 ---
 
@@ -515,8 +640,9 @@ src/app/admin/(protected)/cms-actions.ts   저장/삭제 액션 (requireAdmin �
 
 ### 기술적으로 나중에 정할 것
 
-- 콘텐츠 편집기 — 리치텍스트 도입 여부와 XSS sanitize 방침 (10단계에서 결정)
-  9단계는 plain text + `whitespace-pre-line` 으로 처리했다
+- 콘텐츠 편집기 — 리치텍스트는 **도입하지 않았다.** 10단계도 plain text 로 갔다.
+  본문은 빈 줄로 문단을 나누고 화면이 `<p>` 로 그린다. HTML 을 저장하지 않으므로
+  sanitize 대상이 없다. 표·목록이 필요해지면 그때 다시 검토한다.
 - 업로드 파일 저장 경로 — `public/uploads/` 유지 vs 외부 경로 + 서빙 라우트 (11단계)
 - 다크모드 지원 여부 (현재 라이트 테마 고정)
 - 디자인 B안 (배경 영상/이미지 기반) — 전체 기능 완료 후 별도 단계
@@ -532,7 +658,8 @@ npx tsc --noEmit             # 타입 검사
 npm run lint                 # ESLint
 npx prisma studio            # DB 확인 (브라우저)
 npm run admin:create         # 관리자 계정 생성 (.env 의 SEED_ADMIN_* 사용)
-npm run seed:cms             # 정적 콘텐츠 → DB 이관 (이미 있으면 건드리지 않음)
+npm run seed:cms             # 교수진·과정·교과목 이관 (9단계, 멱등)
+npm run seed:pages           # 페이지 콘텐츠·FAQ·입학안내 수치 이관 (10단계, 멱등)
 npx prisma migrate dev       # 스키마 변경 후 마이그레이션
 
 systemctl status oikos       # 운영 서비스 상태
