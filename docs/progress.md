@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-18 · 12단계 완료
+> 마지막 갱신: 2026-08-18 · 12단계 완료 · **운영 반영까지 끝난 상태에서 세션 종료**
 
 ---
 
@@ -26,8 +26,8 @@
 | 12 | 미디어를 공개 콘텐츠에 연결 | ✅ 완료 |
 | 13 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
 
-**현재 서비스 중**: https://oikos.pastday.co.kr — **11단계까지 반영됨**
-(12단계는 커밋 완료. 운영에 올리려면 `sudo systemctl restart oikos` 가 필요하다)
+**현재 서비스 중**: https://oikos.pastday.co.kr — **12단계까지 전부 반영됨** ✅
+(2026-08-18 14:55 재시작. 공개 페이지·관리자·미디어 서빙 모두 확인)
 (⚠️ 운영과 개발이 같은 디렉터리·같은 DB 를 쓴다. 아래 "운영 전환 체크리스트" 참고)
 
 ---
@@ -42,7 +42,7 @@
 | DB | Faculty 1 · Program 2 · Course 33 · PageSection 19 · PageSectionItem 30 · FAQ 8 · SiteSetting 8 · Media 0 · 상담/설명회 0 |
 | 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
 | 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
-| 운영 | **재시작 대기.** systemd 는 반영 완료. 디스크 `.next` 는 12단계 빌드 |
+| 운영 | ✅ 12단계까지 반영 완료. 밀린 배포 없음 |
 
 ### 시작할 때 할 일
 
@@ -58,51 +58,59 @@ npm run dev                  # 개발 서버 3000
 
 ### 다음 작업
 
-**13단계 — 테스트 / SEO / 보안 점검.**
-연결 기능은 다 만들어졌으므로, 이제 실제 자료(교수 사진, 모집요강 PDF, 인증 기관 로고,
-총장 인사말)를 받아 관리자 화면에서 넣기만 하면 된다.
+기능은 12단계로 한 바퀴 돌았다. **남은 것은 성격이 셋으로 갈린다.**
+
+**A. 자료만 넣으면 되는 것 (개발 불필요, 관리자 화면에서 처리)**
+
+받는 대로 `/admin` 에서 올리고 고르면 끝난다. 코드 작업이 없다.
+
+| 자료 | 넣는 곳 |
+| --- | --- |
+| 교수 사진 | 미디어 업로드 → [교수진] 에서 선택 |
+| 모집요강 PDF | 미디어 업로드 → [입학안내 → 모집안내] 문서 칸 |
+| 인증 기관 로고 (BPPE · TRACS · CHEA · SEVIS) | 미디어 업로드 → [학위 및 인증 → 인가 및 인증] 각 항목 |
+| 총장 인사말 본문 | [페이지 콘텐츠 → 대학원 소개 → 총장 인사말] |
+| 교수진 명단 (주임교수 외) | [교수진] 에서 추가 |
+| FICB 공식 URL | `src/lib/site-links.ts` (여기만 코드다) |
+
+**B. 결정이 필요한 것** — 아래 "미결 항목" 절 참고.
+특히 교수 검수가 필요한 원본 자료 불일치 12건은 자료 확정 전에는 진행할 수 없다.
+
+**C. 남은 단계**
+
+- **13단계 — 테스트 / SEO / 보안 점검**
+  각 단계에서 그때그때 확인해 왔지만, 전체를 한 번에 훑는 작업은 아직 하지 않았다.
+  SEO 는 `buildPageMetadata` 로 title·description·canonical·OG 를 넣어 두었으나
+  sitemap.xml · robots.txt 는 없다.
+- **디자인 B안 (Hero 이미지/영상)** — 미디어 연결 기반(`MediaBlocks` · `MediaPicker`)은
+  12단계에서 만들어 두었다. Hero 자체는 손대지 않았다.
+- **운영 전환 체크리스트** — 아래 절. 교수 검수 전에 반드시 처리한다.
 
 ---
 
-## 운영 반영 상태 (2026-08-18 확인)
+## 운영 반영 이력
 
-**6~9단계가 운영에 모두 반영되었다.** 8/14 에 뜬 채로 옛 빌드를 서비스하던 프로세스를
-`sudo systemctl restart oikos` 로 교체했다. (빌드 자체는 8/17 에 이미 최신이었고 재빌드는 불필요했다)
+밀린 배포는 없다. **코드·빌드·운영 프로세스가 모두 같은 지점(`8d00f67`)에 있다.**
 
-재시작 후 검증 결과:
+| 시각 (UTC) | 반영 내용 |
+| --- | --- |
+| 2026-08-14 15:14 | 5단계까지 (이후 오래 재시작하지 않아 6~9단계가 밀려 있었다) |
+| 2026-08-18 12:28 | 6~9단계 (상담 폼 · 관리자 인증 · 상담관리 · CMS) |
+| 2026-08-18 14:05 | 10~11단계 + systemd `ReadWritePaths` (업로드 디렉터리 쓰기 권한) |
+| 2026-08-18 14:55 | 12단계 (미디어 ↔ 공개 콘텐츠 연결) |
 
-| 경로 | 재시작 전 | 재시작 후 |
-| --- | :---: | :---: |
-| `/ko` `/en` `/ko/faculty` `/ko/about` `/ko/degree` `/ko/admission` `/ko/faq` | 200 | ✅ 200 |
-| `/ko/programs/mba` `/ko/programs/dba` | 200 | ✅ 200 |
-| `/ko/consultation` | 200 (개발 중 골격) | ✅ 200 (실제 폼) |
-| `/ko/consultation/seminar` | 404 | ✅ 200 |
-| `/admin` | 404 | ✅ 307 → `/admin/login` |
-| `/admin/login` | 404 | ✅ 200 |
-
-관리자 로그인 end-to-end 확인 완료 (CSRF → 세션 쿠키 발급 → `/admin` 외 CMS 5개 경로 200).
-음성 테스트도 통과: 쿠키 없이 `/admin/*` 는 전부 로그인으로 307, 잘못된 자격증명은 세션 쿠키 0개.
-
-`npm run seed:cms` 재실행 결과 **생성 0건 / 건너뜀 36건**이고, 실행 전후 전체 행을 덤프해
-비교한 결과 `updatedAt` 까지 완전히 동일했다. (재실행 안전성 확인)
-
----
-
-## 운영 반영 대기 (12단계)
-
-11단계까지는 운영에 반영되었다. (2026-08-18 14:05 재시작)
-12단계 코드는 커밋·push 되었지만 **운영 프로세스에는 아직 반영되지 않았다.**
-
-systemd 유닛 수정(업로드 디렉터리 쓰기 권한)은 **이미 반영되었다.**
-남은 것은 재시작뿐이다.
+### 앞으로 배포할 때
 
 ```bash
-sudo systemctl restart oikos
-
-# 확인
-systemctl status oikos
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3100/ko/admission
+cd /home/pastday/oikos
+git pull && npm ci
+npx prisma migrate deploy    # 스키마 변경이 있을 때만
+npm run build                # 빌드 시 DB 연결이 필요하다 (공개 페이지가 DB 를 읽는다)
+sudo systemctl restart oikos # ← 빠뜨리면 예전 화면이 계속 보인다
 ```
+
+> **`npm run build` 는 운영이 읽는 `.next` 를 그 자리에서 덮어쓴다.** 같은 디렉터리이기 때문이다.
+> 빌드 후 재시작 전까지는 프로세스와 디스크의 빌드가 어긋난 상태다. 빌드했으면 반드시 재시작한다.
 
 ---
 
@@ -135,21 +143,18 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3100/ko/admission
    개발용 계정은 비활성화(`isActive = false`)하거나 삭제한다.
 → 운영 `AUTH_SECRET` 도 로컬과 다른 값으로 재발급한다. (`openssl rand -base64 32`)
 
-### 3. 그 밖에
+### 3. 업로드 파일은 이미 분리돼 있다 — **옮기지 말 것**
+
+11단계부터 업로드 파일은 저장소 밖(`/home/pastday/oikos-data/uploads`)에 있다.
+바로 이 "개발/운영 분리" 를 대비한 구조이므로, 디렉터리를 나눌 때도 **이 경로는 그대로 둔다.**
+경로를 바꾸려면 `UPLOAD_DIR` 환경변수와 systemd `ReadWritePaths` 를 함께 고쳐야 하고,
+`Media.path` 는 공개 URL(`/media/…`)이라 파일을 옮겨도 DB 는 손댈 필요가 없다.
+
+### 4. 그 밖에
 
 - 개인정보 처리방침 전문 게재 (현재 "준비 중" 안내만 있음)
 - 신청 폼 rate limit / CAPTCHA 검토
-- `sudo` 는 이 세션에서 쓸 수 없다. **사용자가 일반 터미널에서 직접 실행해야 한다.**
-
-### 재배포 순서
-
-```bash
-cd /home/pastday/oikos
-git pull && npm ci
-npx prisma migrate deploy    # 스키마 변경이 있을 때만
-npm run build                # 빌드 시 DB 연결이 필요하다 (공개 페이지가 DB 를 읽는다)
-sudo systemctl restart oikos # ← 빠뜨리면 예전 화면이 계속 보인다
-```
+- `sudo` 는 Claude 세션에서 쓸 수 없다. **사용자가 일반 터미널에서 직접 실행해야 한다.**
 
 ---
 
@@ -901,6 +906,8 @@ npx tsc --noEmit             # 타입 검사
 npm run lint                 # ESLint
 npx prisma studio            # DB 확인 (브라우저)
 npm run admin:create         # 관리자 계정 생성 (.env 의 SEED_ADMIN_* 사용)
+                             #   이미 있으면 아무것도 하지 않는다.
+                             #   비밀번호를 바꾸려면: npm run admin:create -- --force-password
 npm run seed:cms             # 교수진·과정·교과목 이관 (9단계, 멱등)
 npm run seed:pages           # 페이지 콘텐츠·FAQ·입학안내 수치 이관 (10단계, 멱등)
 npx prisma migrate dev       # 스키마 변경 후 마이그레이션
@@ -910,3 +917,25 @@ journalctl -u oikos -n 50    # 운영 로그
 ```
 
 각 단계 종료 시 검증 순서: `npx tsc --noEmit` → `npm run lint` → `npm run build` → URL 확인 → Git 보안 확인 → commit/push.
+
+### 관리자 로그인
+
+| 환경 | 주소 |
+| --- | --- |
+| 운영 | https://oikos.pastday.co.kr/admin/login |
+| 개발 | http://localhost:3000/admin/login |
+
+아이디·비밀번호는 **`.env` 의 `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`** 값이다.
+Git 과 이 문서 어디에도 실제 값을 적지 않는다.
+
+### 기능을 실제로 눌러 보며 확인할 때
+
+운영(3100)을 건드리지 않고 **별도 포트로 같은 빌드를 띄워** 확인한다.
+
+```bash
+npm run build
+npx next start -p 3200 -H 127.0.0.1
+```
+
+> 끝나면 반드시 종료한다. 3200 에 옛 프로세스가 남아 있으면 방금 고친 코드가 아니라
+> **예전 빌드를 시험하게 되어** 원인을 찾느라 한참 헤매게 된다. (실제로 겪었다)
