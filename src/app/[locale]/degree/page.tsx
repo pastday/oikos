@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { Prose, Section } from "@/components/page/Section";
+import { ItemImage } from "@/components/page/MediaBlocks";
 import { getPageContent } from "@/content/pages";
 import { getPageSections, getProgramNumbers } from "@/lib/cms/queries";
 import { toPageIntro, toPairs } from "@/lib/cms/page-view";
@@ -124,10 +125,15 @@ export default async function DegreePage({ params }: PageProps) {
                 className="rounded-lg border border-line bg-surface p-6"
               >
                 <h3 className="flex items-center gap-2.5 text-base font-semibold text-navy">
-                  <span
-                    aria-hidden="true"
-                    className="h-1.5 w-1.5 rounded-full bg-gold"
-                  />
+                  {/* 로고가 있으면 금색 점 대신 로고를 쓴다. 둘 다 보이면 산만하다. */}
+                  {item.media ? (
+                    <ItemImage media={item.media} size={28} />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="h-1.5 w-1.5 rounded-full bg-gold"
+                    />
+                  )}
                   {item.label}
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-foreground/75">

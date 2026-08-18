@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guard";
 import { AdminPageHeader } from "@/components/admin/ui";
 import { FacultyForm } from "@/components/admin/FacultyForm";
-import { getImageOptions } from "@/lib/media/options";
+import { getMediaChoices } from "@/lib/media/select";
 import { saveFaculty } from "../../cms-actions";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default async function NewFacultyPage() {
 
   // 신규 등록이므로 id 가 없다. 저장에 성공하면 액션이 목록으로 보낸다.
   const action = saveFaculty.bind(null, null);
-  const mediaOptions = await getImageOptions();
+  const mediaOptions = await getMediaChoices("image");
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -48,7 +48,7 @@ export default async function NewFacultyPage() {
           careerEn: null,
           lectureFieldsKo: null,
           lectureFieldsEn: null,
-          photoUrl: null,
+          photoMediaId: null,
           sortOrder: 0,
           isPublished: true,
         }}

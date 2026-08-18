@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
@@ -120,12 +121,15 @@ function FacultyCard({
 
   return (
     <article className="grid gap-8 rounded-xl border border-line bg-surface p-7 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-10 sm:p-9">
-      {member.photoUrl ? (
-        // 업로드 기능은 아직 없다. 관리자가 URL 을 직접 넣은 경우에만 표시된다.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={member.photoUrl}
-          alt=""
+      {member.photo ? (
+        // 크기가 고정된 원형 아바타라 next/image 로 그린다.
+        // alt 는 Media 에 입력된 값을 쓴다. 비어 있으면 장식용으로 취급되어
+        // 화면 읽기 프로그램이 건너뛴다. 바로 옆에 이름이 글자로 있어 그 편이 정확하다.
+        <Image
+          src={member.photo.url}
+          alt={member.photo.alt}
+          width={96}
+          height={96}
           className="h-24 w-24 rounded-full object-cover"
         />
       ) : (

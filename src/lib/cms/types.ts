@@ -49,7 +49,8 @@ export type FacultyView = {
   major: string | null;
   career: string | null;
   lectureFields: string | null;
-  photoUrl: string | null;
+  /** 교수 사진. 없으면 null 이고 화면은 이니셜 아바타를 그린다. */
+  photo: MediaView | null;
   /** 이니셜 아바타용. 사진이 없을 때 쓴다. */
   initials: string;
 };
@@ -116,6 +117,8 @@ export type PageItemView = {
   label: string | null;
   value: string | null;
   variant: string | null;
+  /** 항목 이미지. 없으면 null 이고 화면은 이미지 없이 그린다. */
+  media: MediaView | null;
 };
 
 /**
@@ -132,6 +135,10 @@ export type PageSectionView = {
   paragraphs: string[];
   highlight: string | null;
   note: string | null;
+  /** 섹션 대표 이미지. 없으면 null */
+  media: MediaView | null;
+  /** 섹션에 딸린 문서(PDF). 없으면 null 이고 링크를 그리지 않는다. */
+  document: MediaView | null;
   items: PageItemView[];
 };
 
@@ -171,3 +178,55 @@ export type FaqView = {
  * 관리자가 아직 입력하지 않은 상태도 정상이다. 화면에서 "-" 로 표시한다.
  */
 export type AdmissionNumbers = Record<string, number | null>;
+
+// ---------------------------------------------------------------------------
+// 미디어 (12단계)
+// ---------------------------------------------------------------------------
+
+/**
+ * 공개 화면이 쓰는 파일.
+ *
+ * DB 행을 그대로 넘기지 않고 **locale 하나로 정리된 값**만 담는다.
+ * 화면 컴포넌트가 어느 언어의 대체 텍스트를 골라야 하는지 몰라도 되게 한다.
+ */
+export type MediaView = {
+  url: string;
+  /** 현재 locale 기준 대체 텍스트. 없으면 빈 문자열(장식용으로 취급) */
+  alt: string;
+  originalName: string;
+  /** 문서 링크에 크기를 표시할 때 쓴다 */
+  size: number;
+};
+
+type MediaRow = {
+  path: string;
+  altKo: string | null;
+  altEn: string | null;
+  originalName: string;
+  size: number;
+};
+
+/**
+ * 대체 텍스트는 **현재 언어를 먼저 보고, 없으면 반대 언어를 쓴다.**
+ *
+ * 둘 다 없으면 빈 문자열이다. 없는 설명을 지어내지 않으며,
+ * 빈 alt 는 "장식용 이미지" 라는 뜻으로 화면 읽기 프로그램이 건너뛴다.
+ * 이미지가 전달하는 정보가 옆 글에 이미 있는 경우가 많아 이 편이 더 정확하다.
+ */
+export function toMediaView(
+  locale: Locale,
+  row: MediaRow | null | undefined,
+): MediaView | null {
+  if (!row) return null;
+
+  const primary = locale === "ko" ? row.altKo : row.altEn;
+  const secondary = locale === "ko" ? row.altEn : row.altKo;
+  const alt = primary?.trim() || secondary?.trim() || "";
+
+  return {
+    url: row.path,
+    alt,
+    originalName: row.originalName,
+    size: row.size,
+  };
+}

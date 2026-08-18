@@ -42,6 +42,21 @@ export type SectionItemSpec = {
   value: SlotSpec | null;
   /** 같은 목록 안에서 표시가 갈리는 경우에만 쓴다 */
   variants?: { value: string; label: string }[];
+  /** 항목마다 이미지를 붙일 수 있게 할지 (이미지 Media 만) */
+  image?: SectionMediaSpec;
+};
+
+/**
+ * 섹션에 붙일 수 있는 파일.
+ *
+ * 여기 없는 섹션에는 관리자 화면에 칸 자체가 나오지 않고, 서버도 저장하지 않는다.
+ * 모든 섹션에 이미지 칸을 열어 두면 어디에 넣어야 화면에 나오는지 알 수 없게 된다.
+ */
+export type SectionMediaSpec = {
+  /** 관리자 화면에 표시할 이름 */
+  label: string;
+  /** 화면 어디에 어떻게 나오는지 */
+  hint: string;
 };
 
 export type SectionSpec = {
@@ -50,6 +65,10 @@ export type SectionSpec = {
   /** 이 섹션이 공개 페이지의 어디인지 */
   description: string;
   slots: Partial<Record<SectionSlot, SlotSpec>>;
+  /** 섹션 대표 이미지 (이미지 Media 만) */
+  image?: SectionMediaSpec;
+  /** 섹션에 딸린 문서 (PDF 만) */
+  document?: SectionMediaSpec;
   items?: SectionItemSpec;
   /** 카탈로그에 없는 내용이 화면에 함께 나올 때의 안내 (DB·정적 출처) */
   notice?: string;
@@ -119,6 +138,10 @@ const aboutPage: PageSpec = {
         title: { label: "제목" },
         body: { label: "본문", hint: bodyHint, multiline: true },
       },
+      image: {
+        label: "섹션 이미지",
+        hint: "본문 오른쪽에 표시됩니다. (좁은 화면에서는 본문 아래) 넣지 않으면 지금처럼 본문만 나옵니다.",
+      },
     },
     {
       key: "philosophy",
@@ -140,6 +163,10 @@ const aboutPage: PageSpec = {
         addLabel: "목표 추가",
         label: { label: "카드 제목" },
         value: { label: "카드 설명", multiline: true },
+        image: {
+          label: "카드 이미지",
+          hint: "카드 위쪽에 표시됩니다. 넣지 않으면 지금처럼 글자만 나옵니다.",
+        },
       },
     },
     {
@@ -220,6 +247,10 @@ const degreePage: PageSpec = {
         addLabel: "항목 추가",
         label: { label: "기관 · 제도명", hint: "예: TRACS 인증" },
         value: { label: "설명", multiline: true },
+        image: {
+          label: "기관 로고",
+          hint: "카드 제목 왼쪽에 작게 표시됩니다. 넣지 않으면 지금처럼 금색 점이 표시됩니다.",
+        },
       },
     },
     {
@@ -276,6 +307,14 @@ const admissionPage: PageSpec = {
         addLabel: "항목 추가",
         label: { label: "항목명", hint: "예: 개강, 수업방식" },
         value: { label: "값" },
+      },
+      image: {
+        label: "섹션 이미지",
+        hint: "정보 그리드 위에 표시됩니다. 넣지 않으면 지금 화면 그대로입니다.",
+      },
+      document: {
+        label: "모집요강 PDF",
+        hint: "지정하면 이 섹션 아래에 [모집요강 PDF 보기] 버튼이 나옵니다. 지정하지 않으면 버튼이 아예 표시되지 않습니다.",
       },
       notice:
         "MBA · DBA 학기 수를 적어 두었다면 [MBA · DBA 과정] 화면에서 학기 수를 바꿀 때 이 값도 함께 고쳐야 합니다.",

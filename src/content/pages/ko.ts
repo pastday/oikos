@@ -415,6 +415,10 @@ export function createPagesKo(
 
   // -------------------------------------------------------------------------
   admission: {
+    guideline: {
+      label: "모집요강 PDF 보기",
+      newWindow: "(새 창에서 열립니다)",
+    },
     intro: {
       eyebrow: "입학안내",
       title: `${intakeKo} 개강`,

@@ -12,7 +12,8 @@ import {
   TextAreaField,
   TextField,
 } from "@/components/admin/form";
-import { MediaPicker, type MediaOption } from "@/components/admin/MediaPicker";
+import { MediaPicker } from "@/components/admin/MediaPicker";
+import type { MediaChoice } from "@/lib/media/select";
 import type { CmsFormState } from "@/lib/cms/validation";
 
 const INITIAL_STATE: CmsFormState = { status: "idle" };
@@ -30,7 +31,7 @@ export type FacultyFormValues = {
   careerEn: string | null;
   lectureFieldsKo: string | null;
   lectureFieldsEn: string | null;
-  photoUrl: string | null;
+  photoMediaId: string | null;
   sortOrder: number;
   isPublished: boolean;
 };
@@ -51,7 +52,7 @@ export function FacultyForm({
   values: FacultyFormValues;
   submitLabel: string;
   /** 미디어에 올려 둔 이미지. 사진을 눌러 고를 수 있게 한다. */
-  mediaOptions: MediaOption[];
+  mediaOptions: MediaChoice[];
 }) {
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
@@ -76,10 +77,11 @@ export function FacultyForm({
           disabled={isPending}
         />
         <MediaPicker
-          name="photoUrl"
+          name="photoMediaId"
           label="사진"
-          hint="[미디어] 에 올린 이미지를 고르거나 주소를 직접 넣습니다. 비워 두면 이름 이니셜로 표시됩니다."
-          defaultValue={values.photoUrl}
+          kind="image"
+          hint="[미디어] 에 올린 이미지 중에서 고릅니다. 비워 두면 이름 이니셜로 표시됩니다."
+          defaultValue={values.photoMediaId}
           options={mediaOptions}
           disabled={isPending}
         />

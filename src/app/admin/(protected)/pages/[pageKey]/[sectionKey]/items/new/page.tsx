@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminPageHeader } from "@/components/admin/ui";
 import { PageSectionItemForm } from "@/components/admin/PageSectionItemForm";
 import { findSection } from "@/lib/cms/page-catalog";
+import { getMediaChoices } from "@/lib/media/select";
 import { savePageSectionItem } from "../../../../../cms-actions";
 
 export const metadata: Metadata = {
@@ -35,6 +36,10 @@ export default async function NewSectionItemPage({ params }: PageProps) {
   const action = savePageSectionItem.bind(null, section.id, null);
 
   // 새 항목은 목록 맨 뒤에 오도록 마지막 순서 + 1 을 기본값으로 준다.
+  const imageChoices = found.section.items.image
+    ? await getMediaChoices("image")
+    : [];
+
   const last = await prisma.pageSectionItem.findFirst({
     where: { sectionId: section.id },
     orderBy: { sortOrder: "desc" },
@@ -64,11 +69,13 @@ export default async function NewSectionItemPage({ params }: PageProps) {
           valueKo: null,
           valueEn: null,
           variant: null,
+          mediaId: null,
           sortOrder: (last?.sortOrder ?? -1) + 1,
           isPublished: true,
         }}
         submitLabel="추가"
         cancelHref={sectionHref}
+        imageChoices={imageChoices}
       />
     </div>
   );

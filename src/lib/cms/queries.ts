@@ -6,6 +6,7 @@ import { admissionNumberKeys } from "./page-catalog";
 import {
   pickLocale,
   pickLocaleOptional,
+  toMediaView,
   toParagraphs,
   type AdmissionNumbers,
   type CourseView,
@@ -67,7 +68,13 @@ function toFacultyView(
     careerEn: string | null;
     lectureFieldsKo: string | null;
     lectureFieldsEn: string | null;
-    photoUrl: string | null;
+    photo: {
+      path: string;
+      altKo: string | null;
+      altEn: string | null;
+      originalName: string;
+      size: number;
+    } | null;
   },
 ): FacultyView {
   const name = pickLocale(locale, row.nameKo, row.nameEn);
@@ -87,7 +94,7 @@ function toFacultyView(
       row.lectureFieldsKo,
       row.lectureFieldsEn,
     ),
-    photoUrl: row.photoUrl,
+    photo: toMediaView(locale, row.photo),
     initials: toInitials(row.nameKo, row.nameEn),
   };
 }
@@ -105,7 +112,7 @@ const facultySelect = {
   careerEn: true,
   lectureFieldsKo: true,
   lectureFieldsEn: true,
-  photoUrl: true,
+  photo: true,
 } as const;
 
 /**
@@ -415,9 +422,12 @@ export const getPageSections = cache(
       where: { pageKey, isPublished: true },
       orderBy: { sortOrder: "asc" },
       include: {
+        media: true,
+        documentMedia: true,
         items: {
           where: { isPublished: true },
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          include: { media: true },
         },
       },
     });
@@ -437,11 +447,14 @@ export const getPageSections = cache(
           row.highlightEn,
         ),
         note: pickLocaleOptional(locale, row.noteKo, row.noteEn),
+        media: toMediaView(locale, row.media),
+        document: toMediaView(locale, row.documentMedia),
         items: row.items.map((item) => ({
           id: item.id,
           label: pickLocaleOptional(locale, item.labelKo, item.labelEn),
           value: pickLocaleOptional(locale, item.valueKo, item.valueEn),
           variant: item.variant,
+          media: toMediaView(locale, item.media),
         })),
       };
     }

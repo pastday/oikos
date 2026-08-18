@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { FactGrid, Prose, Section } from "@/components/page/Section";
+import { DocumentLink, SectionImage } from "@/components/page/MediaBlocks";
 import { getPageContent } from "@/content/pages";
 import {
   getAdmissionNumbers,
@@ -104,12 +105,28 @@ export default async function AdmissionPage({ params }: PageProps) {
     <>
       <PageHero intro={toPageIntro(sections.intro, content.intro)} />
 
-      {recruit && recruit.items.length > 0 && (
+      {recruit && (recruit.items.length > 0 || recruit.media || recruit.document) && (
         <Section
           title={recruit.title ?? undefined}
           description={recruit.subtitle ?? undefined}
         >
-          <FactGrid items={toPairs(recruit.items)} columns={4} />
+          {recruit.media && <SectionImage media={recruit.media} className="mb-8" />}
+
+          {recruit.items.length > 0 && (
+            <FactGrid items={toPairs(recruit.items)} columns={4} />
+          )}
+
+          {/* 모집요강 PDF 는 관리자가 지정했을 때만 나온다.
+              지정하지 않으면 버튼 자체를 그리지 않는다. 404 링크를 보여주지 않는다. */}
+          {recruit.document && (
+            <div className="mt-8">
+              <DocumentLink
+                media={recruit.document}
+                label={content.guideline.label}
+                newWindowLabel={content.guideline.newWindow}
+              />
+            </div>
+          )}
         </Section>
       )}
 

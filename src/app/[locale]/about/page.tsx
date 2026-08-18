@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { FactGrid, Prose, Section } from "@/components/page/Section";
+import { SectionImage } from "@/components/page/MediaBlocks";
 import { getPageContent } from "@/content/pages";
 import { getPageSections, getProgramNumbers } from "@/lib/cms/queries";
 import { toPageIntro, toPairs } from "@/lib/cms/page-view";
@@ -92,7 +93,16 @@ export default async function AboutPage({ params }: PageProps) {
 
       {school && school.paragraphs.length > 0 && (
         <Section title={school.title ?? undefined} tone="surface">
-          <Prose paragraphs={school.paragraphs} />
+          {/* 이미지가 지정되지 않으면 두 칸으로 나누지 않고 본문만 그린다.
+              빈 칸을 남겨 두면 레이아웃이 어색해진다. */}
+          {school.media ? (
+            <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+              <Prose paragraphs={school.paragraphs} />
+              <SectionImage media={school.media} />
+            </div>
+          ) : (
+            <Prose paragraphs={school.paragraphs} />
+          )}
         </Section>
       )}
 
@@ -110,6 +120,9 @@ export default async function AboutPage({ params }: PageProps) {
                 key={goal.id}
                 className="rounded-lg border border-line bg-background p-6"
               >
+                {goal.media && (
+                  <SectionImage media={goal.media} className="mb-4" />
+                )}
                 <h3 className="text-base font-semibold text-navy">
                   {goal.label}
                 </h3>

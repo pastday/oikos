@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminPageHeader } from "@/components/admin/ui";
 import { PageSectionItemForm } from "@/components/admin/PageSectionItemForm";
 import { findSection } from "@/lib/cms/page-catalog";
+import { getMediaChoices } from "@/lib/media/select";
 import { savePageSectionItem } from "../../../../../../cms-actions";
 
 export const metadata: Metadata = {
@@ -40,6 +41,10 @@ export default async function EditSectionItemPage({ params }: PageProps) {
     notFound();
   }
 
+  const imageChoices = found.section.items.image
+    ? await getMediaChoices("image")
+    : [];
+
   const sectionHref = `/admin/pages/${pageKey}/${sectionKey}`;
   const action = savePageSectionItem.bind(null, item.section.id, item.id);
 
@@ -66,11 +71,13 @@ export default async function EditSectionItemPage({ params }: PageProps) {
           valueKo: item.valueKo,
           valueEn: item.valueEn,
           variant: item.variant,
+          mediaId: item.mediaId,
           sortOrder: item.sortOrder,
           isPublished: item.isPublished,
         }}
         submitLabel="저장"
         cancelHref={sectionHref}
+        imageChoices={imageChoices}
       />
     </div>
   );

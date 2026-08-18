@@ -12,7 +12,9 @@ import {
   TextAreaField,
   TextField,
 } from "@/components/admin/form";
+import { MediaPicker } from "@/components/admin/MediaPicker";
 import type { SectionItemSpec, SlotSpec } from "@/lib/cms/page-catalog";
+import type { MediaChoice } from "@/lib/media/select";
 import type { CmsFormState } from "@/lib/cms/validation";
 
 const INITIAL_STATE: CmsFormState = { status: "idle" };
@@ -30,6 +32,7 @@ export type PageSectionItemFormValues = {
   valueKo: string | null;
   valueEn: string | null;
   variant: string | null;
+  mediaId: string | null;
   sortOrder: number;
   isPublished: boolean;
 };
@@ -76,12 +79,15 @@ export function PageSectionItemForm({
   values,
   submitLabel,
   cancelHref,
+  imageChoices,
 }: {
   action: (state: CmsFormState, formData: FormData) => Promise<CmsFormState>;
   spec: SectionItemSpec;
   values: PageSectionItemFormValues;
   submitLabel: string;
   cancelHref: string;
+  /** 이 목록이 이미지를 쓸 때만 채워진다 */
+  imageChoices: MediaChoice[];
 }) {
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
@@ -115,6 +121,18 @@ export function PageSectionItemForm({
           defaultChecked={values.isPublished}
           disabled={isPending}
         />
+
+        {spec.image && (
+          <MediaPicker
+            name="mediaId"
+            kind="image"
+            label={spec.image.label}
+            hint={spec.image.hint}
+            defaultValue={values.mediaId}
+            options={imageChoices}
+            disabled={isPending}
+          />
+        )}
       </SettingsSection>
 
       <div className="grid gap-5 xl:grid-cols-2">

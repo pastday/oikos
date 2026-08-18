@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/layout/Container";
 import type { HomeContent } from "@/content/home";
@@ -40,11 +41,12 @@ export function FacultyPreview({
 
         <div className="mt-10 flex justify-center">
           <article className="w-full max-w-md rounded-xl border border-line bg-background p-8 text-center">
-            {chief.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={chief.photoUrl}
-                alt=""
+            {chief.photo ? (
+              <Image
+                src={chief.photo.url}
+                alt={chief.photo.alt}
+                width={80}
+                height={80}
                 className="mx-auto h-20 w-20 rounded-full object-cover"
               />
             ) : (

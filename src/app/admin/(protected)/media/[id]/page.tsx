@@ -25,7 +25,7 @@ export default async function MediaDetailPage({ params }: PageProps) {
   if (!media) notFound();
 
   const kind = kindFromMimeType(media.mimeType);
-  const usage = await findMediaUsage(media.path);
+  const usage = await findMediaUsage(media.id);
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">

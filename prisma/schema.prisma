@@ -103,21 +103,30 @@ model AdminUser {
 /// 반복되는 카드·팩트·절차·일정은 이 표에 담을 수 없으므로 `PageSectionItem` 에 둔다.
 /// 모두 PostgreSQL text 로 매핑되어 길이 제한이 사실상 없다.
 model PageSection {
-  id           String  @id @default(cuid())
-  pageKey      String
-  sectionKey   String
-  titleKo      String?
-  titleEn      String?
-  subtitleKo   String?
-  subtitleEn   String?
-  bodyKo       String?
-  bodyEn       String?
-  highlightKo  String?
-  highlightEn  String?
-  noteKo       String?
-  noteEn       String?
-  sortOrder    Int     @default(0)
-  isPublished  Boolean @default(true)
+  id          String  @id @default(cuid())
+  pageKey     String
+  sectionKey  String
+  titleKo     String?
+  titleEn     String?
+  subtitleKo  String?
+  subtitleEn  String?
+  bodyKo      String?
+  bodyEn      String?
+  highlightKo String?
+  highlightEn String?
+  noteKo      String?
+  noteEn      String?
+  sortOrder   Int     @default(0)
+  isPublished Boolean @default(true)
+
+  /// 섹션 대표 이미지. 이미지 Media 만 연결한다.
+  mediaId String?
+  media   Media?  @relation("PageSectionImage", fields: [mediaId], references: [id], onDelete: Restrict)
+
+  /// 섹션에 딸린 문서. 지금은 입학안내의 모집요강 PDF 가 유일한 용도다.
+  /// 이미지와 따로 두어 한 섹션이 대표 이미지와 첨부 문서를 동시에 가질 수 있게 한다.
+  documentMediaId String?
+  documentMedia   Media?  @relation("PageSectionDocument", fields: [documentMediaId], references: [id], onDelete: Restrict)
 
   items PageSectionItem[]
 
@@ -148,6 +157,10 @@ model PageSectionItem {
   valueEn String?
   variant String?
 
+  /// 항목 이미지. 인가·인증 카드의 기관 로고 같은 용도다. 이미지 Media 만 연결한다.
+  mediaId String?
+  media   Media?  @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
   sortOrder   Int     @default(0)
   isPublished Boolean @default(true)
 
@@ -176,13 +189,19 @@ model Faculty {
   careerEn        String?
   lectureFieldsKo String?
   lectureFieldsEn String?
-  photoUrl        String?
-  email           String?
-  phone           String?
-  sortOrder       Int         @default(0)
-  isPublished     Boolean     @default(true)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+
+  /// 교수 사진. 12단계에서 URL 문자열(photoUrl)을 Media 참조로 바꿨다.
+  /// 참조로 두면 사용 중인 파일을 DB 가 지우지 못하게 막아 주고,
+  /// 사진의 대체 텍스트도 Media 에서 함께 가져올 수 있다.
+  photoMediaId String?
+  photo        Media?  @relation(fields: [photoMediaId], references: [id], onDelete: Restrict)
+
+  email       String?
+  phone       String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   /// 교수 구분별 목록 조회 + 표시순서 정렬용
   @@index([type, sortOrder])
@@ -322,16 +341,26 @@ model SeminarApplication {
 /// path 는 스토리지 종류에 의존하지 않는 상대 경로로 저장해
 /// 향후 로컬 → 클라우드 Object Storage 전환이 쉽도록 한다. (CLAUDE.md 15항)
 model Media {
-  id           String   @id @default(cuid())
+  id           String  @id @default(cuid())
   originalName String
-  storedName   String   @unique
+  storedName   String  @unique
   mimeType     String
   size         Int
+  /// 파일시스템 경로가 아니라 **공개 URL** 이다. (예: /media/<uuid>.jpg)
   path         String
   altKo        String?
   altEn        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  /// 이 파일을 쓰고 있는 곳. 전부 `onDelete: Restrict` 라
+  /// **사용 중인 파일은 DB 가 삭제를 거부한다.**
+  /// 앱에서도 `findMediaUsage()` 로 미리 막지만, 그 검사를 우회해도 참조가 끊기지 않는다.
+  pageSectionImages    PageSection[]     @relation("PageSectionImage")
+  pageSectionDocuments PageSection[]     @relation("PageSectionDocument")
+  pageSectionItems     PageSectionItem[]
+  facultyPhotos        Faculty[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("media")
 }

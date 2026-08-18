@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-18 · 11단계 완료
+> 마지막 갱신: 2026-08-18 · 12단계 완료
 
 ---
 
@@ -23,10 +23,11 @@
 | 9 | 관리자 CMS (교수진 · MBA/DBA · 교과목) | ✅ 완료 |
 | 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | ✅ 완료 |
 | 11 | 파일 업로드 · 미디어 관리 | ✅ 완료 |
-| 12 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
+| 12 | 미디어를 공개 콘텐츠에 연결 | ✅ 완료 |
+| 13 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
 
-**현재 서비스 중**: https://oikos.pastday.co.kr — **9단계까지 반영됨**
-(10·11단계는 커밋 완료. 운영 반영은 아래 "운영 반영 대기" 참고)
+**현재 서비스 중**: https://oikos.pastday.co.kr — **11단계까지 반영됨**
+(12단계는 커밋 완료. 운영에 올리려면 `sudo systemctl restart oikos` 가 필요하다)
 (⚠️ 운영과 개발이 같은 디렉터리·같은 DB 를 쓴다. 아래 "운영 전환 체크리스트" 참고)
 
 ---
@@ -41,7 +42,7 @@
 | DB | Faculty 1 · Program 2 · Course 33 · PageSection 19 · PageSectionItem 30 · FAQ 8 · SiteSetting 8 · Media 0 · 상담/설명회 0 |
 | 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
 | 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
-| 운영 | **반영 대기.** 디스크 `.next` 는 11단계 빌드, 프로세스는 9단계. systemd 수정도 필요 |
+| 운영 | **재시작 대기.** systemd 는 반영 완료. 디스크 `.next` 는 12단계 빌드 |
 
 ### 시작할 때 할 일
 
@@ -57,10 +58,9 @@ npm run dev                  # 개발 서버 3000
 
 ### 다음 작업
 
-**12단계 — 테스트 / SEO / 보안 점검.**
-그 전에 실제 자료(교수 사진, 모집요강 PDF, 총장 인사말)를 받아 넣는 작업이 남아 있다.
-모집요강 PDF 를 입학안내 화면에 링크로 붙이려면 `PageSection` 에 파일 필드를 더할지
-먼저 정해야 한다. (11단계에서 의도적으로 미뤘다)
+**13단계 — 테스트 / SEO / 보안 점검.**
+연결 기능은 다 만들어졌으므로, 이제 실제 자료(교수 사진, 모집요강 PDF, 인증 기관 로고,
+총장 인사말)를 받아 관리자 화면에서 넣기만 하면 된다.
 
 ---
 
@@ -88,29 +88,21 @@ npm run dev                  # 개발 서버 3000
 
 ---
 
-## 운영 반영 대기 (10 · 11단계)
+## 운영 반영 대기 (12단계)
 
-코드는 커밋·push 되었지만 **운영 프로세스에는 아직 반영되지 않았다.**
-운영 프로세스는 2026-08-18 12:28 에 뜬 9단계 빌드를 물고 있고, 디스크의 `.next` 는 11단계 빌드다.
+11단계까지는 운영에 반영되었다. (2026-08-18 14:05 재시작)
+12단계 코드는 커밋·push 되었지만 **운영 프로세스에는 아직 반영되지 않았다.**
 
-11단계는 재시작만으로는 부족하고 **systemd 유닛 수정이 함께 필요하다.**
-`ProtectHome=read-only` 때문에 업로드 디렉터리가 쓰기 가능해야 한다.
+systemd 유닛 수정(업로드 디렉터리 쓰기 권한)은 **이미 반영되었다.**
+남은 것은 재시작뿐이다.
 
 ```bash
-# 1) systemd 유닛 갱신 (업로드 디렉터리 쓰기 권한)
-sudo cp /home/pastday/oikos/deploy/systemd/oikos.service /etc/systemd/system/oikos.service
-sudo systemctl daemon-reload
-
-# 2) 재시작
 sudo systemctl restart oikos
 
-# 3) 확인
+# 확인
 systemctl status oikos
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3100/admin/media
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3100/ko/admission
 ```
-
-업로드 디렉터리(`/home/pastday/oikos-data/uploads`)는 이미 만들어 두었다.
-**이 두 가지를 하지 않으면 관리자 파일 업로드가 실패한다.**
 
 ---
 
@@ -307,7 +299,8 @@ Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken
 모델: `AdminUser` `PageSection` `PageSectionItem` `Faculty` `Program` `Course` `FAQ`
 `Consultation` `SeminarApplication` `Media` `SiteSetting`
 
-> `Media` 는 11단계부터 쓰인다. **스키마는 바꾸지 않았다.**
+> `Media` 는 11단계부터 쓰인다. 11단계에서는 스키마를 바꾸지 않았고,
+> 12단계에서 **역참조(사용처)만 추가**했다.
 > 기존 컬럼(`originalName` `storedName` `mimeType` `size` `path` `altKo` `altEn`)으로 충분했다.
 > `path` 에는 파일시스템 경로가 아니라 **공개 URL**(`/media/<uuid>.jpg`)을 넣는다.
 enum: `AdminRole` `FacultyType` `ProgramType` `CourseCategory` `InquiryStatus`
@@ -765,12 +758,99 @@ DB 행은 있는데 파일이 없으면 관리자 화면이 깨지지 않고 **"
 
 ### 이번 단계에서 하지 않은 것
 
-- **`PageSection` 에 이미지·파일 필드를 추가하지 않았다.** 실제 필요가 확인되면 그때 migration 한다.
-  그래서 모집요강 PDF 를 입학안내 화면에 **링크로 붙이는 것은 다음 단계**다.
-  (지금은 업로드하고 URL 을 확보하는 것까지 된다)
+- **`PageSection` 에 이미지·파일 필드를 추가하지 않았다.** (12단계에서 추가했다)
+  그래서 이 단계까지는 업로드하고 URL 을 확보하는 것까지만 됐다.
 - 자동 resize·압축·썸네일 생성 — 원본을 그대로 저장한다.
 - content hash 중복 제거 — 같은 파일을 여러 번 올릴 수 있고, 저장 이름은 항상 다르다.
 - Media seed — 실제 파일은 관리자가 올린다. `assets/source/` 를 자동 import 하지 않는다.
+
+---
+
+## 12단계에서 만든 것 (미디어를 공개 콘텐츠에 연결)
+
+11단계에서 올린 파일을 실제 페이지에서 쓸 수 있게 연결했다.
+**공개 디자인(A안)은 그대로다.** 파일을 지정하지 않으면 화면은 이전과 완전히 같다.
+
+### 스키마 — 참조를 전부 FK 로 통일
+
+`20260818142008_add_media_relations_to_content`
+
+| 모델 | 필드 | 대상 |
+| --- | --- | --- |
+| `PageSection` | `mediaId` | 섹션 대표 이미지 |
+| `PageSection` | `documentMediaId` | 섹션 첨부 문서 (모집요강 PDF) |
+| `PageSectionItem` | `mediaId` | 항목 이미지 (인증 기관 로고 등) |
+| `Faculty` | `photoMediaId` | 교수 사진 — **`photoUrl` 문자열에서 전환** |
+
+전부 nullable, 전부 **`onDelete: Restrict`**.
+
+`Faculty.photoUrl` 을 함께 바꾼 이유: 참조 방식이 두 가지로 갈라지면 사용처 검사도
+두 벌이 되고, 사용처가 늘 때마다 어느 쪽인지 판단해야 한다. Media 0건 · `photoUrl` 전부 null
+이던 시점이라 이관할 데이터가 없어 비용이 가장 낮았다.
+**대신 교수 사진에 외부 URL 을 직접 넣는 기능은 사라졌다.** 올린 파일만 고른다.
+
+### ★ 삭제 보호가 두 겹이 됐다
+
+1. `findMediaUsage()` — 관리자에게 **어디서 쓰는지 알려 주고** 삭제를 거절한다.
+2. DB 의 `onDelete: Restrict` — 앱 검사를 지나쳐도 참조가 끊기지 않는다.
+
+1번만 있으면 검사를 빠뜨린 경로가 생겼을 때 조용히 깨지고,
+2번만 있으면 막히긴 하는데 관리자는 이유를 알 수 없다. 둘 다 필요하다.
+(Prisma 로 직접 `media.delete()` 를 호출해 `P2003` 으로 막히는 것을 확인했다)
+
+사용처 검사는 이제 **Media id** 기준이며 4곳을 본다.
+`Faculty.photoMediaId` · `PageSection.mediaId` · `PageSection.documentMediaId` ·
+`PageSectionItem.mediaId`. 사용처가 늘면 `src/lib/media/usage.ts` 에 추가한다.
+
+### 어느 섹션에 어떤 칸이 나오는가 — 카탈로그가 정한다
+
+모든 섹션에 이미지 칸을 열어 두면 어디에 넣어야 화면에 나오는지 알 수 없다.
+`page-catalog.ts` 의 `image` / `document` / `items.image` 가 있는 섹션에만 칸이 나오고,
+**서버도 그 칸만 저장한다.** 칸이 없는 섹션에 직접 POST 로 밀어 넣어도 무시된다.
+
+| 섹션 | 이미지 | 문서 |
+| --- | :---: | :---: |
+| `about/school` | ○ | — |
+| `about/goals` (카드마다) | ○ | — |
+| `degree/accreditation` (카드마다) | ○ | — |
+| `admission/recruit` | ○ | ○ (모집요강 PDF) |
+
+### 타입은 서버가 다시 본다
+
+이미지 칸에는 이미지만, 문서 칸에는 PDF 만 넣을 수 있다.
+화면에서 종류별로 걸러 보여 주지만 그건 편의일 뿐이고,
+`resolveMediaId()` 가 저장 직전에 **실제로 있는 파일인지**와 **종류가 맞는지**를 확인한다.
+네 가지 경우(이미지 칸에 PDF / PDF 칸에 이미지 / 없는 이미지 id / 없는 PDF id)를 모두 시험했다.
+
+### 공개 렌더링
+
+- **이미지는 `next/image`.** 업로드 파일은 가로·세로를 모르므로 `fill` 로 그리고
+  **바깥 상자가 비율을 정한다.** 어떤 크기를 올려도 레이아웃이 흔들리지 않는다.
+  섹션 이미지는 16:10 `object-cover`, 항목 로고는 `object-contain`
+  (로고는 여백·비율이 제각각이라 잘라 내면 알아볼 수 없다).
+- **대체 텍스트는 현재 언어 → 반대 언어 → 빈 문자열** 순으로 고른다.
+  빈 alt 는 "장식용" 이라는 뜻이라 화면 읽기 프로그램이 건너뛴다.
+  이미지가 전하는 내용이 옆 글에 이미 있는 경우가 많아 그 편이 정확하다.
+- **PDF 는 새 탭으로 연다.** 링크에 형식과 용량을 함께 적어 무엇이 열릴지 미리 알린다.
+  파일이 없으면 **버튼 자체를 그리지 않는다.** 404 가 될 링크를 보여주지 않는다.
+- 인증 카드에 로고가 있으면 금색 점 대신 로고를 쓴다. 둘 다 보이면 산만하다.
+
+`revalidate` 는 바뀐 페이지만 한다. 대체 텍스트를 고치면 사용처가 알려 주는 경로만 무효화한다.
+메인(`/[locale]`)은 교수 사진이 걸려 있을 때만 포함된다.
+
+### 이 단계에서 겪은 것
+
+- `MediaPicker` 를 **URL 문자열 입력에서 id 선택으로** 다시 만들었다.
+  값은 hidden input 이 나르고, 종류 필터와 파일명 검색이 붙었다.
+- 1KB 가 안 되는 파일의 용량이 `0 KB` 로 표시됐다. 비어 있는 파일처럼 보여
+  최소 `1 KB` 로 적도록 고쳤다.
+
+### 아직 하지 않은 것
+
+- **Hero 는 연결하지 않았다.** 디자인 B안에서 다룬다.
+  다만 `MediaBlocks` 와 `MediaPicker` 를 그대로 쓸 수 있게 만들어 두었다.
+- 인증 기관 로고 파일은 아직 없다. **임의로 내려받지 않았고 연결 기능만 만들었다.**
+- 이미지 자동 리사이즈·압축은 하지 않는다. 원본을 그대로 저장한다.
 
 ---
 

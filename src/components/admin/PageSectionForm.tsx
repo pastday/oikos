@@ -10,7 +10,9 @@ import {
   TextAreaField,
   TextField,
 } from "@/components/admin/form";
+import { MediaPicker } from "@/components/admin/MediaPicker";
 import type { SectionSlot, SectionSpec } from "@/lib/cms/page-catalog";
+import type { MediaChoice } from "@/lib/media/select";
 import type { CmsFormState } from "@/lib/cms/validation";
 
 const INITIAL_STATE: CmsFormState = { status: "idle" };
@@ -25,6 +27,8 @@ const INITIAL_STATE: CmsFormState = { status: "idle" };
 
 export type PageSectionFormValues = Partial<Record<`${SectionSlot}Ko` | `${SectionSlot}En`, string | null>> & {
   isPublished: boolean;
+  mediaId: string | null;
+  documentMediaId: string | null;
 };
 
 function SlotFields({
@@ -86,11 +90,17 @@ export function PageSectionForm({
   section,
   values,
   cancelHref,
+  imageChoices,
+  documentChoices,
 }: {
   action: (state: CmsFormState, formData: FormData) => Promise<CmsFormState>;
   section: SectionSpec;
   values: PageSectionFormValues;
   cancelHref: string;
+  /** 이 섹션이 이미지 칸을 쓸 때만 채워진다 */
+  imageChoices: MediaChoice[];
+  /** 이 섹션이 문서 칸을 쓸 때만 채워진다 */
+  documentChoices: MediaChoice[];
 }) {
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
@@ -105,6 +115,36 @@ export function PageSectionForm({
           disabled={isPending}
         />
       </SettingsSection>
+
+      {/* 파일 칸은 카탈로그가 정한 섹션에만 나온다.
+          어디에 넣어야 화면에 보이는지 알 수 없게 되는 것을 막기 위해서다. */}
+      {(section.image || section.document) && (
+        <SettingsSection title="파일">
+          {section.image && (
+            <MediaPicker
+              name="mediaId"
+              kind="image"
+              label={section.image.label}
+              hint={section.image.hint}
+              defaultValue={values.mediaId}
+              options={imageChoices}
+              disabled={isPending}
+            />
+          )}
+
+          {section.document && (
+            <MediaPicker
+              name="documentMediaId"
+              kind="pdf"
+              label={section.document.label}
+              hint={section.document.hint}
+              defaultValue={values.documentMediaId}
+              options={documentChoices}
+              disabled={isPending}
+            />
+          )}
+        </SettingsSection>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-2">
         <LangSection lang="ko">

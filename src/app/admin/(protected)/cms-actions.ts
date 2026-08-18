@@ -17,6 +17,7 @@ import {
   findSection,
   sectionSlots,
 } from "@/lib/cms/page-catalog";
+import { resolveMediaId } from "@/lib/media/select";
 import {
   admissionNumberSchema,
   courseSchema,
@@ -41,6 +42,12 @@ import {
  * 클라이언트가 보낸 필드를 그대로 Prisma 에 펼쳐 넣지 않는다.
  * zod 를 통과한 값만 명시적으로 매핑한다. (allowlist)
  */
+
+/** 미디어 연결이 잘못됐을 때의 안내. 어느 칸이 문제인지 알 수 있게 종류별로 나눈다. */
+const MEDIA_IMAGE_ERROR =
+  "이미지를 찾을 수 없습니다. 올려 둔 이미지 중에서 선택해 주세요.";
+const MEDIA_PDF_ERROR =
+  "PDF 를 찾을 수 없습니다. 올려 둔 PDF 중에서 선택해 주세요.";
 
 /** Prisma 오류를 사용자용 문구로 바꾼다. 원문·stack trace 는 화면으로 내보내지 않는다. */
 function toErrorState(scope: string, error: unknown): CmsFormState {
@@ -73,11 +80,19 @@ export async function saveFaculty(
     return { status: "error", message: CMS_INVALID_ERROR };
   }
 
+  // 사진은 이미지 Media 만 연결할 수 있다. 없는 id 나 PDF 는 여기서 걸러진다.
+  const photoMediaId = await resolveMediaId(parsed.data.photoMediaId, "image");
+  if (photoMediaId === "invalid") {
+    return { status: "error", message: MEDIA_IMAGE_ERROR };
+  }
+
+  const data = { ...parsed.data, photoMediaId };
+
   try {
     if (id) {
-      await prisma.faculty.update({ where: { id }, data: parsed.data });
+      await prisma.faculty.update({ where: { id }, data });
     } else {
-      await prisma.faculty.create({ data: parsed.data });
+      await prisma.faculty.create({ data });
     }
   } catch (error) {
     return toErrorState("faculty", error);
@@ -253,6 +268,27 @@ export async function savePageSection(
     data[`${slot}En`] = parsed.data[`${slot}En`];
   }
 
+  // 미디어도 카탈로그가 허용한 칸만 저장한다.
+  // 칸이 없는 섹션에 직접 POST 로 밀어 넣어도 무시된다. (allowlist)
+  if (found.section.image) {
+    const mediaId = await resolveMediaId(parsed.data.mediaId, "image");
+    if (mediaId === "invalid") {
+      return { status: "error", message: MEDIA_IMAGE_ERROR };
+    }
+    data.mediaId = mediaId;
+  }
+
+  if (found.section.document) {
+    const documentMediaId = await resolveMediaId(
+      parsed.data.documentMediaId,
+      "pdf",
+    );
+    if (documentMediaId === "invalid") {
+      return { status: "error", message: MEDIA_PDF_ERROR };
+    }
+    data.documentMediaId = documentMediaId;
+  }
+
   const sortOrder = found.page.sections.findIndex(
     (item) => item.key === sectionKey,
   );
@@ -319,6 +355,17 @@ export async function savePageSectionItem(
       ? parsed.data.variant
       : null;
 
+  // 이미지를 쓰지 않는 목록에 mediaId 가 들어오면 버린다.
+  let mediaId: string | null = null;
+
+  if (spec.image) {
+    const resolved = await resolveMediaId(parsed.data.mediaId, "image");
+    if (resolved === "invalid") {
+      return { status: "error", message: MEDIA_IMAGE_ERROR };
+    }
+    mediaId = resolved;
+  }
+
   // label 을 쓰지 않는 목록(등록금 비고)에 label 이 들어오면 버린다.
   const data = {
     labelKo: spec.label ? parsed.data.labelKo : null,
@@ -326,6 +373,7 @@ export async function savePageSectionItem(
     valueKo: spec.value ? parsed.data.valueKo : null,
     valueEn: spec.value ? parsed.data.valueEn : null,
     variant,
+    mediaId,
     sortOrder: parsed.data.sortOrder,
     isPublished: parsed.data.isPublished,
   };

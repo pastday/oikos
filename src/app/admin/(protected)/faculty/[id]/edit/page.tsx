@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminPageHeader } from "@/components/admin/ui";
 import { DeleteForm } from "@/components/admin/cms-ui";
 import { FacultyForm } from "@/components/admin/FacultyForm";
-import { getImageOptions } from "@/lib/media/options";
+import { getMediaChoices } from "@/lib/media/select";
 import { deleteFaculty, saveFaculty } from "../../../cms-actions";
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export default async function EditFacultyPage({ params }: PageProps) {
   if (!faculty) notFound();
 
   const action = saveFaculty.bind(null, faculty.id);
-  const mediaOptions = await getImageOptions();
+  const mediaOptions = await getMediaChoices("image");
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">

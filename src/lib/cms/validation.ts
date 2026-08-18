@@ -63,6 +63,20 @@ const sortOrder = z
     "표시순서는 정수여야 합니다.",
   );
 
+/**
+ * Media 참조 필드.
+ *
+ * 빈 값은 "연결 없음" 이라는 정상적인 상태다.
+ * **여기서는 형식만 본다.** 실제로 존재하는 파일인지, 요구한 종류(이미지/PDF)가 맞는지는
+ * DB 를 봐야 알 수 있으므로 액션에서 `resolveMediaId()` 로 다시 확인한다.
+ */
+const mediaRef = z
+  .string()
+  .trim()
+  .max(64)
+  .optional()
+  .transform((value) => (value === undefined || value.length === 0 ? null : value));
+
 // ---------------------------------------------------------------------------
 
 export const facultyTypes = [
@@ -83,8 +97,8 @@ export const facultySchema = z.object({
   careerEn: optionalLong,
   lectureFieldsKo: optionalLong,
   lectureFieldsEn: optionalLong,
-  /** 업로드 기능은 아직 없다. 관리자가 URL 을 직접 넣는 경우만 지원한다. */
-  photoUrl: optionalShort,
+  /** 12단계부터 URL 문자열이 아니라 Media 참조다. 존재 여부는 액션에서 확인한다. */
+  photoMediaId: mediaRef,
   sortOrder,
   isPublished: checkbox,
 });
@@ -211,6 +225,8 @@ export const pageSectionSchema = z.object({
   highlightEn: absentAsNull,
   noteKo: absentAsNull,
   noteEn: absentAsNull,
+  mediaId: mediaRef,
+  documentMediaId: mediaRef,
   isPublished: checkbox,
 });
 
@@ -225,6 +241,7 @@ export const pageSectionItemSchema = z.object({
   valueKo: absentAsNull,
   valueEn: absentAsNull,
   variant: absentAsNull,
+  mediaId: mediaRef,
   sortOrder,
   isPublished: checkbox,
 });

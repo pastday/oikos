@@ -151,6 +151,11 @@ export type DegreeContent = {
 
 export type AdmissionContent = {
   intro: PageIntro;
+  /**
+   * 모집요강 PDF 링크 문구.
+   * 관리자가 PDF 를 지정했을 때만 화면에 나온다. 지정하지 않으면 링크 자체가 없다.
+   */
+  guideline: { label: string; newWindow: string };
   recruit: {
     title: string;
     description: string;

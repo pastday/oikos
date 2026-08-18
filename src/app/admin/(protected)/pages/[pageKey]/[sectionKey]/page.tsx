@@ -10,6 +10,7 @@ import {
   type PageSectionFormValues,
 } from "@/components/admin/PageSectionForm";
 import { findSection } from "@/lib/cms/page-catalog";
+import { getMediaChoices } from "@/lib/media/select";
 import { deletePageSectionItem, savePageSection } from "../../../cms-actions";
 
 export const metadata: Metadata = {
@@ -57,11 +58,21 @@ export default async function AdminSectionEditPage({ params }: PageProps) {
     highlightEn: row?.highlightEn ?? null,
     noteKo: row?.noteKo ?? null,
     noteEn: row?.noteEn ?? null,
+    mediaId: row?.mediaId ?? null,
+    documentMediaId: row?.documentMediaId ?? null,
     // 새 섹션은 기본으로 표시한다. 저장하자마자 화면에서 사라지면 당황스럽다.
     isPublished: row?.isPublished ?? true,
   };
 
   const action = savePageSection.bind(null, pageKey, sectionKey);
+
+  // 쓰지 않는 칸의 목록까지 불러오지 않는다. 필요한 것만 조회한다.
+  const [imageChoices, documentChoices] = await Promise.all([
+    section.image || section.items?.image
+      ? getMediaChoices("image")
+      : Promise.resolve([]),
+    section.document ? getMediaChoices("pdf") : Promise.resolve([]),
+  ]);
   const listHref = `/admin/pages/${pageKey}`;
   const sectionHref = `${listHref}/${sectionKey}`;
 
@@ -90,6 +101,8 @@ export default async function AdminSectionEditPage({ params }: PageProps) {
         section={section}
         values={values}
         cancelHref={listHref}
+        imageChoices={imageChoices}
+        documentChoices={documentChoices}
       />
 
       {section.items && (

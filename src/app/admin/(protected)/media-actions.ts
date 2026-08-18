@@ -145,26 +145,18 @@ export async function saveMediaAlt(
     return { status: "error", message: CMS_INVALID_ERROR };
   }
 
-  let url: string;
-
   try {
-    const updated = await prisma.media.update({
-      where: { id },
-      data: parsed.data,
-      select: { path: true },
-    });
-    url = updated.path;
+    await prisma.media.update({ where: { id }, data: parsed.data });
   } catch (error) {
     return toErrorState("alt", error);
   }
 
-  // 이 이미지를 쓰는 공개 화면이 있으면 다시 만든다.
-  // 지금은 교수 사진뿐이라 사용처를 찾아 해당하는 경우에만 무효화한다.
-  const usage = await findMediaUsage(url);
-  if (usage.length > 0) {
-    revalidatePath("/[locale]", "page");
-    revalidatePath("/[locale]/faculty", "page");
-  }
+  // 대체 텍스트는 화면에 그대로 나가므로, 이 파일을 쓰는 페이지만 다시 만든다.
+  // 어디에 쓰이는지는 사용처 검사가 알고 있다. 쓰이지 않으면 아무것도 하지 않는다.
+  const usage = await findMediaUsage(id);
+  const paths = new Set(usage.flatMap((item) => item.paths));
+
+  for (const path of paths) revalidatePath(path, "page");
 
   return { status: "saved" };
 }
@@ -205,14 +197,14 @@ export async function deleteMedia(
 
   const media = await prisma.media.findUnique({
     where: { id },
-    select: { storedName: true, path: true, originalName: true },
+    select: { storedName: true, originalName: true },
   });
 
   if (!media) {
     return { status: "error", message: CMS_NOT_FOUND_ERROR };
   }
 
-  const usage = await findMediaUsage(media.path);
+  const usage = await findMediaUsage(id);
   if (usage.length > 0) {
     return {
       status: "error",

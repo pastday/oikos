@@ -430,6 +430,10 @@ export function createPagesEn(
 
   // -------------------------------------------------------------------------
   admission: {
+    guideline: {
+      label: "Download the admission guide",
+      newWindow: "(opens in a new window)",
+    },
     intro: {
       eyebrow: "Admissions",
       title: `Starting ${intakeEn}`,

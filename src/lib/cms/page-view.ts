@@ -1,5 +1,5 @@
 import type { PageIntro } from "@/content/pages";
-import type { PageItemView, PageSectionView } from "./types";
+import type { MediaView, PageItemView, PageSectionView } from "./types";
 
 /**
  * 공개 화면이 CMS 섹션을 쓸 때 필요한 작은 변환들.
@@ -29,13 +29,23 @@ export function toPageIntro(
   };
 }
 
-/** 라벨과 값이 모두 있는 항목만 남긴다. 한쪽만 있는 항목은 화면에서 어색하다. */
+/**
+ * 라벨과 값이 모두 있는 항목만 남긴다. 한쪽만 있는 항목은 화면에서 어색하다.
+ * 이미지는 있을 수도 없을 수도 있으므로 그대로 함께 넘긴다.
+ */
 export function toPairs(
   items: PageItemView[],
-): { id: string; label: string; value: string }[] {
+): { id: string; label: string; value: string; media: MediaView | null }[] {
   return items.flatMap((item) =>
     item.label && item.value
-      ? [{ id: item.id, label: item.label, value: item.value }]
+      ? [
+          {
+            id: item.id,
+            label: item.label,
+            value: item.value,
+            media: item.media,
+          },
+        ]
       : [],
   );
 }
