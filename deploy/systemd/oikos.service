@@ -11,6 +11,11 @@
 #
 # 코드 갱신 후 재시작:
 #   cd /home/pastday/oikos && npm ci && npm run build && sudo systemctl restart oikos
+#
+# 업로드 디렉터리 준비 (최초 1회):
+#   mkdir -p /home/pastday/oikos-data/uploads
+#   chmod 755 /home/pastday/oikos-data /home/pastday/oikos-data/uploads
+#   (소유자는 아래 User/Group 과 같아야 한다)
 
 [Unit]
 Description=oikos.pastday.co.kr - Oikos University Graduate School site (Next.js)
@@ -34,8 +39,16 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=read-only
-# Next.js 가 런타임에 이미지 최적화 캐시를 쓰는 경로
+# ProtectHome=read-only 때문에 /home 전체가 읽기 전용이다.
+# 서비스가 써야 하는 경로만 여기에 다시 열어 준다.
+#   .next          Next.js 런타임 캐시 (이미지 최적화 등)
+#   oikos-data     관리자 업로드 파일 (11단계)
+#
+# ⚠️ 업로드 디렉터리를 빠뜨리면 관리자 파일 업로드가 EROFS/EACCES 로 실패한다.
+#    업로드 파일을 소스 트리 밖에 둔 이유는 git 작업이나 배포 디렉터리 교체로
+#    운영 데이터가 사라지지 않게 하기 위해서다.
 ReadWritePaths=/home/pastday/oikos/.next
+ReadWritePaths=/home/pastday/oikos-data/uploads
 
 [Install]
 WantedBy=multi-user.target

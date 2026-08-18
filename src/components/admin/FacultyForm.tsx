@@ -12,6 +12,7 @@ import {
   TextAreaField,
   TextField,
 } from "@/components/admin/form";
+import { MediaPicker, type MediaOption } from "@/components/admin/MediaPicker";
 import type { CmsFormState } from "@/lib/cms/validation";
 
 const INITIAL_STATE: CmsFormState = { status: "idle" };
@@ -44,10 +45,13 @@ export function FacultyForm({
   action,
   values,
   submitLabel,
+  mediaOptions,
 }: {
   action: (state: CmsFormState, formData: FormData) => Promise<CmsFormState>;
   values: FacultyFormValues;
   submitLabel: string;
+  /** 미디어에 올려 둔 이미지. 사진을 눌러 고를 수 있게 한다. */
+  mediaOptions: MediaOption[];
 }) {
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
@@ -71,11 +75,12 @@ export function FacultyForm({
           max={9999}
           disabled={isPending}
         />
-        <TextField
+        <MediaPicker
           name="photoUrl"
-          label="사진 URL"
-          hint="파일 업로드는 아직 지원하지 않습니다. 비워 두면 이름 이니셜로 표시됩니다."
+          label="사진"
+          hint="[미디어] 에 올린 이미지를 고르거나 주소를 직접 넣습니다. 비워 두면 이름 이니셜로 표시됩니다."
           defaultValue={values.photoUrl}
+          options={mediaOptions}
           disabled={isPending}
         />
         <CheckboxField

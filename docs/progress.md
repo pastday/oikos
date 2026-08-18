@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-18 · 10단계 완료
+> 마지막 갱신: 2026-08-18 · 11단계 완료
 
 ---
 
@@ -22,11 +22,11 @@
 | 8 | 관리자 상담·설명회 관리 | ✅ 완료 |
 | 9 | 관리자 CMS (교수진 · MBA/DBA · 교과목) | ✅ 완료 |
 | 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | ✅ 완료 |
-| 11 | **파일 업로드** | ⏭ 다음 |
-| 12 | 테스트 / SEO / 보안 점검 | 예정 |
+| 11 | 파일 업로드 · 미디어 관리 | ✅ 완료 |
+| 12 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
 
 **현재 서비스 중**: https://oikos.pastday.co.kr — **9단계까지 반영됨**
-(10단계는 커밋 완료. 운영에 올리려면 `sudo systemctl restart oikos` 가 필요하다)
+(10·11단계는 커밋 완료. 운영 반영은 아래 "운영 반영 대기" 참고)
 (⚠️ 운영과 개발이 같은 디렉터리·같은 DB 를 쓴다. 아래 "운영 전환 체크리스트" 참고)
 
 ---
@@ -37,12 +37,11 @@
 
 | 항목 | 상태 |
 | --- | --- |
-| Git | `main` = `origin/main`, working tree clean, 마지막 커밋 `c6f23b6` |
-| DB | AdminUser 1 / Faculty 1 / Program 2 / Course 33 / 상담·설명회 0 / PageSection 19 /
-  PageSectionItem 30 / FAQ 8 / SiteSetting 8 |
+| Git | `main` = `origin/main`, working tree clean |
+| DB | Faculty 1 · Program 2 · Course 33 · PageSection 19 · PageSectionItem 30 · FAQ 8 · SiteSetting 8 · Media 0 · 상담/설명회 0 |
 | 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
 | 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
-| 운영 | **재시작 대기.** 디스크의 `.next` 는 10단계 빌드인데 프로세스는 9단계를 물고 있다 |
+| 운영 | **반영 대기.** 디스크 `.next` 는 11단계 빌드, 프로세스는 9단계. systemd 수정도 필요 |
 
 ### 시작할 때 할 일
 
@@ -58,10 +57,10 @@ npm run dev                  # 개발 서버 3000
 
 ### 다음 작업
 
-**11단계 — 파일 업로드.**
-교수 사진·모집요강 PDF·인증 이미지를 관리자가 올릴 수 있게 한다.
-지금은 `photoUrl` 에 URL 을 직접 넣는 것만 된다.
-저장 경로(`public/uploads/` vs 외부 경로 + 서빙 라우트)를 먼저 정해야 한다.
+**12단계 — 테스트 / SEO / 보안 점검.**
+그 전에 실제 자료(교수 사진, 모집요강 PDF, 총장 인사말)를 받아 넣는 작업이 남아 있다.
+모집요강 PDF 를 입학안내 화면에 링크로 붙이려면 `PageSection` 에 파일 필드를 더할지
+먼저 정해야 한다. (11단계에서 의도적으로 미뤘다)
 
 ---
 
@@ -86,6 +85,32 @@ npm run dev                  # 개발 서버 3000
 
 `npm run seed:cms` 재실행 결과 **생성 0건 / 건너뜀 36건**이고, 실행 전후 전체 행을 덤프해
 비교한 결과 `updatedAt` 까지 완전히 동일했다. (재실행 안전성 확인)
+
+---
+
+## 운영 반영 대기 (10 · 11단계)
+
+코드는 커밋·push 되었지만 **운영 프로세스에는 아직 반영되지 않았다.**
+운영 프로세스는 2026-08-18 12:28 에 뜬 9단계 빌드를 물고 있고, 디스크의 `.next` 는 11단계 빌드다.
+
+11단계는 재시작만으로는 부족하고 **systemd 유닛 수정이 함께 필요하다.**
+`ProtectHome=read-only` 때문에 업로드 디렉터리가 쓰기 가능해야 한다.
+
+```bash
+# 1) systemd 유닛 갱신 (업로드 디렉터리 쓰기 권한)
+sudo cp /home/pastday/oikos/deploy/systemd/oikos.service /etc/systemd/system/oikos.service
+sudo systemctl daemon-reload
+
+# 2) 재시작
+sudo systemctl restart oikos
+
+# 3) 확인
+systemctl status oikos
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3100/admin/media
+```
+
+업로드 디렉터리(`/home/pastday/oikos-data/uploads`)는 이미 만들어 두었다.
+**이 두 가지를 하지 않으면 관리자 파일 업로드가 실패한다.**
 
 ---
 
@@ -279,7 +304,12 @@ Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken
 - 사용자 페이지는 여전히 정적 생성(SSG)이다. 관리자가 CMS 에서 저장할 때만 해당 경로를 다시 만든다.
 - **관리자 화면(`/admin/*`)은 동적 렌더링(ƒ)이다.** 세션 쿠키와 DB 를 읽기 때문이다.
 
-모델: `AdminUser` `PageSection` `Faculty` `Program` `Course` `FAQ` `Consultation` `SeminarApplication` `Media` `SiteSetting`
+모델: `AdminUser` `PageSection` `PageSectionItem` `Faculty` `Program` `Course` `FAQ`
+`Consultation` `SeminarApplication` `Media` `SiteSetting`
+
+> `Media` 는 11단계부터 쓰인다. **스키마는 바꾸지 않았다.**
+> 기존 컬럼(`originalName` `storedName` `mimeType` `size` `path` `altKo` `altEn`)으로 충분했다.
+> `path` 에는 파일시스템 경로가 아니라 **공개 URL**(`/media/<uuid>.jpg`)을 넣는다.
 enum: `AdminRole` `FacultyType` `ProgramType` `CourseCategory` `InquiryStatus`
 
 ---
@@ -608,6 +638,139 @@ FAQ 답변과 입학절차 설명에는 학점·학기·금액이 **문장 안�
    (`⚠ Missing origin header from a forwarded Server Actions request`)
 3. 개발 중 `npm run build` 는 **운영이 읽는 `.next` 를 덮어쓴다.** 같은 디렉터리이기 때문이다.
    빌드 후에는 운영 프로세스와 디스크의 빌드가 어긋나므로 재시작이 필요하다.
+
+---
+
+## 11단계에서 만든 것 (파일 업로드 · 미디어 관리)
+
+| 관리자 경로 | 기능 |
+| --- | --- |
+| `/admin/media` | 목록 (미리보기 · 파일명 · 형식 · 크기 · 올린 날짜 · 대체텍스트) |
+| `/admin/media/new` | 업로드 (파일 + 한/영 대체 텍스트) |
+| `/admin/media/[id]` | 상세 · 대체텍스트 수정 · **사용처 표시** · 삭제 |
+| `/media/[name]` | 공개 서빙 라우트 (인증 없음) |
+
+### ★ 파일 저장 위치 — 소스 트리 **밖**
+
+```
+/home/pastday/oikos-data/uploads/<uuid>.jpg
+```
+
+`public/uploads/` 가 아니라 프로젝트 디렉터리의 **형제**에 둔다.
+개발 디렉터리와 운영 디렉터리가 같기 때문에, 소스 트리 안에 두면 `git clean` 한 번이나
+배포 디렉터리 교체로 운영 데이터가 사라진다. 밖에 두면 저장소를 어떻게 다루든 파일이 남고,
+나중에 개발/운영 디렉터리를 분리해도 같은 파일을 그대로 공유할 수 있다.
+
+경로는 `UPLOAD_DIR` 환경변수로 바꿀 수 있다. 값이 없으면 위 기본 위치를 쓴다.
+
+### ⚠️ systemd 를 고쳐야 업로드가 된다
+
+유닛에 **`ProtectHome=read-only`** 가 걸려 있어 `/home` 전체가 서비스에게 읽기 전용이다.
+`ReadWritePaths` 에 업로드 디렉터리를 추가하지 않으면 **저장이 EROFS/EACCES 로 실패한다.**
+
+```ini
+ReadWritePaths=/home/pastday/oikos/.next
+ReadWritePaths=/home/pastday/oikos-data/uploads   # ← 11단계에서 추가
+```
+
+`deploy/systemd/oikos.service` 사본은 갱신해 두었다. **운영 반영은 사용자가 직접 해야 한다.**
+
+```bash
+sudo cp /home/pastday/oikos/deploy/systemd/oikos.service /etc/systemd/system/oikos.service
+sudo systemctl daemon-reload
+sudo systemctl restart oikos
+```
+
+디렉터리는 이미 만들어 두었다. (`755`, 소유자 `pastday:pastday` — 서비스 계정과 같다.
+`chmod 777` 은 쓰지 않았다)
+
+### 서빙은 nginx 가 아니라 Next.js 라우트
+
+`public/` 밖이라 Next.js 가 자동으로 내보내지 않는다. `src/app/media/[name]/route.ts` 가 읽어서
+스트리밍한다. nginx 는 이미 모든 요청을 Next.js 로 넘기고 있어 **설정을 건드리지 않았다.**
+(certbot 이 관리하는 vhost 를 수정하지 않는 것이 이 프로젝트의 원칙이다)
+덕분에 개발(3000)과 운영(3100)의 동작이 같다.
+
+응답 헤더: `Cache-Control: immutable`(이름이 UUID 라 내용이 바뀌면 이름도 바뀐다),
+`X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'`.
+
+### 허용 형식과 크기
+
+| 종류 | 형식 | 최대 |
+| --- | --- | --- |
+| 이미지 | JPEG · PNG · WebP | 10 MB |
+| 문서 | PDF | 20 MB |
+
+**SVG 는 받지 않는다.** 이미지처럼 보이지만 `<script>` 를 품을 수 있는 XML 문서다.
+0바이트 파일도 거부한다.
+
+**확장자와 브라우저가 알려준 MIME 을 믿지 않는다.** 파일 앞부분의 signature(magic bytes)로
+실제 형식을 판정하고, **저장 확장자도 그 판정 결과에서 만든다.**
+그래서 `evil.html` 을 `photo.jpg` 로 이름만 바꿔 올려도 거부된다. (실제로 시험했다)
+
+### 안전한 파일명
+
+저장 이름은 `randomUUID()` + 판정된 확장자다. **사용자가 올린 원본 파일명은 경로에 전혀 쓰이지 않는다.**
+`../` 같은 조작이 들어올 자리가 없다. 원본 이름은 표시용으로 `originalName` 에만 남는다.
+서빙 라우트는 우리가 만든 이름 형식만 통과시키고 `basename` 으로 한 번 더 자른다.
+
+### 삭제 정책 — 사용 중이면 거부
+
+`Faculty.photoUrl` 에 걸려 있으면 삭제하지 않고 **어디서 쓰는지 알려 준다.**
+cascade 로 지우지 않는다. 쓰던 쪽을 먼저 정리하게 하는 편이 안전하다.
+사용처 검사는 `src/lib/media/usage.ts` 한 곳에 모아 두었다. 사용처가 늘면 여기에 추가한다.
+
+### 파일과 DB 가 어긋나지 않게 하는 순서
+
+파일시스템에는 트랜잭션이 없으므로 순서로 방어한다.
+
+| | 순서 | 실패하면 |
+| --- | --- | --- |
+| 업로드 | 검증 → **파일 저장** → DB insert | DB 가 실패하면 방금 쓴 파일을 지운다 |
+| 삭제 | 사용처 확인 → **DB 삭제** → 파일 삭제 | 파일 삭제가 실패해도 참조가 없어 노출되지 않는다 |
+
+방향이 반대인 이유: 업로드는 "DB 에 있는데 파일이 없는" 상태를 막아야 하고,
+삭제는 그 상태를 만들지 않으면서 끝나야 한다. 남을 수 있는 것은 **아무도 참조하지 않는 파일**뿐이고
+이름을 아는 사람이 없어 노출되지 않는다. 로그를 보고 수동으로 지우면 된다.
+
+DB 행은 있는데 파일이 없으면 관리자 화면이 깨지지 않고 **"파일 없음"** 으로 표시한다.
+
+### 교수진 사진 연동
+
+`FacultyForm` 의 사진 입력을 `MediaPicker` 로 바꿨다. 올려 둔 이미지를 눌러 고르거나
+주소를 직접 넣을 수 있고, 현재 사진 미리보기와 선택 해제도 된다.
+**PDF 는 선택 목록에 나오지 않는다.** 사진 자리에 PDF 를 고르면 화면이 깨진다.
+
+저장되는 값은 언제나 **공개 URL 문자열**이며 파일시스템 경로가 아니다.
+`name` 만 바꾸면 다른 곳(PageSection 이미지 등)에서도 그대로 재사용할 수 있다.
+
+김동준 교수에게는 **사진을 넣지 않았다.** 원본 자료에 사진이 없어 임의로 만들지 않는다.
+사진이 없으면 지금처럼 이니셜 아바타(DK)가 나온다.
+
+### 이 단계에서 겪은 함정 3가지
+
+1. **Server Actions 의 기본 본문 제한이 1MB 다.** 그대로 두면 10MB·20MB 정책이 동작하지 않고
+   그 전에 413 으로 끊겨 사용자에게는 500 으로 보인다.
+   `next.config.ts` 에 `serverActions.bodySizeLimit = "21mb"` 를 넣었다.
+   nginx 의 `client_max_body_size`(24m)보다 작게 잡아야 너무 큰 파일이 nginx 에서 잘리지 않고
+   우리 검증까지 도달해 한국어로 안내된다.
+2. **Turbopack 이 한글 주석이 있는 줄에서 코드프레임을 그리다 패닉했다.**
+   (`end byte index ... is not a char boundary`) 오류 자체가 아니라 **오류를 표시하다** 죽는 것이라
+   원인을 알 수 없었다. `next build --webpack` 으로 돌려 보니 성공해서 코드 문제가 아님을 확인했고,
+   바이트 오프셋으로 해당 줄을 역추적해 찾았다.
+3. 그 밑에 있던 진짜 경고는 **"Dynamic filesystem access causes tracing of the whole project"** 였다.
+   업로드 경로가 프로젝트 밖이라 Next 가 `public/` 까지 서버 번들에 넣으려 한 것이다.
+   Next 가 안내하는 대로 해당 호출에만 `/* turbopackIgnore: true */` 를 달아 껐다.
+   `src/lib/media/` 를 `url.ts`(순수) / `storage.ts`(`node:` 사용)로 나눈 것도 이때다.
+
+### 이번 단계에서 하지 않은 것
+
+- **`PageSection` 에 이미지·파일 필드를 추가하지 않았다.** 실제 필요가 확인되면 그때 migration 한다.
+  그래서 모집요강 PDF 를 입학안내 화면에 **링크로 붙이는 것은 다음 단계**다.
+  (지금은 업로드하고 URL 을 확보하는 것까지 된다)
+- 자동 resize·압축·썸네일 생성 — 원본을 그대로 저장한다.
+- content hash 중복 제거 — 같은 파일을 여러 번 올릴 수 있고, 저장 이름은 항상 다르다.
+- Media seed — 실제 파일은 관리자가 올린다. `assets/source/` 를 자동 import 하지 않는다.
 
 ---
 

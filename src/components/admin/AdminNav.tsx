@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
       },
       { label: "입학안내", href: "/admin/pages/admission" },
       { label: "FAQ", href: "/admin/faq" },
+      { label: "미디어", href: "/admin/media" },
     ],
   },
   {

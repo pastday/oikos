@@ -273,3 +273,23 @@ export const admissionNumberSchema = z
     return Number.isFinite(parsed) && parsed >= 0;
   }, "숫자만 입력할 수 있습니다. 값이 없으면 비워 두세요.")
   .transform((value) => (value.length === 0 ? null : value));
+
+// ---------------------------------------------------------------------------
+// 미디어 (11단계)
+// ---------------------------------------------------------------------------
+
+/**
+ * 대체 텍스트.
+ *
+ * **필수가 아니다.** 장식용 이미지에는 빈 alt 가 오히려 올바르고,
+ * PDF 처럼 alt 개념이 없는 파일도 같은 칸을 쓴다.
+ * 대신 관리자 화면에서 이미지일 때 입력을 권한다.
+ *
+ * 파일 자체는 이 스키마로 다루지 않는다. 업로드 검증은 `lib/media/validation.ts` 가 한다.
+ */
+export const mediaAltSchema = z.object({
+  altKo: optionalLong,
+  altEn: optionalLong,
+});
+
+export type MediaAltInput = z.infer<typeof mediaAltSchema>;

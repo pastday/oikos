@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminPageHeader } from "@/components/admin/ui";
 import { DeleteForm } from "@/components/admin/cms-ui";
 import { FacultyForm } from "@/components/admin/FacultyForm";
+import { getImageOptions } from "@/lib/media/options";
 import { deleteFaculty, saveFaculty } from "../../../cms-actions";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default async function EditFacultyPage({ params }: PageProps) {
   if (!faculty) notFound();
 
   const action = saveFaculty.bind(null, faculty.id);
+  const mediaOptions = await getImageOptions();
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -35,7 +37,12 @@ export default async function EditFacultyPage({ params }: PageProps) {
         </Link>
       </AdminPageHeader>
 
-      <FacultyForm action={action} submitLabel="저장" values={faculty} />
+      <FacultyForm
+        action={action}
+        submitLabel="저장"
+        values={faculty}
+        mediaOptions={mediaOptions}
+      />
 
       <section className="rounded-lg border border-[#b3261e]/30 bg-[#b3261e]/[0.03] px-5 py-5">
         <h2 className="text-sm font-semibold text-[#b3261e]">교수 삭제</h2>
