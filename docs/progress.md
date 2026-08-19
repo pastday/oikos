@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-19 · 13단계(디자인 B안) 완료 · **운영 반영 전** (재시작 대기)
+> 마지막 갱신: 2026-08-19 · 13단계(디자인 B안 전면 재설계) 완료
 
 ---
 
@@ -24,7 +24,7 @@
 | 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | ✅ 완료 |
 | 11 | 파일 업로드 · 미디어 관리 | ✅ 완료 |
 | 12 | 미디어를 공개 콘텐츠에 연결 | ✅ 완료 |
-| 13 | 디자인 B안 — 공개 사이트 한 벌 전체 (preview) | ✅ 완료 |
+| 13 | 디자인 B안 — 공개 사이트 한 벌 전체 (preview) | ✅ 완료 (교수 검수 대기) |
 | 14 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
 
 **현재 서비스 중**: https://oikos.pastday.co.kr — **12단계까지 반영됨**
@@ -884,9 +884,47 @@ DB 행은 있는데 파일이 없으면 관리자 화면이 깨지지 않고 **"
 | --- | --- | --- |
 | 주소 | `/ko`, `/ko/about` … | `/ko/design-b`, `/ko/design-b/about` … |
 | 검색엔진 | 색인됨 (canonical·hreflang 있음) | **noindex, nofollow** (canonical·hreflang 없음) |
-| 지면 | 흰 바탕 · 둥근 카드 · 76rem | 아이보리 바탕 · 각진 면 · 88rem |
-| Header | sticky 2행, 항상 흰 배경 | Hero 위에 겹치는 투명 → 스크롤하면 아이보리 |
-| 메뉴 | 7개 | 8개 (FAQ 추가) |
+| 정보 담는 방식 | 테두리 있는 카드 격자 | 가로선으로 나눈 목록 |
+| 제목 크기 | 고정 (`text-2xl`~`text-4xl`) | 화면 폭에 따라 늘어나는 clamp |
+| 세로 축 | 없음 | 섹션마다 **번호 + 세로 라벨 레일** |
+| 이미지 자리 | 사진이 있을 때만 생김 | 설계에 **먼저** 들어가 있음 |
+| 메뉴 | 7개 · 2행 고정 헤더 | 8개(FAQ 추가) · 1행, 스크롤하면 높이가 줄어듦 |
+
+### 첫 번째 시안은 폐기했다
+
+처음 만든 B안은 **A안 컴포넌트의 DOM 을 그대로 두고 색과 모서리만 바꾼 것**이었다.
+`Accordion→AccordionB`, `Section→SectionB`, `ProgramPage→ProgramPageB` 처럼 7쌍이
+1:1로 대응했고, MBA 상세와 메인의 섹션 순서가 A안과 완전히 같았다.
+색을 회색조로 바꾸면 두 사이트를 구분할 수 없는 수준이었다.
+
+두 번째로 만든 지금 것은 그 컴포넌트를 전부 지우고 **B안 전용 조판 어휘**를 새로 세웠다.
+같은 판단이 필요할 때 쓰라고 측정치를 남겨 둔다. (렌더링된 HTML 의 class 를 센 것)
+
+| 구조 지표 | 홈 | 대학원 소개 | MBA | 입학안내 |
+| --- | --- | --- | --- | --- |
+| 둥근 모서리 | A 53 / **B 0** | A 22 / **B 0** | A 35 / **B 0** | A 28 / **B 0** |
+| 이미지 프레임(aspect) | A 0 / B 3 | A 0 / B 2 | A 0 / B 1 | A 0 / B 1 |
+| 세로쓰기 레일 | A 0 / B 5 | A 0 / B 4 | A 0 / B 4 | A 0 / B 5 |
+| clamp 타이포 | A 0 / B 16 | A 0 / B 8 | A 0 / B 8 | A 0 / B 11 |
+| 12열 비대칭 그리드 | A 1 / B 6 | A 0 / B 1 | A 0 / B 1 | A 0 / B 6 |
+
+### B안의 조판 어휘 (`components/site-b`)
+
+페이지마다 CSS 를 즉흥으로 만들지 않는다. 아래 것만 조합해서 모든 페이지를 만든다.
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `BLayout` | 지면 폭 · **레일이 붙은 섹션**(`BSection`) · 전폭 띠 |
+| `BType` | clamp 타이포 스케일 · 본문 · 인용 · 가로선 · 안내 |
+| `BBlocks` | **번호 목록**(`BRowList`) · 선언(`BStatement`) · 통계 띠 · 어긋난 두 판 · 버튼 |
+| `BFrame` | **이미지 자리.** 사진이 없으면 gradient·격자·워드마크로 면을 만든다 |
+| `BHero` / `BPageHero` | 좌우 분할 + 화면 끝까지 닿는 비주얼 |
+| `BHeader` / `BFooter` | 1행 축소형 헤더 / 워드마크가 한 층을 쓰는 푸터 |
+| `BAccordion` · `BCourseList` · `BDocumentLink` · `BRelated` | 목록·문서·다음 페이지 |
+| `BProgramFeature` · `BProgramPage` · `BFacultyFeature` · `BConsultationCTA` | 과정 · 교수 · 마무리 |
+| `home/*` | 메인 섹션 8개 |
+
+**카드를 쓰지 않는다.** 정보는 가로선으로 나누고, 크기 차이로 중요도를 만든다.
 
 ### 구조를 어떻게 나눴는가
 
@@ -896,7 +934,6 @@ DB 행은 있는데 파일이 없으면 관리자 화면이 깨지지 않고 **"
 그래서 **root layout 은 `<html>`/`<body>` 와 locale 검사만 남기고**,
 A안 페이지 전부를 `(site)/` route group 으로 옮겨 그 안의 layout 이 Header/Footer 를 그리게 했다.
 route group 은 주소에 나타나지 않으므로 **`/ko/about` 같은 정식 URL 은 하나도 바뀌지 않았다.**
-(`git mv` 만 했고 페이지 파일 내용은 한 줄도 고치지 않았다)
 
 ### 복제하지 않은 것
 
@@ -908,77 +945,69 @@ route group 은 주소에 나타나지 않으므로 **`/ko/about` 같은 정식 
   색만 B안으로 바꾸기 위해 `globals.css` 에 `.form-b` 껍데기를 두었다.
   Tailwind 유틸리티가 `var(--color-*)` 를 읽으므로 **조상에서 변수를 다시 정의하면**
   자식 전체가 다시 칠해진다. 폼 컴포넌트는 한 줄도 고치지 않았다.
+  **페이지 구성은 B안 전용**이다. (왼쪽 안내 / 오른쪽 폼 2단)
 - **Media** — 같은 `Media` 레코드·같은 URL·같은 대체 텍스트를 쓴다.
 - **관리자 CMS** — 하나뿐이다. B안용 관리자 화면은 만들지 않았다.
 
-공유 컴포넌트에 새로 붙인 것은 `basePath` 하나뿐이다.
-성공 화면의 안내 링크가 각자의 사이트 안에 머물게 하는 용도이고, 기본값이 `""` 라 A안은 그대로다.
+공유 컴포넌트에 새로 붙인 것은 `basePath` 하나뿐이다. 기본값이 `""` 라 A안은 그대로다.
 
 ### B안 안에서 A안으로 새지 않게 하기
 
-가장 조심한 부분이다. 링크 하나만 A안을 가리켜도 교수가 둘러보다 갑자기 다른 디자인을 보게 된다.
+링크 하나만 A안을 가리켜도 교수가 둘러보다 갑자기 다른 디자인을 보게 된다.
 
 - B안 컴포넌트는 `localePath` 대신 **`bPath()` 만** 쓴다.
 - 콘텐츠(`content/home`)의 `href` 는 `/ko/programs/mba` 같은 **A안 절대경로**다.
   그대로 쓰면 새므로 과정 코드로 B안 경로를 새로 만든다.
 - 언어 전환은 경로에서 **locale 세그먼트만** 바꾼다(`replaceLocaleInPath`).
-  그래서 `/ko/design-b/about` → `/en/design-b/about` 가 된다.
-- 검증: 22개 B안 페이지의 HTML 에서 `href="/ko…"` · `href="/en…"` 중
-  `design-b` 가 아닌 것이 **0개**임을 확인했다.
+- 검증: 22개 B안 페이지 HTML 에서 `design-b` 가 아닌 `/ko…` `/en…` 링크가 **0개**.
 
 ### CMS 수정이 두 곳에 반영되게 하기
 
-`lib/cms/revalidate.ts` 의 `revalidate()` 가 이제 **A안·B안 두 패턴을 항상 함께** 무효화한다.
-호출하는 쪽은 `"/faculty"` 처럼 공통 경로 하나만 넘긴다.
+`lib/cms/revalidate.ts` 의 `revalidate()` 가 **A안·B안 두 패턴을 항상 함께** 무효화한다.
 한쪽만 무효화하면 관리자가 저장한 뒤 B안만 옛 내용을 계속 보여주게 된다.
 
-### Hero
+### Hero 와 이미지
 
 `Media` 가 아직 0건이라 **사진이 없다.** 인터넷에서 내려받지 않았다.
-겹친 gradient · 얇은 격자선 · 큰 타이포그래피만으로 한 화면(`min-h-svh`)을 만들었다.
+`BFrame` 이 gradient·격자·잘린 워드마크로 면을 만든다. 빈 회색 사각형을 그리지 않는다.
 
-`HeroB` 에 `backgroundMedia` prop 을 열어 두었다. 사진이 생기면 넘기기만 하면
-그 자리에 깔리고 gradient 는 overlay 가 된다.
+사진이 생기면 `BFrame` 에 `media` 를 넘기기만 하면 같은 자리에 들어간다.
+Hero 는 `backgroundMedia` prop 이 그 통로다.
 **영상 업로드는 만들지 않았다.** 업로드 정책이 이미지·PDF 로 한정되어 있고
 영상은 MIME·용량·스트리밍·MediaPicker 까지 함께 손봐야 한다.
-지금의 Hero 가 영상이 재생되지 않는 환경에서 보여 줄 정지 화면 역할을 그대로 한다.
+`BFrame` 이 "배경 레이어 + overlay + 내용" 세 겹이라 배경만 `<video>` 로 바꾸면 되고,
+영상이 재생되지 않는 환경에서 보여 줄 정지 화면이 지금의 면이다.
 
-### 색 대비를 계산해서 고쳤다
+### 색 대비
 
-처음 고른 bronze(`#a8823f`)는 아이보리 지면에서 **3.34:1** 이었다.
-eyebrow·섹션 번호 같은 작은 글자에 쓰는 색이라 AA(4.5:1)에 못 미친다.
-`#856327` 로 내려 **5.20:1** 로 맞췄다. (이 색 위의 흰 글자도 5.51:1)
-어두운 면의 `text-white/40`(3.80:1)·`/45`(4.50:1)도 `/60`(7.19:1)으로 올렸다.
+- bronze 를 `#a8823f`(아이보리에서 3.34:1, AA 미달) → `#856327`(5.20:1)로 내렸다.
+- 어두운 면의 `text-white/40`(3.80:1)·`/45`(4.50:1)를 `/60`(7.19:1)으로 올렸다.
 
 ### 검증
 
 | 항목 | 결과 |
 | --- | --- |
-| A안 22개 페이지 HTML | **운영(3100)의 12단계 빌드와 바이트 단위로 동일** (차이 0줄) |
-| B안 22개 route | 전부 200 |
-| B안 noindex/nofollow | 22개 전부 적용, canonical·hreflang 0개 |
-| B안 → A안 이탈 링크 | 0개 |
-| 404 | `/ko/design-b/nope` · `/jp/design-b` · `/ko/nope` 모두 404 |
-| A/B 데이터 동일성 | FAQ 8 · 교수 1 · MBA 교과목 14 · DBA 교과목 19 · 과정명 2 · 금액 4 · 학기/학점 — 양쪽 모두 누락 0 |
+| A안 22개 페이지 HTML | **직전 커밋 빌드와 바이트 단위로 동일** (차이 0줄) |
+| B안 22개 route | 전부 200 · noindex · 이탈 링크 0 · 빈 제목 0 · h1 1개 · alt 없는 img 0 |
+| 404 | `/ko/design-b/nope` · `/jp/design-b` · `/ko/nope` |
+| A/B 데이터 동일성 | FAQ 8 · 교수 1 · MBA 14 · DBA 19 · 과정명 2 · 금액 4 · 학기/학점 — 누락 0 |
 | 폼 | 입력 필드 구성이 A안과 동일, 같은 Server Action |
-| 제목 구조 | 페이지마다 h1 1개, alt 없는 img 0개 |
+| prisma · tsc · lint · build | 전부 통과 |
 
-**스크린샷은 만들지 못했다.** 이 환경에 headless 브라우저(playwright/puppeteer/chromium)가 없고,
-그것 때문에 무거운 의존성을 추가하지 않았다. 실제 화면 확인은 사람이 브라우저로 해야 한다.
-390px 모바일도 마찬가지로 **구조적으로만** 확인했다.
-(넓은 표는 `overflow-x-auto` 안에 있고, 큰 장식 글자는 전부 `overflow-hidden` 안에 있다)
+**스크린샷은 만들지 못했다.** 이 환경에 headless 브라우저가 없고 그것 때문에
+무거운 의존성을 추가하지 않았다. **실제 화면 확인은 사람이 브라우저로 해야 한다.**
+390px 모바일도 구조적으로만 확인했다.
 
 ### B안을 정식 디자인으로 승격하기 (교수가 B안을 고른 경우)
 
-1. `app/[locale]/(site)/` 안의 페이지들을 지우고 `design-b/` 의 페이지를 그 자리로 옮긴다.
+1. `app/[locale]/(site)/` 의 페이지를 지우고 `design-b/` 의 페이지를 그 자리로 옮긴다.
 2. `components/site-b/paths.ts` 의 `bPath()` 에서 `design-b` 세그먼트를 뺀다.
-   (`localePath` 로 바꾸면 `RelatedLinksB` 등도 함께 정리된다)
 3. `metadata.ts` 의 `buildDesignBMetadata` 를 `buildPageMetadata` 로 바꾼다. (canonical·hreflang 복구)
 4. `lib/cms/revalidate.ts` 에서 B안 패턴 무효화를 제거한다.
 5. A안 전용이 된 `components/home` · `components/page` · `components/layout/Header|Footer` 를 정리한다.
 
-A안이 채택되면 `app/[locale]/design-b/` 와 `components/site-b/` 를 통째로 지우면 된다.
-`.form-b`(globals.css)와 B안 색 토큰, `SuccessPanel` 의 `basePath` prop 도 같이 지운다.
+A안이 채택되면 `app/[locale]/design-b/` 와 `components/site-b/` 를 통째로 지운다.
+`.form-b`(globals.css)와 B안 색·타이포 토큰, `SuccessPanel` 의 `basePath` prop 도 같이 지운다.
 
 ---
 

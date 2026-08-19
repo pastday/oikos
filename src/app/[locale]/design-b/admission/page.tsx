@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buildDesignBMetadata } from "@/components/site-b/metadata";
-import { DocumentLinkB, SectionImageB } from "@/components/site-b/MediaBlocksB";
-import { PageHeroB } from "@/components/site-b/PageHeroB";
-import { RelatedLinksB } from "@/components/site-b/RelatedLinksB";
+import { BDocumentLink } from "@/components/site-b/BDocumentLink";
+import { BSection } from "@/components/site-b/BLayout";
+import { BPageHero } from "@/components/site-b/BPageHero";
+import { BRelated } from "@/components/site-b/BRelated";
 import {
-  FactGridB,
-  ProseB,
-  SectionB,
-  SectionHeadB,
-} from "@/components/site-b/SectionB";
+  BBody,
+  BEyebrow,
+  BHeadline,
+  BMega,
+} from "@/components/site-b/BType";
+import { buildDesignBMetadata } from "@/components/site-b/metadata";
 import { getPageContent } from "@/content/pages";
 import { formatKrw } from "@/content/program-facts";
+import { getDictionary } from "@/i18n";
 import { isLocale, type Locale } from "@/i18n/config";
 import { toPageIntro, toPairs, toValues } from "@/lib/cms/page-view";
 import {
@@ -62,9 +64,14 @@ function money(amount: number | null, locale: Locale): string {
 /**
  * B안 입학안내.
  *
- * 문구는 `PageSection`, 금액·개강은 `SiteSetting`, 과정 이름은 `Program` 에서 온다.
- * **A안과 완전히 같은 값**이며 표를 만드는 규칙도 같다. (13단계 지시 21·31항)
- * 모집요강 PDF 는 관리자가 지정했을 때만 버튼이 나온다.
+ * ## A안과 무엇이 다른가
+ *
+ * A안은 모집 정보 → 지원자격 → 등록금표 → 절차 카드 → 학사일정 카드가
+ * 모두 같은 굵기로 이어진다. B안은 **모집 시기를 화면 크기로 먼저 보여주고**
+ * 나머지를 그 아래에 선으로 나눠 둔다. 대학 입학안내 페이지가 실제로 그렇게 생겼다.
+ *
+ * 값의 출처는 A안과 같다. 문구는 `PageSection`, 금액·개강은 `SiteSetting`,
+ * 과정 이름은 `Program`. 여기서 새 숫자를 만들지 않는다.
  */
 export default async function DesignBAdmissionPage({ params }: PageProps) {
   const { locale } = await params;
@@ -77,14 +84,20 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
     getPublishedPrograms(locale),
   ]);
 
+  const dict = getDictionary(locale);
   const pages = getPageContent(locale, numbers);
   const content = pages.admission;
+  const watermark = dict.site.wordmark;
 
   const recruit = sections.recruit;
   const eligibility = sections.eligibility;
   const tuition = sections.tuition;
   const steps = sections.steps;
   const calendar = sections.calendar;
+
+  const recruitItems = recruit ? toPairs(recruit.items) : [];
+  // 첫 항목(모집 시기)은 크게 세우고 나머지는 띠로 둔다.
+  const [headline, ...restItems] = recruitItems;
 
   // 표는 원본 자료와 같은 순서(DBA → MBA)로 둔다.
   const tuitionRows = ["DBA", "MBA"].flatMap((type) => {
@@ -106,67 +119,95 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
 
   return (
     <>
-      <PageHeroB intro={toPageIntro(sections.intro, content.intro)} />
+      <BPageHero
+        intro={toPageIntro(sections.intro, content.intro)}
+        index={7}
+        media={recruit?.media ?? null}
+        watermark={watermark}
+      />
 
       {recruit &&
-        (recruit.items.length > 0 || recruit.media || recruit.document) && (
-          <SectionB>
-            <SectionHeadB
-              index={1}
-              title={recruit.title ?? ""}
-              description={recruit.subtitle ?? undefined}
-            />
-
-            {recruit.media && (
-              <SectionImageB media={recruit.media} className="mt-12" />
-            )}
-
-            {recruit.items.length > 0 && (
-              <div className="mt-14">
-                <FactGridB items={toPairs(recruit.items)} columns={4} />
+        (recruitItems.length > 0 || recruit.document) && (
+          <BSection index={1} label={recruit.title ?? undefined} tone="paper">
+            <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
+              <div className="lg:col-span-7">
+                {headline && (
+                  <>
+                    <BEyebrow>{headline.label}</BEyebrow>
+                    <BMega tone="light" className="mt-6">
+                      {headline.value}
+                    </BMega>
+                  </>
+                )}
               </div>
-            )}
+
+              <div className="lg:col-span-5">
+                <BHeadline size="small">{recruit.title ?? ""}</BHeadline>
+                {recruit.subtitle && (
+                  <p className="mt-5 text-[0.9375rem] leading-[1.85] text-quiet">
+                    {recruit.subtitle}
+                  </p>
+                )}
+
+                {restItems.length > 0 && (
+                  <dl className="mt-10 border-t border-rule">
+                    {restItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-baseline justify-between gap-6 border-b border-rule py-5"
+                      >
+                        <dt className="text-[0.625rem] font-semibold tracking-[0.2em] text-quiet uppercase">
+                          {item.label}
+                        </dt>
+                        <dd className="text-right font-serif text-lg font-bold text-ink">
+                          {item.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
+            </div>
 
             {/* 지정되지 않았으면 버튼 자체를 그리지 않는다. 404 링크를 보여주지 않는다. */}
             {recruit.document && (
-              <div className="mt-12">
-                <DocumentLinkB
+              <div className="mt-14">
+                <BDocumentLink
                   media={recruit.document}
                   label={content.guideline.label}
                   newWindowLabel={content.guideline.newWindow}
                 />
               </div>
             )}
-          </SectionB>
+          </BSection>
         )}
 
       {eligibility && (
-        <SectionB tone="paper-2">
-          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-            <div className="lg:col-span-5">
-              <SectionHeadB index={2} title={eligibility.title ?? ""} />
-            </div>
-            <div className="lg:col-span-7">
-              <ProseB paragraphs={eligibility.paragraphs} />
-              {eligibility.note && (
-                <p className="mt-8 text-sm text-quiet">{eligibility.note}</p>
-              )}
-            </div>
+        <BSection index={2} label={eligibility.title ?? undefined} tone="stone">
+          <BHeadline>{eligibility.title ?? ""}</BHeadline>
+          <div className="mt-10">
+            <BBody paragraphs={eligibility.paragraphs} columns={2} />
           </div>
-        </SectionB>
+          {eligibility.note && (
+            <p className="mt-10 max-w-[62ch] text-sm leading-relaxed text-quiet">
+              {eligibility.note}
+            </p>
+          )}
+        </BSection>
       )}
 
       {tuition && (
-        <SectionB>
-          <SectionHeadB
-            index={3}
-            title={tuition.title ?? ""}
-            description={tuition.subtitle ?? undefined}
-          />
+        <BSection index={3} label={tuition.title ?? undefined} tone="paper">
+          <BHeadline>{tuition.title ?? ""}</BHeadline>
+          {tuition.subtitle && (
+            <p className="mt-6 max-w-2xl text-[1.0625rem] leading-[1.85] text-quiet">
+              {tuition.subtitle}
+            </p>
+          )}
 
           {/* 좁은 화면에서는 표가 가로로 스크롤된다. 글자를 줄이거나 자르지 않는다. */}
-          <div className="mt-14 -mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
-            <table className="w-full min-w-[44rem] border-collapse text-sm">
+          <div className="mt-12 -mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[46rem] border-collapse">
               <caption className="sr-only">
                 {tuition.title ?? content.tuition.title}
               </caption>
@@ -177,7 +218,7 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
                       key={column}
                       scope="col"
                       className={cn(
-                        "px-5 py-4 text-[0.6875rem] font-semibold tracking-[0.14em] whitespace-nowrap text-ink uppercase",
+                        "px-4 py-4 text-[0.625rem] font-semibold tracking-[0.18em] whitespace-nowrap text-quiet uppercase",
                         index === 0 ? "text-left" : "text-right",
                       )}
                     >
@@ -191,14 +232,14 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
                   <tr key={row.program} className="border-b border-rule">
                     <th
                       scope="row"
-                      className="px-5 py-6 text-left font-serif text-lg font-bold whitespace-nowrap text-ink"
+                      className="px-4 py-7 text-left font-serif text-xl font-bold whitespace-nowrap text-ink"
                     >
                       {row.program}
                     </th>
                     {row.cells.map((cell, index) => (
                       <td
                         key={`${row.program}-${index}`}
-                        className="px-5 py-6 text-right whitespace-nowrap text-ink/80"
+                        className="px-4 py-7 text-right font-serif text-lg whitespace-nowrap text-ink/85"
                       >
                         {cell}
                       </td>
@@ -215,78 +256,83 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
                 <li key={note.id} className="flex gap-3 text-xs text-quiet">
                   <span
                     aria-hidden="true"
-                    className="mt-2 h-px w-2.5 shrink-0 bg-rule-2"
+                    className="mt-2 h-px w-3 shrink-0 bg-rule-2"
                   />
                   {note.value}
                 </li>
               ))}
             </ul>
           )}
-        </SectionB>
+        </BSection>
       )}
 
       {steps && steps.items.length > 0 && (
-        <SectionB tone="ink">
-          <SectionHeadB
-            index={4}
-            title={steps.title ?? ""}
-            description={steps.subtitle ?? undefined}
-            tone="dark"
-          />
+        <BSection index={4} label={steps.title ?? undefined} tone="ink">
+          <BHeadline tone="dark">{steps.title ?? ""}</BHeadline>
+          {steps.subtitle && (
+            <p className="mt-6 max-w-2xl text-[1.0625rem] leading-[1.85] text-white/70">
+              {steps.subtitle}
+            </p>
+          )}
 
-          <ol className="mt-14 grid gap-px bg-white/15 lg:grid-cols-5">
+          <ol className="mt-12 border-t border-white/15">
             {toPairs(steps.items).map((step, index) => (
-              <li key={step.id} className="flex flex-col bg-ink px-6 py-9">
-                <span className="text-[0.625rem] font-semibold tracking-[0.2em] text-bronze-2 uppercase">
-                  STEP {index + 1}
-                </span>
-                <h3 className="mt-4 font-serif text-lg font-bold text-white">
-                  {step.label}
-                </h3>
-                <p className="mt-3 text-xs leading-[1.9] text-white/60">
-                  {step.value}
-                </p>
+              <li key={step.id} className="border-b border-white/15">
+                <div className="grid gap-4 py-8 lg:grid-cols-12 lg:items-baseline lg:gap-10">
+                  <span
+                    aria-hidden="true"
+                    className="font-serif text-sm font-bold tabular-nums text-bronze-2 lg:col-span-1"
+                  >
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="font-serif text-2xl font-bold text-white lg:col-span-4">
+                    {step.label}
+                  </h3>
+                  <p className="max-w-[62ch] text-[0.9375rem] leading-[1.9] text-white/65 lg:col-span-7">
+                    {step.value}
+                  </p>
+                </div>
               </li>
             ))}
           </ol>
-        </SectionB>
+        </BSection>
       )}
 
       {calendar && calendar.items.length > 0 && (
-        <SectionB tone="paper-2">
-          <SectionHeadB
-            index={5}
-            title={calendar.title ?? ""}
-            description={calendar.subtitle ?? undefined}
-          />
+        <BSection index={5} label={calendar.title ?? undefined} tone="stone">
+          <BHeadline>{calendar.title ?? ""}</BHeadline>
+          {calendar.subtitle && (
+            <p className="mt-6 max-w-2xl text-[1.0625rem] leading-[1.85] text-quiet">
+              {calendar.subtitle}
+            </p>
+          )}
 
-          <ol className="mt-14 border-t border-rule">
+          <ol className="mt-12 border-t border-rule-2/60">
             {calendar.items.map((item) => (
               <li
                 key={item.id}
-                className={cn(
-                  "flex flex-wrap items-baseline justify-between gap-4 border-b border-rule py-5",
-                  item.variant === "semester" ? "" : "opacity-75",
-                )}
+                className="flex flex-wrap items-baseline justify-between gap-4 border-b border-rule-2/60 py-6"
               >
                 <span
                   className={cn(
-                    "font-serif text-lg font-bold",
-                    item.variant === "semester" ? "text-ink" : "text-quiet",
+                    "font-serif font-bold",
+                    item.variant === "semester"
+                      ? "text-2xl text-ink"
+                      : "text-lg text-quiet",
                   )}
                 >
                   {item.label}
                 </span>
-                <span className="text-sm tracking-wide text-ink/70">
+                <span className="text-sm tracking-[0.08em] text-ink/70">
                   {item.value}
                 </span>
               </li>
             ))}
           </ol>
-        </SectionB>
+        </BSection>
       )}
 
-      <RelatedLinksB
+      <BRelated
         locale={locale}
         title={pages.related.title}
         links={[

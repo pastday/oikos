@@ -12,24 +12,23 @@ import { isBNavActive, type BNavItem } from "./paths";
 /**
  * B안 Header.
  *
- * A안 Header 와 가장 크게 다른 점은 **Hero 위에 겹쳐 놓는다**는 것이다.
- * 첫 화면에서는 배경이 비치는 투명 상태로 두어 Hero 가 화면 끝까지 이어져 보이고,
- * 스크롤하면 아이보리 바탕으로 바뀌어 글자가 읽힌다. (13단계 지시 9항)
+ * ## A안과 무엇이 다른가
  *
- * 그래서 이 컴포넌트는 `fixed` 이고, B안의 모든 페이지는 **상단이 어두운 영역으로 시작**한다.
- * (홈은 Hero, 상세는 PageHeroB) 두 상태 모두에서 대비가 확보된다.
+ * A안은 **2행 구조**다. 1행에 로고·언어·CTA, 2행에 메뉴가 있고 항상 흰 바탕으로 고정된다.
+ * B안은 **1행**이고 Hero 위에 겹쳐 놓는다. 그리고 스크롤하면 색만 바뀌는 것이 아니라
+ * **높이가 줄어든다.** (6rem → 4rem) 지면을 읽기 시작하면 머리글이 물러나는 방식이다.
  *
- * 기능은 A안과 같은 것을 모두 갖춘다.
- * 메뉴 · 현재 위치 표시 · 언어 전환 · 입학상담 CTA · 모바일 메뉴.
- * 다만 이동 대상이 전부 B안 경로다. (지시 24항)
+ * 모바일 메뉴도 A안(위에서 내려오는 패널)과 다르다.
+ * 화면 전체를 덮는 어두운 면에 **번호가 붙은 큰 세리프 항목**을 세운다.
+ * 본문의 레일·목록과 같은 어휘라 메뉴를 열어도 같은 사이트로 읽힌다.
  */
 
-const PANEL_ID = "design-b-mobile-menu";
+const PANEL_ID = "design-b-menu";
 
-/** 이 높이만큼 내려가면 solid 로 바꾼다. Hero 를 벗어나기 전에 이미 바뀌면 어수선하다. */
-const SOLID_AFTER_PX = 40;
+/** 이 높이를 넘어가면 머리글을 접는다. */
+const COMPACT_AFTER_PX = 32;
 
-export function HeaderB({
+export function BHeader({
   locale,
   navItems,
   ctaHref,
@@ -54,13 +53,12 @@ export function HeaderB({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isSolid, setIsSolid] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  // 스크롤 위치에 따라 배경만 바꾼다. 레이아웃은 건드리지 않으므로 재계산 비용이 없다.
   useEffect(() => {
     function handleScroll() {
-      setIsSolid(window.scrollY > SOLID_AFTER_PX);
+      setIsCompact(window.scrollY > COMPACT_AFTER_PX);
     }
 
     handleScroll();
@@ -68,7 +66,7 @@ export function HeaderB({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // 메뉴가 열려 있는 동안에만 ESC 닫기와 배경 스크롤 잠금을 건다. (A안 MobileMenu 와 같은 방식)
+  // 메뉴가 열려 있는 동안에만 ESC 닫기와 배경 스크롤 잠금을 건다.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -86,8 +84,8 @@ export function HeaderB({
     };
   }, [isOpen]);
 
-  // 모바일 메뉴가 열려 있으면 그 자체가 어두운 면이므로 Header 도 투명 상태로 둔다.
-  const onDark = !isSolid || isOpen;
+  // 메뉴가 열려 있으면 그 자체가 어두운 면이므로 머리글도 밝은 글자를 쓴다.
+  const onDark = !isCompact || isOpen;
 
   return (
     <header
@@ -95,36 +93,49 @@ export function HeaderB({
         "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
         isOpen
           ? "bg-transparent"
-          : isSolid
+          : isCompact
             ? "border-b border-rule bg-paper/95 backdrop-blur-sm"
-            : "border-b border-white/15 bg-transparent",
+            : "bg-transparent",
       )}
     >
-      <div className="mx-auto flex h-20 w-full max-w-site-b items-center justify-between gap-6 px-6 sm:px-10 lg:px-16">
-        {/* 로고 + 워드마크 */}
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-site-b items-center justify-between gap-6 px-6 transition-[height] duration-300 sm:px-10 lg:px-14",
+          isCompact && !isOpen ? "h-16" : "h-24",
+        )}
+      >
         <Link
           href={navItems[0]?.href ?? "/"}
-          className="flex shrink-0 items-center gap-3"
+          className="flex shrink-0 items-center gap-3.5"
         >
           {/* 어두운 Hero 위에서도 문장이 보이도록 흰 판에 얹는다.
-              로고 자체는 비율 그대로 쓰고 다시 디자인하지 않는다. (지시 11항) */}
-          <span className="flex h-11 w-11 items-center justify-center bg-white">
+              로고 자체는 비율 그대로 쓰고 다시 디자인하지 않는다. */}
+          <span
+            className={cn(
+              "flex items-center justify-center bg-white transition-all duration-300",
+              isCompact && !isOpen ? "h-9 w-9" : "h-12 w-12",
+            )}
+          >
             <Image
               src="/images/oikos-seal.png"
               alt={labels.logoAlt}
               width={295}
               height={220}
               priority
-              className="h-7 w-auto"
+              className={cn(
+                "w-auto transition-all duration-300",
+                isCompact && !isOpen ? "h-6" : "h-8",
+              )}
             />
           </span>
 
           <span className="flex flex-col justify-center leading-none">
             <span
               className={cn(
-                // 390px 에서 로고 + 워드마크 + 햄버거가 한 줄에 들어가야 한다.
-                // 자간이 넓어 글자 수 대비 폭을 많이 먹으므로 작은 화면에서만 줄인다.
-                "font-serif text-[0.8125rem] font-bold tracking-[0.12em] transition-colors sm:text-base sm:tracking-[0.18em]",
+                "font-serif font-bold transition-colors",
+                isCompact && !isOpen
+                  ? "text-[0.8125rem] tracking-[0.14em]"
+                  : "text-[0.8125rem] tracking-[0.14em] sm:text-[0.9375rem] sm:tracking-[0.2em]",
                 onDark ? "text-white" : "text-ink",
               )}
             >
@@ -132,7 +143,7 @@ export function HeaderB({
             </span>
             <span
               className={cn(
-                "mt-1.5 text-[0.625rem] tracking-[0.2em] uppercase transition-colors",
+                "mt-1.5 hidden text-[0.625rem] tracking-[0.22em] uppercase transition-colors sm:block",
                 onDark ? "text-bronze-2" : "text-bronze",
               )}
             >
@@ -141,9 +152,8 @@ export function HeaderB({
           </span>
         </Link>
 
-        {/* 데스크톱 메뉴 */}
         <nav aria-label={labels.primaryNav} className="hidden xl:block">
-          <ul className="flex items-center gap-1">
+          <ul className="flex items-center gap-7">
             {navItems.map((item) => {
               const isActive = isBNavActive(pathname, item);
 
@@ -153,21 +163,22 @@ export function HeaderB({
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "relative block px-3.5 py-2 text-[0.8125rem] font-medium tracking-wide whitespace-nowrap transition-colors",
+                      "relative block py-1 text-[0.6875rem] font-semibold tracking-[0.16em] whitespace-nowrap uppercase transition-colors",
                       onDark
                         ? isActive
                           ? "text-white"
-                          : "text-white/70 hover:text-white"
+                          : "text-white/65 hover:text-white"
                         : isActive
                           ? "text-ink"
-                          : "text-ink/65 hover:text-ink",
+                          : "text-ink/60 hover:text-ink",
                     )}
                   >
                     {item.label}
                     <span
                       aria-hidden="true"
                       className={cn(
-                        "absolute inset-x-3.5 -bottom-0.5 h-px bg-bronze-2 transition-opacity",
+                        "absolute -bottom-1 left-0 h-px w-full transition-opacity",
+                        onDark ? "bg-bronze-2" : "bg-bronze",
                         isActive ? "opacity-100" : "opacity-0",
                       )}
                     />
@@ -178,8 +189,7 @@ export function HeaderB({
           </ul>
         </nav>
 
-        <div className="flex items-center gap-3 sm:gap-5">
-          {/* 언어 전환. 경로에서 locale 만 바꾸므로 B안 안에 머문다. */}
+        <div className="flex items-center gap-4 sm:gap-6">
           <nav
             aria-label={labels.language}
             className="hidden items-center gap-1.5 sm:flex"
@@ -206,7 +216,7 @@ export function HeaderB({
                     hrefLang={item}
                     aria-current={isCurrent ? "true" : undefined}
                     onClick={(event) => {
-                      // query / hash 가 있을 때만 보존해서 이동한다. (A안과 같은 처리)
+                      // query / hash 가 있을 때만 보존해서 이동한다.
                       const { search, hash } = window.location;
                       if (search || hash) {
                         event.preventDefault();
@@ -214,7 +224,7 @@ export function HeaderB({
                       }
                     }}
                     className={cn(
-                      "text-xs font-semibold tracking-[0.1em] transition-colors",
+                      "text-[0.6875rem] font-semibold tracking-[0.14em] transition-colors",
                       onDark
                         ? isCurrent
                           ? "text-white"
@@ -234,7 +244,7 @@ export function HeaderB({
           <Link
             href={ctaHref}
             className={cn(
-              "hidden px-6 py-3 text-xs font-semibold tracking-[0.12em] whitespace-nowrap uppercase transition-colors lg:inline-block",
+              "hidden px-6 py-3 text-[0.6875rem] font-semibold tracking-[0.16em] whitespace-nowrap uppercase transition-colors lg:inline-block",
               onDark
                 ? "bg-bronze text-white hover:bg-bronze-2 hover:text-ink"
                 : "bg-ink text-white hover:bg-ink-3",
@@ -254,23 +264,17 @@ export function HeaderB({
               onDark ? "text-white" : "text-ink",
             )}
           >
-            <span aria-hidden="true" className="relative block h-4 w-6">
+            <span aria-hidden="true" className="relative block h-3.5 w-7">
               <span
                 className={cn(
-                  "absolute left-0 block h-px w-6 bg-current transition-transform duration-200",
-                  isOpen ? "top-2 rotate-45" : "top-0",
+                  "absolute left-0 block h-px w-7 bg-current transition-transform duration-200",
+                  isOpen ? "top-1.5 rotate-45" : "top-0",
                 )}
               />
               <span
                 className={cn(
-                  "absolute top-2 left-0 block h-px w-6 bg-current transition-opacity duration-200",
-                  isOpen && "opacity-0",
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute left-0 block h-px w-6 bg-current transition-transform duration-200",
-                  isOpen ? "top-2 -rotate-45" : "top-4",
+                  "absolute top-3.5 left-0 block h-px bg-current transition-all duration-200",
+                  isOpen ? "w-7 -translate-y-2 -rotate-45" : "w-4",
                 )}
               />
             </span>
@@ -278,44 +282,60 @@ export function HeaderB({
         </div>
       </div>
 
-      {/* 모바일 메뉴: 화면 전체를 덮는 어두운 면. 항목을 크게 두어 누르기 쉽게 한다. */}
+      {/* 모바일 메뉴: 화면 전체를 덮고, 본문과 같은 번호·세리프 어휘를 쓴다. */}
       {isOpen && (
         <div
           id={PANEL_ID}
           role="dialog"
           aria-modal="true"
           aria-label={labels.mobileMenu}
-          className="fixed inset-0 top-0 -z-10 overflow-y-auto bg-ink pt-20"
+          className="fixed inset-0 -z-10 overflow-y-auto bg-midnight pt-24"
         >
-          <nav aria-label={labels.mobileMenu} className="px-6 py-8 sm:px-10">
-            <ul className="flex flex-col">
-              {navItems.map((item) => {
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_80%_0%,rgba(168,130,63,0.22),transparent_60%)]"
+          />
+
+          <nav
+            aria-label={labels.mobileMenu}
+            className="relative px-6 pb-16 sm:px-10"
+          >
+            <ul className="border-t border-white/15">
+              {navItems.map((item, index) => {
                 const isActive = isBNavActive(pathname, item);
 
                 return (
-                  <li key={item.key}>
+                  <li key={item.key} className="border-b border-white/15">
                     <Link
                       href={item.href}
                       aria-current={isActive ? "page" : undefined}
                       onClick={() => setIsOpen(false)}
-                      className={cn(
-                        "block border-b border-white/10 py-4 font-serif text-xl transition-colors",
-                        isActive
-                          ? "text-bronze-2"
-                          : "text-white/85 hover:text-white",
-                      )}
+                      className="flex items-baseline gap-5 py-5"
                     >
-                      {item.label}
+                      <span
+                        aria-hidden="true"
+                        className="font-serif text-xs font-bold tabular-nums text-bronze-2"
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span
+                        className={cn(
+                          "font-serif text-2xl font-bold",
+                          isActive ? "text-bronze-2" : "text-white",
+                        )}
+                      >
+                        {item.label}
+                      </span>
                     </Link>
                   </li>
                 );
               })}
             </ul>
 
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-5">
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-6">
               <nav
                 aria-label={labels.language}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-2"
               >
                 {locales.map((item, index) => {
                   const isCurrent = item === locale;
@@ -324,7 +344,7 @@ export function HeaderB({
                   return (
                     <span key={item} className="flex items-center">
                       {index > 0 && (
-                        <span aria-hidden="true" className="px-1.5 text-white/30">
+                        <span aria-hidden="true" className="px-2 text-white/30">
                           /
                         </span>
                       )}
@@ -334,8 +354,8 @@ export function HeaderB({
                         aria-current={isCurrent ? "true" : undefined}
                         onClick={() => setIsOpen(false)}
                         className={cn(
-                          "text-sm font-semibold tracking-[0.1em]",
-                          isCurrent ? "text-white" : "text-white/50",
+                          "text-sm font-semibold tracking-[0.14em]",
+                          isCurrent ? "text-white" : "text-white/60",
                         )}
                       >
                         {item.toUpperCase()}
@@ -348,7 +368,7 @@ export function HeaderB({
               <Link
                 href={ctaHref}
                 onClick={() => setIsOpen(false)}
-                className="bg-bronze px-6 py-3.5 text-xs font-semibold tracking-[0.12em] text-white uppercase transition-colors hover:bg-bronze-2 hover:text-ink"
+                className="bg-bronze px-7 py-4 text-[0.6875rem] font-semibold tracking-[0.16em] text-white uppercase transition-colors hover:bg-bronze-2 hover:text-ink"
               >
                 {labels.cta}
               </Link>

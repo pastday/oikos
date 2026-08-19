@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BProgramPage } from "@/components/site-b/BProgramPage";
+import { BRelated } from "@/components/site-b/BRelated";
 import { buildDesignBMetadata } from "@/components/site-b/metadata";
-import { ProgramPageB } from "@/components/site-b/ProgramPageB";
-import { RelatedLinksB } from "@/components/site-b/RelatedLinksB";
 import { getPageContent } from "@/content/pages";
+import { getDictionary } from "@/i18n";
 import { isLocale } from "@/i18n/config";
 import {
   getProgramCurriculum,
@@ -40,13 +41,19 @@ export default async function DesignBMbaPage({ params }: PageProps) {
   const program = await getPublishedProgram("MBA", locale);
   if (!program) notFound();
 
+  const dict = getDictionary(locale);
   const pages = getPageContent(locale, await getProgramNumbers());
   const curriculum = await getProgramCurriculum(program.id, locale);
 
   return (
     <>
-      <ProgramPageB content={pages.mba} curriculum={curriculum} />
-      <RelatedLinksB
+      <BProgramPage
+        content={pages.mba}
+        curriculum={curriculum}
+        index={4}
+        watermark={dict.site.wordmark}
+      />
+      <BRelated
         locale={locale}
         title={pages.related.title}
         links={[

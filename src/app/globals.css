@@ -52,11 +52,13 @@
    * 두 벌이 같은 CSS 파일을 쓰지만 서로의 색을 공유하지 않으므로
    * B안을 고쳐도 A안 화면은 변하지 않는다.
    *
-   * 방향: American University / Editorial / Premium / Hospitality
-   *  - A안이 차가운 흰 배경이라면 B안은 **따뜻한 아이보리** 지면을 쓴다.
-   *    첫인상에서 가장 크게 갈리는 것이 지면 색이라 이 한 가지만으로도 두 안이 구분된다.
-   *  - 남색은 A안보다 더 깊게 내려 사진·영상이 올라왔을 때 overlay 로 쓸 수 있게 한다.
-   *  - 강조색은 금색 대신 조금 더 차분한 bronze 계열로 둔다.
+   * 방향: American University / Editorial / Architectural
+   *
+   * **색만으로는 두 안이 구분되지 않는다.** 그래서 여기에는 색뿐 아니라
+   * B안이 A안과 구조적으로 달라지는 근거 — 타이포 스케일과 지면 폭 — 를 함께 둔다.
+   *  - 지면: 차가운 흰색(A) ↔ 따뜻한 아이보리(B)
+   *  - 조판: 상자에 담기(A) ↔ 가로선으로 나누기(B)
+   *  - 제목: 고정 크기(A) ↔ 화면 폭에 따라 늘어나는 clamp 스케일(B)
    *
    * 이름에 `b-` 같은 접두사를 붙이지 않는다. `border-b-line` 이 Tailwind 의
    * `border-b`(아래 테두리) 유틸리티로 먼저 해석되어 엉뚱한 색이 나오기 때문이다.
@@ -64,16 +66,20 @@
    * 이 토큰들은 `components/site-b` 안에서만 쓴다.
    * ---------------------------------------------------------------------- */
 
-  /* 잉크(진한 남색). Hero·Footer·full-bleed 밴드의 바탕 */
+  /* 면
+   *  - midnight : 가장 깊은 바탕. Hero·Statement 처럼 화면을 통째로 덮는 면.
+   *  - ink      : 어두운 패널.
+   *  - paper    : 따뜻한 아이보리 지면. A안의 차가운 흰색과 정반대에 둔다.
+   *  - stone    : 지면 위에 한 단계 눌러 놓는 면. */
+  --color-midnight: #04080f;
   --color-ink: #08111f;
   --color-ink-2: #10203a;
   --color-ink-3: #1c3355;
-
-  /* 지면 */
   --color-paper: #fbf8f3;
   --color-paper-2: #f3ece0;
+  --color-stone: #e7e0d4;
 
-  /* 선 */
+  /* 선. B안은 상자 대신 **머리카락 같은 가로선**으로 정보를 나눈다. */
   --color-rule: #ded4c4;
   --color-rule-2: #c3b49c;
 
@@ -81,15 +87,36 @@
   --color-quiet: #6d6558;
 
   /* 강조 (bronze)
-   *
-   * 두 값의 쓰임이 다르다.
-   *  - `bronze`  : **밝은 지면 위의 작은 글자**(eyebrow·섹션 번호)와 버튼 바탕.
-   *    작은 글자에 쓰이므로 아이보리 지면에서 4.5:1 을 넘겨야 한다.
-   *    처음 고른 #a8823f 은 3.3:1 밖에 되지 않아 한 단계 어둡게 내렸다.
-   *    (지금 값은 paper 5.2:1 / paper-2 4.7:1, 이 색 위의 흰 글자 5.5:1)
-   *  - `bronze-2`: **어두운 면 위의 강조.** 잉크 위에서 9.0:1 이다. */
+   *  - bronze  : 밝은 지면 위의 작은 글자. 아이보리에서 5.2:1.
+   *              처음 고른 #a8823f 은 3.3:1 이라 AA 에 못 미쳐 한 단계 내렸다.
+   *  - bronze-2: 어두운 면 위의 강조. 잉크 위에서 9.0:1. */
   --color-bronze: #856327;
   --color-bronze-2: #cfae74;
+
+  /* 타이포그래피 스케일 — B안의 핵심
+   *
+   * A안의 제목은 `text-2xl`~`text-4xl`(1.5~2.25rem)이고 행간이 넉넉하다.
+   * B안은 **화면 폭에 따라 늘어나는 clamp 스케일**을 쓰고 행간을 1 아래로 조인다.
+   * 색을 모두 빼도 두 사이트가 달라 보이는 이유의 절반이 여기서 나온다.
+   *
+   * mega     : 화면을 가로지르는 한 낱말 (100% ONLINE, 개강 연월)
+   * display  : Hero 와 페이지 제목
+   * headline : 섹션 제목
+   * index    : 섹션 번호·목록 번호 */
+  --text-mega: clamp(3rem, 14vw, 13rem);
+  --text-mega--line-height: 0.82;
+  --text-mega--letter-spacing: -0.03em;
+
+  --text-display: clamp(2.5rem, 6.2vw, 5.5rem);
+  --text-display--line-height: 0.98;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-headline: clamp(1.75rem, 3.6vw, 3rem);
+  --text-headline--line-height: 1.05;
+  --text-headline--letter-spacing: -0.015em;
+
+  --text-index: clamp(1.5rem, 2.4vw, 2.25rem);
+  --text-index--line-height: 1;
 
   /* B안은 A안(76rem)보다 넓은 지면을 쓴다. 비율만으로도 인상이 달라진다. */
   --container-site-b: 88rem;

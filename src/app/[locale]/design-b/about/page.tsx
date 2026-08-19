@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buildDesignBMetadata } from "@/components/site-b/metadata";
-import { SectionImageB } from "@/components/site-b/MediaBlocksB";
-import { PageHeroB } from "@/components/site-b/PageHeroB";
-import { bPath } from "@/components/site-b/paths";
-import { RelatedLinksB } from "@/components/site-b/RelatedLinksB";
 import {
-  ButtonB,
-  FactGridB,
-  NoticeB,
-  ProseB,
-  SectionB,
-  SectionHeadB,
-} from "@/components/site-b/SectionB";
+  BButton,
+  BRowList,
+  BStatsBand,
+  type BRow,
+} from "@/components/site-b/BBlocks";
+import { BFrame } from "@/components/site-b/BFrame";
+import { BContainer, BSection } from "@/components/site-b/BLayout";
+import { BPageHero } from "@/components/site-b/BPageHero";
+import { BRelated } from "@/components/site-b/BRelated";
+import {
+  BBody,
+  BHeadline,
+  BNotice,
+  BPullQuote,
+  BRule,
+} from "@/components/site-b/BType";
+import { buildDesignBMetadata } from "@/components/site-b/metadata";
+import { bPath } from "@/components/site-b/paths";
 import { getPageContent } from "@/content/pages";
+import { getDictionary } from "@/i18n";
 import { isLocale } from "@/i18n/config";
 import { toPageIntro, toPairs } from "@/lib/cms/page-view";
 import { getPageSections, getProgramNumbers } from "@/lib/cms/queries";
@@ -50,7 +57,12 @@ export async function generateMetadata({
  *
  * **A안과 같은 `PageSection` 행을 같은 규칙으로 읽는다.** 섹션이 없거나 비어 있으면
  * 그 부분을 그리지 않는 것도 같다. 관리자가 CMS 에서 고치면 두 안에 함께 반영된다.
- * 달라지는 것은 조판뿐이다.
+ *
+ * 조판은 A안과 전혀 다르다.
+ *  - 상단이 좌우 분할 Hero (비주얼 자리 포함)
+ *  - 본문은 선언문 + 2단 흐름
+ *  - 비전·목표는 카드 격자가 아니라 번호가 붙은 가로선 목록
+ *  - 본교 수치는 상자 없는 통계 띠
  */
 export default async function DesignBAboutPage({ params }: PageProps) {
   const { locale } = await params;
@@ -61,8 +73,10 @@ export default async function DesignBAboutPage({ params }: PageProps) {
     getProgramNumbers(),
   ]);
 
+  const dict = getDictionary(locale);
   const pages = getPageContent(locale, numbers);
   const content = pages.about;
+  const watermark = dict.site.wordmark;
   const oikosLink = externalLinks.find((link) => link.key === "oikos");
 
   const president = sections.president;
@@ -70,118 +84,115 @@ export default async function DesignBAboutPage({ params }: PageProps) {
   const philosophy = sections.philosophy;
   const goals = sections.goals;
   const university = sections.university;
-  const facts = university ? toPairs(university.items) : [];
+
+  const goalRows: BRow[] = goals
+    ? toPairs(goals.items).map((goal) => ({
+        id: goal.id,
+        title: goal.label,
+        body: goal.value,
+      }))
+    : [];
+
+  const facts = university
+    ? toPairs(university.items).map((item) => ({
+        label: item.label,
+        value: item.value,
+      }))
+    : [];
+
+  const [schoolLead, ...schoolRest] = school?.paragraphs ?? [];
 
   return (
     <>
-      <PageHeroB intro={toPageIntro(sections.intro, content.intro)} />
+      <BPageHero
+        intro={toPageIntro(sections.intro, content.intro)}
+        index={1}
+        media={school?.media ?? null}
+        watermark={watermark}
+      />
 
       {/* 총장 인사말: 원본 자료에 본문이 없어 안내만 둔다. 임의로 작성하지 않는다. */}
       {president && (president.title || president.paragraphs.length > 0) && (
-        <SectionB size="compact">
-          <NoticeB title={president.title ?? ""}>
-            {president.paragraphs.map((paragraph) => (
-              <p key={paragraph.slice(0, 24)}>{paragraph}</p>
-            ))}
-          </NoticeB>
-        </SectionB>
+        <section className="border-b border-rule bg-paper py-14">
+          <BContainer>
+            <BNotice title={president.title ?? undefined}>
+              {president.paragraphs.map((paragraph) => (
+                <p key={paragraph.slice(0, 24)}>{paragraph}</p>
+              ))}
+            </BNotice>
+          </BContainer>
+        </section>
       )}
 
       {school && school.paragraphs.length > 0 && (
-        <SectionB tone="paper-2">
-          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-            <div className="lg:col-span-5">
-              <div className="lg:sticky lg:top-32">
-                <SectionHeadB index={1} title={school.title ?? ""} />
-              </div>
-            </div>
-            <div className="lg:col-span-7">
-              <ProseB paragraphs={school.paragraphs} />
-              {/* 이미지가 지정되지 않았으면 빈 칸을 남기지 않는다. */}
-              {school.media && (
-                <SectionImageB media={school.media} className="mt-12" />
-              )}
-            </div>
-          </div>
-        </SectionB>
+        <BSection index={2} label={school.title ?? undefined} tone="paper">
+          <BHeadline size="small">{school.title ?? ""}</BHeadline>
+          {schoolLead && <BPullQuote className="mt-8">{schoolLead}</BPullQuote>}
+          <BRule className="my-12 lg:my-14" />
+          <BBody paragraphs={schoolRest} columns={2} />
+        </BSection>
       )}
 
       {philosophy && philosophy.paragraphs.length > 0 && (
-        <SectionB>
-          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+        <BSection index={3} label={philosophy.title ?? undefined} tone="stone">
+          <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
             <div className="lg:col-span-5">
-              <SectionHeadB index={2} title={philosophy.title ?? ""} />
+              <div className="lg:sticky lg:top-32">
+                <BHeadline>{philosophy.title ?? ""}</BHeadline>
+                <BFrame
+                  media={null}
+                  watermark={watermark}
+                  ratio="3/4"
+                  className="mt-10"
+                  sizes="(min-width: 1024px) 22rem, 100vw"
+                />
+              </div>
             </div>
             <div className="lg:col-span-7">
-              <ProseB paragraphs={philosophy.paragraphs} />
+              <BBody paragraphs={philosophy.paragraphs} />
             </div>
           </div>
-        </SectionB>
+        </BSection>
       )}
 
-      {goals && goals.items.length > 0 && (
-        <SectionB tone="ink">
-          <SectionHeadB index={3} title={goals.title ?? ""} tone="dark" />
-
-          <ol className="mt-14 grid gap-px bg-white/15 sm:grid-cols-2">
-            {toPairs(goals.items).map((goal, index) => (
-              <li key={goal.id} className="bg-ink px-8 py-11 lg:px-10">
-                <span className="font-serif text-sm font-bold tracking-[0.1em] text-bronze-2">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                {goal.media && (
-                  <SectionImageB media={goal.media} className="mt-5" />
-                )}
-                <h3 className="mt-5 font-serif text-2xl font-bold text-white">
-                  {goal.label}
-                </h3>
-                <p className="mt-4 text-[0.9375rem] leading-[1.9] text-white/65">
-                  {goal.value}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </SectionB>
+      {goalRows.length > 0 && (
+        <BSection index={4} label={goals?.title ?? undefined} tone="ink">
+          <BHeadline tone="dark">{goals?.title ?? ""}</BHeadline>
+          <div className="mt-12">
+            <BRowList rows={goalRows} tone="dark" size="large" />
+          </div>
+        </BSection>
       )}
 
       {university && (
-        <SectionB>
-          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-            <div className="lg:col-span-5">
-              <SectionHeadB index={4} title={university.title ?? ""} />
-            </div>
+        <BSection index={5} label={university.title ?? undefined} tone="paper">
+          <BHeadline>{university.title ?? ""}</BHeadline>
 
-            <div className="lg:col-span-7">
-              <ProseB paragraphs={university.paragraphs} />
-
-              {facts.length > 0 && (
-                <div className="mt-12">
-                  <FactGridB items={facts} columns={2} />
-                </div>
-              )}
-
-              <div className="mt-10 flex flex-wrap gap-3">
-                <ButtonB href={bPath(locale, "/degree")} variant="outline">
-                  {content.university.degreeLinkLabel}
-                </ButtonB>
-
-                {oikosLink?.href && (
-                  <a
-                    href={oikosLink.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-7 py-4 text-xs font-semibold tracking-[0.14em] text-quiet uppercase transition-colors hover:text-ink"
-                  >
-                    {content.university.officialSiteLabel} ↗
-                  </a>
-                )}
-              </div>
-            </div>
+          <div className="mt-10">
+            <BBody paragraphs={university.paragraphs} columns={2} />
           </div>
-        </SectionB>
+
+          {facts.length > 0 && (
+            <div className="mt-14 border-t border-rule">
+              <BStatsBand stats={facts} tone="light" columns={4} />
+            </div>
+          )}
+
+          <div className="mt-12 flex flex-wrap gap-3">
+            <BButton href={bPath(locale, "/degree")} tone="outline">
+              {content.university.degreeLinkLabel}
+            </BButton>
+
+            {oikosLink?.href && (
+              <BButton href={oikosLink.href} tone="outline" external>
+                {content.university.officialSiteLabel} ↗
+              </BButton>
+            )}
+          </div>
+        </BSection>
       )}
 
-      <RelatedLinksB
+      <BRelated
         locale={locale}
         title={pages.related.title}
         links={[
