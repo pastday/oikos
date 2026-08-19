@@ -46,6 +46,7 @@ export async function generateMetadata({
  * 대학원 소개.
  *
  * 10단계부터 **본문은 DB(`PageSection`)가 출처**다.
+ * 총장 인사말도 `about/president` 섹션을 그대로 쓴다. A안과 B안이 같은 행을 읽는다.
  * 정적 콘텐츠 파일은 이관 원본이자 관련 링크·버튼 문구 같은 UI 문구용으로만 남는다.
  * 섹션이 없거나 비어 있으면 그 부분을 그리지 않는다. 페이지는 깨지지 않는다.
  */
@@ -73,20 +74,19 @@ export default async function AboutPage({ params }: PageProps) {
     <>
       <PageHero intro={toPageIntro(sections.intro, content.intro)} />
 
-      {/* 총장 인사말: 원본 자료에 본문이 없어 안내만 둔다. 임의로 작성하지 않는다. */}
       {president && (president.title || president.paragraphs.length > 0) && (
-        <Section>
-          <div className="rounded-lg border border-dashed border-line bg-surface px-6 py-7">
-            {president.title && (
-              <h2 className="text-base font-semibold text-navy">
-                {president.title}
-              </h2>
+        <Section title={president.title ?? undefined}>
+          <div className="grid items-end gap-8 lg:grid-cols-12 lg:gap-12">
+            <div className="lg:col-span-8">
+              <Prose paragraphs={president.paragraphs} />
+            </div>
+            {president.note && (
+              <div className="lg:col-span-4">
+                <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-navy lg:text-right">
+                  {president.note}
+                </p>
+              </div>
             )}
-            {president.paragraphs.map((paragraph) => (
-              <p key={paragraph.slice(0, 24)} className="mt-2 text-sm text-muted">
-                {paragraph}
-              </p>
-            ))}
           </div>
         </Section>
       )}

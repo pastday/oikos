@@ -7,13 +7,12 @@ import {
   type BRow,
 } from "@/components/site-b/BBlocks";
 import { BFrame } from "@/components/site-b/BFrame";
-import { BContainer, BSection } from "@/components/site-b/BLayout";
+import { BSection } from "@/components/site-b/BLayout";
 import { BPageHero } from "@/components/site-b/BPageHero";
 import { BRelated } from "@/components/site-b/BRelated";
 import {
   BBody,
   BHeadline,
-  BNotice,
   BPullQuote,
   BRule,
 } from "@/components/site-b/BType";
@@ -113,21 +112,26 @@ export default async function DesignBAboutPage({ params }: PageProps) {
         watermark={watermark}
       />
 
-      {/* 총장 인사말: 원본 자료에 본문이 없어 안내만 둔다. 임의로 작성하지 않는다. */}
       {president && (president.title || president.paragraphs.length > 0) && (
-        <section className="border-b border-rule bg-paper py-14">
-          <BContainer>
-            <BNotice title={president.title ?? undefined}>
-              {president.paragraphs.map((paragraph) => (
-                <p key={paragraph.slice(0, 24)}>{paragraph}</p>
-              ))}
-            </BNotice>
-          </BContainer>
-        </section>
+        <BSection index={2} label={president.title ?? undefined} tone="stone">
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-4">
+              <BHeadline>{president.title ?? ""}</BHeadline>
+            </div>
+            <div className="lg:col-span-8">
+              <BBody paragraphs={president.paragraphs} />
+              {president.note && (
+                <p className="mt-12 whitespace-pre-line font-serif text-sm leading-relaxed text-ink/70">
+                  {president.note}
+                </p>
+              )}
+            </div>
+          </div>
+        </BSection>
       )}
 
       {school && school.paragraphs.length > 0 && (
-        <BSection index={2} label={school.title ?? undefined} tone="paper">
+        <BSection index={3} label={school.title ?? undefined} tone="paper">
           <BHeadline size="small">{school.title ?? ""}</BHeadline>
           {schoolLead && <BPullQuote className="mt-8">{schoolLead}</BPullQuote>}
           <BRule className="my-12 lg:my-14" />
@@ -136,7 +140,7 @@ export default async function DesignBAboutPage({ params }: PageProps) {
       )}
 
       {philosophy && philosophy.paragraphs.length > 0 && (
-        <BSection index={3} label={philosophy.title ?? undefined} tone="stone">
+        <BSection index={4} label={philosophy.title ?? undefined} tone="stone">
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
             <div className="lg:col-span-5">
               <div className="lg:sticky lg:top-32">
@@ -158,7 +162,7 @@ export default async function DesignBAboutPage({ params }: PageProps) {
       )}
 
       {goalRows.length > 0 && (
-        <BSection index={4} label={goals?.title ?? undefined} tone="ink">
+        <BSection index={5} label={goals?.title ?? undefined} tone="ink">
           <BHeadline tone="dark">{goals?.title ?? ""}</BHeadline>
           <div className="mt-12">
             <BRowList rows={goalRows} tone="dark" size="large" />
@@ -167,7 +171,7 @@ export default async function DesignBAboutPage({ params }: PageProps) {
       )}
 
       {university && (
-        <BSection index={5} label={university.title ?? undefined} tone="paper">
+        <BSection index={6} label={university.title ?? undefined} tone="paper">
           <BHeadline>{university.title ?? ""}</BHeadline>
 
           <div className="mt-10">

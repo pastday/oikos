@@ -37,8 +37,16 @@ export function createPagesEn(
         "An online graduate school of business opened for working professionals who pursue a degree alongside their careers.",
     },
     presidentNotice: {
-      title: "Message from the President",
-      body: "The president's message is currently being prepared and will be published here once confirmed.",
+      title: "President's Message",
+      body: [
+        "Welcome to the Graduate School of Business at Oikos University.",
+        "Today's business environment is changing rapidly, and the hospitality, foodservice, wine, and tourism industries continue to evolve in response to global trends and changing consumer expectations. In this environment, professionals need more than academic knowledge. They need practical insight, the ability to understand real-world challenges, and a global perspective that enables them to lead through change.",
+        "The Graduate School of Business at Oikos University is committed to providing structured learning opportunities for professionals who wish to continue their education while advancing their careers. Our MBA and DBA programs are designed to combine the foundations of business and management with practical knowledge that can be applied in professional settings.",
+        "Through our online programs, we seek to reduce the limitations of time and location and provide learners from diverse professional backgrounds with opportunities to deepen their expertise. Our educational goal is to develop professionals who combine academic understanding with practical judgment and who are prepared to create meaningful value in an evolving global business environment.",
+        "Education is the beginning of new possibilities. We hope that your experience at Oikos University will help you strengthen your professional capabilities, broaden your perspective, and take the next step in your academic and professional journey.",
+        "We welcome your aspirations and look forward to supporting your continued growth.",
+        "Sincerely,",
+      ].join("\n\n"),
     },
     school: {
       title: "About the Graduate School",

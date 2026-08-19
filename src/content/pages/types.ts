@@ -37,7 +37,10 @@ export type NoticeBlock = {
 
 export type AboutContent = {
   intro: PageIntro;
-  /** 원본 자료에 총장 인사말 본문이 없어 준비 중임을 알리는 안내만 둔다. */
+  /**
+   * 총장 인사말. 공개 화면의 출처는 CMS(`PageSection` about/president)다.
+   * 이 값은 이관 원본이며, 화면은 DB 를 읽는다.
+   */
   presidentNotice: NoticeBlock;
   school: TextBlock;
   philosophy: TextBlock;

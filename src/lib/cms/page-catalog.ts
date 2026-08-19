@@ -122,13 +122,16 @@ const aboutPage: PageSpec = {
     {
       key: "president",
       label: "총장 인사말",
-      description: "점선 테두리 안내 상자",
+      description: "제목 · 본문 · 서명",
       slots: {
         title: { label: "제목" },
         body: { label: "본문", hint: bodyHint, multiline: true },
+        note: {
+          label: "서명",
+          hint: "본문 아래 서명입니다. 줄바꿈이 유지됩니다. 총장 성명이 확정되지 않았으면 직함만 적습니다.",
+          multiline: true,
+        },
       },
-      notice:
-        "원본 자료에 총장 인사말 본문이 없어 현재는 준비 중 안내만 있습니다. 본문이 확정되면 여기에 넣습니다.",
     },
     {
       key: "school",
