@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { DESIGN_B_SEGMENT } from "@/components/site-b/paths";
 import type { ProgramType } from "@/generated/prisma/enums";
 
 /**
@@ -14,16 +15,29 @@ import type { ProgramType } from "@/generated/prisma/enums";
  * 처음에 `/ko/faculty` 를 넘겼더니 관리자가 저장해도 화면이 그대로였다.
  * 패턴으로 부르면 ko·en 이 한 번에 무효화되는 장점도 있다.
  *
+ * ## A안과 B안을 함께 무효화한다 (13단계)
+ *
+ * 같은 CMS 데이터를 A안(`/[locale]/faculty`)과 B안(`/[locale]/design-b/faculty`)이
+ * 함께 쓴다. 한쪽만 무효화하면 **관리자가 저장한 뒤 B안만 옛 내용을 계속 보여준다.**
+ * 그래서 아래 `revalidate()` 가 항상 두 벌을 같이 처리한다.
+ * 호출하는 쪽은 `"/faculty"` 처럼 **공통 경로 한 개만** 넘기면 된다.
+ *
  * **무엇을 넣을지 빠뜨리면 화면이 옛날 내용을 계속 보여준다.**
  * 그래서 "어떤 데이터가 어느 화면에 나오는지"를 이 파일 한 곳에 적어 둔다.
  * 반대로 모든 경로를 통째로 무효화하지도 않는다. 그러면 정적 유지의 이점이 사라진다.
  */
 
 /** 메인 페이지. 과정 카드·주임교수·교육과정 Preview 가 모두 여기 있다. */
-const HOME = "/[locale]";
+const HOME = "";
 
-function revalidate(pattern: string): void {
-  revalidatePath(pattern, "page");
+/**
+ * locale 을 제외한 공통 경로 하나를 받아 A안·B안 두 패턴을 모두 무효화한다.
+ *
+ * @param path 홈은 `""`, 나머지는 `"/faculty"` 처럼 앞에 `/` 를 붙인 경로
+ */
+function revalidate(path: string): void {
+  revalidatePath(`/[locale]${path}`, "page");
+  revalidatePath(`/[locale]/${DESIGN_B_SEGMENT}${path}`, "page");
 }
 
 /**
@@ -32,7 +46,7 @@ function revalidate(pattern: string): void {
  */
 export function revalidateFaculty(): void {
   revalidate(HOME);
-  revalidate("/[locale]/faculty");
+  revalidate("/faculty");
 }
 
 /**
@@ -43,10 +57,10 @@ export function revalidateFaculty(): void {
  */
 export function revalidateProgram(type: ProgramType): void {
   revalidate(HOME);
-  revalidate("/[locale]/programs");
-  revalidate(`/[locale]/programs/${type.toLowerCase()}`);
-  revalidate("/[locale]/admission");
-  revalidate("/[locale]/faq");
+  revalidate("/programs");
+  revalidate(`/programs/${type.toLowerCase()}`);
+  revalidate("/admission");
+  revalidate("/faq");
 }
 
 /**
@@ -55,7 +69,7 @@ export function revalidateProgram(type: ProgramType): void {
  */
 export function revalidateCourse(type: ProgramType): void {
   revalidate(HOME);
-  revalidate(`/[locale]/programs/${type.toLowerCase()}`);
+  revalidate(`/programs/${type.toLowerCase()}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -65,11 +79,11 @@ export function revalidateCourse(type: ProgramType): void {
 /**
  * 페이지 콘텐츠 변경.
  *
- * `pageKey` 는 공개 경로의 세그먼트와 같게 맞춰 두었다. (`about` → `/[locale]/about`)
+ * `pageKey` 는 공개 경로의 세그먼트와 같게 맞춰 두었다. (`about` → `/about`)
  * 그래서 여기서 경로를 표로 다시 적지 않는다. 두 곳에 적으면 갈라진다.
  */
 export function revalidatePageContent(pageKey: string): void {
-  revalidate(`/[locale]/${pageKey}`);
+  revalidate(`/${pageKey}`);
 }
 
 /**
@@ -77,7 +91,7 @@ export function revalidatePageContent(pageKey: string): void {
  * 질문·답변은 FAQ 페이지에만 나온다. 메인이나 다른 페이지에는 노출되지 않는다.
  */
 export function revalidateFaq(): void {
-  revalidate("/[locale]/faq");
+  revalidate("/faq");
 }
 
 /**
@@ -88,5 +102,5 @@ export function revalidateFaq(): void {
  * 화면에서 값을 읽는 곳은 입학안내 한 페이지뿐이라 여기만 무효화한다.
  */
 export function revalidateAdmissionNumbers(): void {
-  revalidate("/[locale]/admission");
+  revalidate("/admission");
 }

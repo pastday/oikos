@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import {
   CheckboxField,
+  SelectField,
   SpamGuardFields,
   TextAreaField,
   TextField,
@@ -12,39 +13,41 @@ import {
   SubmitButton,
   SuccessPanel,
 } from "@/components/form/FormFeedback";
-import type { SeminarContent } from "@/content/pages";
+import type { ConsultationContent } from "@/content/pages";
 import type { Locale } from "@/i18n/config";
-import { MAX_ATTENDEES, MIN_ATTENDEES } from "@/lib/validation/inquiry";
-import { submitSeminarApplication, type SeminarFormState } from "../actions";
+import { submitConsultation, type ConsultationFormState } from "./actions";
 
-const INITIAL_STATE: SeminarFormState = { status: "idle" };
+const INITIAL_STATE: ConsultationFormState = { status: "idle" };
 
 const EMPTY_VALUES = {
   name: "",
   phone: "",
   email: "",
-  preferredSession: "",
-  attendeeCount: String(MIN_ATTENDEES),
-  memo: "",
+  interestedProgram: "",
+  message: "",
 };
 
 /**
- * 설명회 신청 폼.
+ * 입학상담 신청 폼.
  *
- * 입학상담 폼과 구조는 같지만 입력 항목의 의미가 다르므로 하나의 범용 폼으로 합치지 않는다.
- * 공통되는 부분은 `@/components/form` 의 입력 컴포넌트로만 공유한다. (CLAUDE.md 21항)
+ * 입력값을 state 로 들고 있는 이유는 서버가 오류를 돌려줬을 때 사용자가 적은 내용이
+ * 그대로 남아 있게 하기 위해서다. 성공하면 폼 자체를 결과 화면으로 교체한다.
+ * 검증 결과는 서버가 돌려준 오류 코드만 신뢰한다. 여기서는 문구로 바꿔 보여주기만 한다.
  */
-export function SeminarForm({
+export function ConsultationForm({
   locale,
   content,
+  basePath = "",
 }: {
   locale: Locale;
-  content: SeminarContent["form"];
+  /**
+   * 성공 화면의 안내 링크가 가리킬 사이트. 기본값은 A안(빈 문자열)이다.
+   * 디자인 B안이 같은 폼을 그대로 쓰면서 "/design-b" 를 넘긴다. (13단계)
+   */
+  basePath?: string;
+  content: ConsultationContent["form"];
 }) {
-  const action = useMemo(
-    () => submitSeminarApplication.bind(null, locale),
-    [locale],
-  );
+  const action = useMemo(() => submitConsultation.bind(null, locale), [locale]);
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
   const [values, setValues] = useState(EMPTY_VALUES);
@@ -59,6 +62,7 @@ export function SeminarForm({
     return (
       <SuccessPanel
         locale={locale}
+        basePath={basePath}
         title={text.success.title}
         description={text.success.description}
         links={content.successLinks}
@@ -124,18 +128,16 @@ export function SeminarForm({
           disabled={isPending}
         />
 
-        <TextField
-          name="attendeeCount"
-          type="number"
-          inputMode="numeric"
-          min={MIN_ATTENDEES}
-          max={MAX_ATTENDEES}
-          label={fields.attendeeCount.label}
-          hint={fields.attendeeCount.hint}
-          value={values.attendeeCount}
-          onChange={set("attendeeCount")}
+        <SelectField
+          name="interestedProgram"
+          label={fields.interestedProgram.label}
+          placeholder={fields.interestedProgram.placeholder}
+          options={fields.interestedProgram.options}
+          value={values.interestedProgram}
+          onChange={set("interestedProgram")}
           error={
-            fieldErrors.attendeeCount && text.errors[fieldErrors.attendeeCount]
+            fieldErrors.interestedProgram &&
+            text.errors[fieldErrors.interestedProgram]
           }
           required
           requiredMark={text.requiredMark}
@@ -144,32 +146,15 @@ export function SeminarForm({
         />
       </div>
 
-      <TextField
-        name="preferredSession"
-        label={fields.preferredSession.label}
-        placeholder={fields.preferredSession.placeholder}
-        hint={fields.preferredSession.hint}
-        maxLength={200}
-        value={values.preferredSession}
-        onChange={set("preferredSession")}
-        error={
-          fieldErrors.preferredSession &&
-          text.errors[fieldErrors.preferredSession]
-        }
-        requiredMark={text.requiredMark}
-        optionalMark={text.optionalMark}
-        disabled={isPending}
-      />
-
       <TextAreaField
-        name="memo"
-        label={fields.memo.label}
-        placeholder={fields.memo.placeholder}
-        rows={5}
+        name="message"
+        label={fields.message.label}
+        placeholder={fields.message.placeholder}
         maxLength={2000}
-        value={values.memo}
-        onChange={set("memo")}
-        error={fieldErrors.memo && text.errors[fieldErrors.memo]}
+        value={values.message}
+        onChange={set("message")}
+        error={fieldErrors.message && text.errors[fieldErrors.message]}
+        required
         requiredMark={text.requiredMark}
         optionalMark={text.optionalMark}
         disabled={isPending}

@@ -1,4 +1,4 @@
-import type { Locale } from "@/i18n/config";
+import { locales, type Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n";
 
 /**
@@ -23,6 +23,29 @@ export type NavKey = (typeof mainNavItems)[number]["key"];
 /** locale prefix 를 붙인 실제 경로를 만든다. 예: ("ko", "/about") -> "/ko/about" */
 export function localePath(locale: Locale, path: string): string {
   return `/${locale}${path}`;
+}
+
+/**
+ * 현재 경로에서 **locale 세그먼트만** 바꾼다. 예: /ko/about -> /en/about
+ *
+ * 나머지 경로를 건드리지 않으므로 A안(`/ko/about`)과 B안(`/ko/design-b/about`)
+ * 어디서 불러도 같은 페이지의 다른 언어판으로 이동한다.
+ * (13단계 지시 25항 — B안에서 언어를 바꿔도 A안으로 빠져나가지 않는다)
+ */
+export function replaceLocaleInPath(
+  pathname: string,
+  nextLocale: Locale,
+): string {
+  const segments = pathname.split("/");
+  // pathname 은 "/ko/about" 형태이므로 segments[1] 이 locale 이다.
+  if (
+    segments.length > 1 &&
+    (locales as readonly string[]).includes(segments[1])
+  ) {
+    segments[1] = nextLocale;
+    return segments.join("/");
+  }
+  return `/${nextLocale}`;
 }
 
 export type ResolvedNavItem = {

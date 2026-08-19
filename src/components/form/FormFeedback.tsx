@@ -51,11 +51,19 @@ export function SuccessPanel({
   title,
   description,
   links,
+  basePath = "",
 }: {
   locale: Locale;
   title: string;
   description: string;
   links: { path: string; label: string }[];
+  /**
+   * locale 다음에 끼워 넣을 경로. 기본값은 빈 문자열이라 A안은 지금까지와 같다.
+   *
+   * 디자인 B안(13단계)이 이 폼을 **그대로 재사용**하면서 `/design-b` 를 넘긴다.
+   * 폼을 복제하지 않고 안내 링크만 각자의 사이트 안에 머물게 하기 위한 것이다.
+   */
+  basePath?: string;
 }) {
   return (
     <div
@@ -88,7 +96,7 @@ export function SuccessPanel({
         {links.map((link) => (
           <li key={link.path}>
             <Link
-              href={localePath(locale, link.path)}
+              href={localePath(locale, `${basePath}${link.path}`)}
               className="inline-flex rounded-md border border-navy/30 px-5 py-2.5 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
             >
               {link.label}

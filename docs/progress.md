@@ -3,7 +3,7 @@
 > 이 문서는 다음 세션에서 이어서 작업할 수 있도록 **현재 상태와 다음 할 일**을 기록한다.
 > 요구사항은 [`CLAUDE.md`](../CLAUDE.md), 결정 배경은 [`decisions.md`](./decisions.md) 참고.
 >
-> 마지막 갱신: 2026-08-18 · 12단계 완료 · **운영 반영까지 끝난 상태에서 세션 종료**
+> 마지막 갱신: 2026-08-19 · 13단계(디자인 B안) 완료 · **운영 반영 전** (재시작 대기)
 
 ---
 
@@ -24,9 +24,11 @@
 | 10 | 관리자 CMS (페이지 콘텐츠 · 입학안내 · FAQ) | ✅ 완료 |
 | 11 | 파일 업로드 · 미디어 관리 | ✅ 완료 |
 | 12 | 미디어를 공개 콘텐츠에 연결 | ✅ 완료 |
-| 13 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
+| 13 | 디자인 B안 — 공개 사이트 한 벌 전체 (preview) | ✅ 완료 |
+| 14 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
 
-**현재 서비스 중**: https://oikos.pastday.co.kr — **12단계까지 전부 반영됨** ✅
+**현재 서비스 중**: https://oikos.pastday.co.kr — **12단계까지 반영됨**
+⚠️ **13단계는 아직 운영에 반영되지 않았다.** `systemctl restart oikos` 를 하면 반영된다.
 (2026-08-18 14:55 재시작. 공개 페이지·관리자·미디어 서빙 모두 확인)
 (⚠️ 운영과 개발이 같은 디렉터리·같은 DB 를 쓴다. 아래 "운영 전환 체크리스트" 참고)
 
@@ -42,7 +44,7 @@
 | DB | Faculty 1 · Program 2 · Course 33 · PageSection 19 · PageSectionItem 30 · FAQ 8 · SiteSetting 8 · Media 0 · 상담/설명회 0 |
 | 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
 | 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
-| 운영 | ✅ 12단계까지 반영 완료. 밀린 배포 없음 |
+| 운영 | ⚠️ 12단계까지만 반영됨. **13단계(디자인 B안)는 재시작 대기** |
 
 ### 시작할 때 할 일
 
@@ -78,12 +80,12 @@ npm run dev                  # 개발 서버 3000
 
 **C. 남은 단계**
 
-- **13단계 — 테스트 / SEO / 보안 점검**
+- **교수 디자인 검수** — A안(`/ko`)과 B안(`/ko/design-b`)을 나란히 보여주고 한쪽을 고른다.
+  B안이 채택되면 아래 "B안을 정식 디자인으로 승격하기" 절을 따른다.
+- **14단계 — 테스트 / SEO / 보안 점검**
   각 단계에서 그때그때 확인해 왔지만, 전체를 한 번에 훑는 작업은 아직 하지 않았다.
   SEO 는 `buildPageMetadata` 로 title·description·canonical·OG 를 넣어 두었으나
-  sitemap.xml · robots.txt 는 없다.
-- **디자인 B안 (Hero 이미지/영상)** — 미디어 연결 기반(`MediaBlocks` · `MediaPicker`)은
-  12단계에서 만들어 두었다. Hero 자체는 손대지 않았다.
+  sitemap.xml · robots.txt 는 없다. (B안은 sitemap 에 넣지 않는다)
 - **운영 전환 체크리스트** — 아래 절. 교수 검수 전에 반드시 처리한다.
 
 ---
@@ -218,11 +220,17 @@ sudo systemctl restart oikos # ← 빠뜨리면 예전 화면이 계속 보인�
 
 ```
 src/
-  app/[locale]/          ← 사용자 사이트의 root layout (html lang 을 locale 별로 바꾸기 위함)
-    page.tsx             메인 (Hero + 9개 섹션)
-    about  faculty  degree  admission  faq
-    consultation/        상담 폼 + actions.ts(서버 액션) + seminar/ (설명회 폼)
-    programs/  programs/mba  programs/dba
+  app/[locale]/          ← root layout. **html/body 와 locale 검사만** 한다 (13단계에서 분리)
+    (site)/              ★ A안 = 정식 공개 사이트. route group 이라 URL 에 나타나지 않는다
+      layout.tsx           Header · Footer · skip link (예전 root layout 에 있던 것)
+      page.tsx             메인 (Hero + 9개 섹션)
+      about  faculty  degree  admission  faq
+      consultation/        상담 폼 + actions.ts(서버 액션) + seminar/ (설명회 폼)
+      programs/  programs/mba  programs/dba
+    design-b/            ★ B안 = 교수 검토용 preview (/ko/design-b …). noindex
+      layout.tsx           HeaderB · FooterB
+      page.tsx  about  faculty  programs(+mba,dba)  degree  admission  faq  consultation(+seminar)
+                           → A안과 **같은 11개 페이지**. 조회·검증·Server Action 은 A안 것을 그대로 쓴다
   app/admin/             ← 관리자 영역의 별도 root layout (한국어 고정, locale 라우팅 없음)
     login/               로그인 (보호 대상 아님 — redirect loop 방지)
     (protected)/         ★ layout 에서 requireAdmin(). 이 아래는 전부 인증 필요
@@ -240,7 +248,13 @@ src/
     layout/              Header(2행) · Footer · MobileMenu · LanguageSwitcher · Container
     home/                메인 페이지 섹션 10개
     page/                상세 페이지 공통 (PageHero · Section · Accordion · CourseList · ProgramPage · RelatedLinks)
-    form/                신청 폼 공통 입력·피드백 컴포넌트
+    site-b/              ★ B안 표현 계층 전용 (13단계)
+                           paths.ts(bPath·B 메뉴) · metadata.ts(noindex) · HeaderB · FooterB ·
+                           ContainerB · SectionB(조판 요소 묶음) · PageHeroB · AccordionB ·
+                           CourseListB · MediaBlocksB · RelatedLinksB · ProgramPanelsB ·
+                           ProgramPageB · home/(메인 섹션 10개)
+                           ※ DB 조회·business logic 은 하나도 들어 있지 않다
+    form/                신청 폼 공통 입력·피드백 컴포넌트 (A안·B안이 **같은 것**을 쓴다)
     admin/               사이드바 · 공통 UI · 검색상자 · CMS 입력 컴포넌트(form.tsx) · 각 CMS 폼
   types/next-auth.d.ts   session.user.role 타입 확장
   content/
@@ -275,7 +289,9 @@ assets/source/           원본 이미지 (Git 미포함)
 - **수치는 `program-facts.ts` 에만 둔다.** 개강일·등록금이 바뀌어도 한 곳만 고치면 된다.
 - **한/영은 같은 타입을 공유한다.** 한쪽에 키가 늘면 다른 쪽에서 컴파일 오류가 난다.
 - **원본 자료에 없는 내용을 만들지 않는다.** 값이 없으면 `null` 로 두고 화면에 "준비 중"으로 표시한다.
-- Server Component 가 기본. 상태·경로가 필요한 곳만 Client Component (`MobileMenu`, `LanguageSwitcher`, `DesktopNav`, `Accordion`).
+- Server Component 가 기본. 상태·경로가 필요한 곳만 Client Component (`MobileMenu`, `LanguageSwitcher`, `DesktopNav`, `Accordion`, `HeaderB`, `AccordionB`).
+- **디자인이 둘이어도 데이터는 하나다.** A안과 B안은 같은 DB·CMS·Media·Server Action·검증을 쓰고
+  `components/site-b` 아래의 표현 계층만 갈라진다.
 
 ---
 
@@ -859,6 +875,113 @@ DB 행은 있는데 파일이 없으면 관리자 화면이 깨지지 않고 **"
 
 ---
 
+## 13단계에서 만든 것 (디자인 B안 — 공개 사이트 한 벌 전체)
+
+교수에게 A/B 를 비교해 보여주기 위해 **공개 사이트를 한 벌 더** 만들었다.
+메인만이 아니라 11개 페이지 전부이며, 처음부터 끝까지 하나의 디자인으로 이어진다.
+
+| | A안 (정식) | B안 (preview) |
+| --- | --- | --- |
+| 주소 | `/ko`, `/ko/about` … | `/ko/design-b`, `/ko/design-b/about` … |
+| 검색엔진 | 색인됨 (canonical·hreflang 있음) | **noindex, nofollow** (canonical·hreflang 없음) |
+| 지면 | 흰 바탕 · 둥근 카드 · 76rem | 아이보리 바탕 · 각진 면 · 88rem |
+| Header | sticky 2행, 항상 흰 배경 | Hero 위에 겹치는 투명 → 스크롤하면 아이보리 |
+| 메뉴 | 7개 | 8개 (FAQ 추가) |
+
+### 구조를 어떻게 나눴는가
+
+`app/[locale]/layout.tsx` 가 root layout 인데 거기에 Header/Footer 가 들어 있었다.
+그대로 두면 B안 페이지에도 A안 Header 가 따라붙는다.
+
+그래서 **root layout 은 `<html>`/`<body>` 와 locale 검사만 남기고**,
+A안 페이지 전부를 `(site)/` route group 으로 옮겨 그 안의 layout 이 Header/Footer 를 그리게 했다.
+route group 은 주소에 나타나지 않으므로 **`/ko/about` 같은 정식 URL 은 하나도 바뀌지 않았다.**
+(`git mv` 만 했고 페이지 파일 내용은 한 줄도 고치지 않았다)
+
+### 복제하지 않은 것
+
+디자인이 둘이라고 해서 두 벌이 되면 안 되는 것들이 있다.
+
+- **DB·Prisma·CMS 조회** — `lib/cms/queries.ts` 를 그대로 쓴다.
+- **Server Action** — 상담·설명회 폼은 `ConsultationForm` / `SeminarForm` **컴포넌트 자체를 재사용**한다.
+  zod 검증 · 오류 코드 · 중복 제출 차단 · 스팸 방어가 전부 같은 코드다.
+  색만 B안으로 바꾸기 위해 `globals.css` 에 `.form-b` 껍데기를 두었다.
+  Tailwind 유틸리티가 `var(--color-*)` 를 읽으므로 **조상에서 변수를 다시 정의하면**
+  자식 전체가 다시 칠해진다. 폼 컴포넌트는 한 줄도 고치지 않았다.
+- **Media** — 같은 `Media` 레코드·같은 URL·같은 대체 텍스트를 쓴다.
+- **관리자 CMS** — 하나뿐이다. B안용 관리자 화면은 만들지 않았다.
+
+공유 컴포넌트에 새로 붙인 것은 `basePath` 하나뿐이다.
+성공 화면의 안내 링크가 각자의 사이트 안에 머물게 하는 용도이고, 기본값이 `""` 라 A안은 그대로다.
+
+### B안 안에서 A안으로 새지 않게 하기
+
+가장 조심한 부분이다. 링크 하나만 A안을 가리켜도 교수가 둘러보다 갑자기 다른 디자인을 보게 된다.
+
+- B안 컴포넌트는 `localePath` 대신 **`bPath()` 만** 쓴다.
+- 콘텐츠(`content/home`)의 `href` 는 `/ko/programs/mba` 같은 **A안 절대경로**다.
+  그대로 쓰면 새므로 과정 코드로 B안 경로를 새로 만든다.
+- 언어 전환은 경로에서 **locale 세그먼트만** 바꾼다(`replaceLocaleInPath`).
+  그래서 `/ko/design-b/about` → `/en/design-b/about` 가 된다.
+- 검증: 22개 B안 페이지의 HTML 에서 `href="/ko…"` · `href="/en…"` 중
+  `design-b` 가 아닌 것이 **0개**임을 확인했다.
+
+### CMS 수정이 두 곳에 반영되게 하기
+
+`lib/cms/revalidate.ts` 의 `revalidate()` 가 이제 **A안·B안 두 패턴을 항상 함께** 무효화한다.
+호출하는 쪽은 `"/faculty"` 처럼 공통 경로 하나만 넘긴다.
+한쪽만 무효화하면 관리자가 저장한 뒤 B안만 옛 내용을 계속 보여주게 된다.
+
+### Hero
+
+`Media` 가 아직 0건이라 **사진이 없다.** 인터넷에서 내려받지 않았다.
+겹친 gradient · 얇은 격자선 · 큰 타이포그래피만으로 한 화면(`min-h-svh`)을 만들었다.
+
+`HeroB` 에 `backgroundMedia` prop 을 열어 두었다. 사진이 생기면 넘기기만 하면
+그 자리에 깔리고 gradient 는 overlay 가 된다.
+**영상 업로드는 만들지 않았다.** 업로드 정책이 이미지·PDF 로 한정되어 있고
+영상은 MIME·용량·스트리밍·MediaPicker 까지 함께 손봐야 한다.
+지금의 Hero 가 영상이 재생되지 않는 환경에서 보여 줄 정지 화면 역할을 그대로 한다.
+
+### 색 대비를 계산해서 고쳤다
+
+처음 고른 bronze(`#a8823f`)는 아이보리 지면에서 **3.34:1** 이었다.
+eyebrow·섹션 번호 같은 작은 글자에 쓰는 색이라 AA(4.5:1)에 못 미친다.
+`#856327` 로 내려 **5.20:1** 로 맞췄다. (이 색 위의 흰 글자도 5.51:1)
+어두운 면의 `text-white/40`(3.80:1)·`/45`(4.50:1)도 `/60`(7.19:1)으로 올렸다.
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| A안 22개 페이지 HTML | **운영(3100)의 12단계 빌드와 바이트 단위로 동일** (차이 0줄) |
+| B안 22개 route | 전부 200 |
+| B안 noindex/nofollow | 22개 전부 적용, canonical·hreflang 0개 |
+| B안 → A안 이탈 링크 | 0개 |
+| 404 | `/ko/design-b/nope` · `/jp/design-b` · `/ko/nope` 모두 404 |
+| A/B 데이터 동일성 | FAQ 8 · 교수 1 · MBA 교과목 14 · DBA 교과목 19 · 과정명 2 · 금액 4 · 학기/학점 — 양쪽 모두 누락 0 |
+| 폼 | 입력 필드 구성이 A안과 동일, 같은 Server Action |
+| 제목 구조 | 페이지마다 h1 1개, alt 없는 img 0개 |
+
+**스크린샷은 만들지 못했다.** 이 환경에 headless 브라우저(playwright/puppeteer/chromium)가 없고,
+그것 때문에 무거운 의존성을 추가하지 않았다. 실제 화면 확인은 사람이 브라우저로 해야 한다.
+390px 모바일도 마찬가지로 **구조적으로만** 확인했다.
+(넓은 표는 `overflow-x-auto` 안에 있고, 큰 장식 글자는 전부 `overflow-hidden` 안에 있다)
+
+### B안을 정식 디자인으로 승격하기 (교수가 B안을 고른 경우)
+
+1. `app/[locale]/(site)/` 안의 페이지들을 지우고 `design-b/` 의 페이지를 그 자리로 옮긴다.
+2. `components/site-b/paths.ts` 의 `bPath()` 에서 `design-b` 세그먼트를 뺀다.
+   (`localePath` 로 바꾸면 `RelatedLinksB` 등도 함께 정리된다)
+3. `metadata.ts` 의 `buildDesignBMetadata` 를 `buildPageMetadata` 로 바꾼다. (canonical·hreflang 복구)
+4. `lib/cms/revalidate.ts` 에서 B안 패턴 무효화를 제거한다.
+5. A안 전용이 된 `components/home` · `components/page` · `components/layout/Header|Footer` 를 정리한다.
+
+A안이 채택되면 `app/[locale]/design-b/` 와 `components/site-b/` 를 통째로 지우면 된다.
+`.form-b`(globals.css)와 B안 색 토큰, `SuccessPanel` 의 `basePath` prop 도 같이 지운다.
+
+---
+
 ## 미결 항목 (누가 결정해야 하는가)
 
 ### 교수 검수가 필요한 원본 자료 불일치 12건
@@ -893,7 +1016,12 @@ DB 행은 있는데 파일이 없으면 관리자 화면이 깨지지 않고 **"
   sanitize 대상이 없다. 표·목록이 필요해지면 그때 다시 검토한다.
 - 업로드 파일 저장 경로 — `public/uploads/` 유지 vs 외부 경로 + 서빙 라우트 (11단계)
 - 다크모드 지원 여부 (현재 라이트 테마 고정)
-- 디자인 B안 (배경 영상/이미지 기반) — 전체 기능 완료 후 별도 단계
+- **A안 / B안 중 무엇을 정식 디자인으로 할지** — 교수 검수 대상. 13단계에서 둘 다 만들어 두었다.
+- **Hero 배경 영상 지원 여부** — 13단계에서 만들지 않았다. 필요하다고 결정되면
+  업로드 MIME·magic bytes·용량 상한·serving(Range 요청)·MediaPicker·nginx 를 함께 손봐야 한다.
+- **Hero 배경 이미지를 관리자가 고르게 할지** — 지금은 코드에서만 넘길 수 있다.
+  `PageSection` 이 범용 모델이라 **마이그레이션 없이** `page-catalog.ts` 에
+  `home/hero` 섹션을 추가하는 것으로 붙일 수 있다.
 
 ---
 

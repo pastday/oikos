@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { locales, type Locale } from "@/i18n/config";
 import { cn } from "@/lib/cn";
+import { replaceLocaleInPath } from "@/lib/navigation";
 
 /**
  * 현재 경로를 유지한 채 언어만 바꾼다.
@@ -12,16 +13,10 @@ import { cn } from "@/lib/cn";
  * href 는 pathname 만으로 만들기 때문에 JS 없이도 정상 동작한다.
  * query string 과 hash 는 클릭 시점에 붙여 보존한다.
  * (useSearchParams 를 쓰면 레이아웃 전체가 Suspense 경계를 요구하므로 사용하지 않는다.)
+ *
+ * 경로에서 locale 만 바꾸는 규칙은 B안 Header 도 함께 쓰므로
+ * `@/lib/navigation` 의 `replaceLocaleInPath` 한 곳에 둔다.
  */
-function replaceLocale(pathname: string, nextLocale: Locale): string {
-  const segments = pathname.split("/");
-  // pathname 은 "/ko/about" 형태이므로 segments[1] 이 locale 이다.
-  if (segments.length > 1 && (locales as readonly string[]).includes(segments[1])) {
-    segments[1] = nextLocale;
-    return segments.join("/");
-  }
-  return `/${nextLocale}`;
-}
 
 export function LanguageSwitcher({
   currentLocale,
@@ -39,7 +34,7 @@ export function LanguageSwitcher({
     <nav aria-label={label} className={cn("flex items-center gap-1", className)}>
       {locales.map((locale, index) => {
         const isCurrent = locale === currentLocale;
-        const href = replaceLocale(pathname, locale);
+        const href = replaceLocaleInPath(pathname, locale);
 
         return (
           <span key={locale} className="flex items-center">
