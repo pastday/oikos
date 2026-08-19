@@ -83,8 +83,13 @@ export default async function DesignBHomePage({ params }: PageProps) {
 
       <BIntro content={content} />
       <BSpecialization content={content} watermark={watermark} />
-      <BPrograms locale={locale} content={content} programs={programs} />
-      <BOnline content={content} />
+      <BPrograms
+        locale={locale}
+        content={content}
+        programs={programs}
+        watermark={watermark}
+      />
+      <BOnline content={content} watermark={watermark} />
       <BCurriculum locale={locale} content={content} courses={courses} />
       <BFacultyHome
         locale={locale}

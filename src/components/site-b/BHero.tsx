@@ -3,6 +3,7 @@ import type { Locale } from "@/i18n/config";
 import type { MediaView } from "@/lib/cms/types";
 import { BButton, BStatsBand } from "./BBlocks";
 import { BFrame } from "./BFrame";
+import { designBImages } from "./images";
 import { BContainer } from "./BLayout";
 import { BDisplay, BEyebrow } from "./BType";
 import { bPath } from "./paths";
@@ -27,10 +28,11 @@ import { bPath } from "./paths";
  * A안에는 이런 좌우 분할도, 화면 끝까지 닿는 비주얼 영역도 없다.
  * 색을 모두 지워도 두 Hero 는 다른 구조로 읽힌다.
  *
- * ## 사진이 없을 때
+ * ## 사진
  *
- * 오른쪽 자리는 비워 두지 않는다. `BFrame` 이 gradient·격자·워드마크로 면을 만든다.
- * 사진이 생기면 `backgroundMedia` 로 넘기기만 하면 같은 자리에 들어간다.
+ * 지금은 시안용 CC0 이미지(대학 건물)가 들어가 있다. 오이코스대학교를 찍은 것이 아니다.
+ * 관리자가 CMS 에서 Hero 이미지를 올리면 `backgroundMedia` 가 그것을 이기고
+ * 시안 이미지는 저절로 밀려난다. 둘 다 없으면 `BFrame` 이 CSS 로 면을 만든다.
  * 영상으로 확장할 때도 이 자리의 배경 레이어만 바꾸면 된다.
  */
 export function BHero({
@@ -53,6 +55,7 @@ export function BHero({
       <div className="absolute inset-y-0 right-0 hidden w-[42%] lg:block">
         <BFrame
           media={backgroundMedia}
+          staticSrc={designBImages.heroCampus}
           watermark={watermark}
           priority
           fill
@@ -104,6 +107,7 @@ export function BHero({
       <div className="relative lg:hidden">
         <BFrame
           media={backgroundMedia}
+          staticSrc={designBImages.heroCampus}
           watermark={watermark}
           ratio="16/9"
           sizes="100vw"

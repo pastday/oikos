@@ -17,6 +17,7 @@ import {
   BPullQuote,
   BRule,
 } from "@/components/site-b/BType";
+import { designBImages } from "@/components/site-b/images";
 import { buildDesignBMetadata } from "@/components/site-b/metadata";
 import { bPath } from "@/components/site-b/paths";
 import { getPageContent } from "@/content/pages";
@@ -108,6 +109,7 @@ export default async function DesignBAboutPage({ params }: PageProps) {
         intro={toPageIntro(sections.intro, content.intro)}
         index={1}
         media={school?.media ?? null}
+        staticSrc={designBImages.heroCampus}
         watermark={watermark}
       />
 

@@ -5,6 +5,15 @@ import { cn } from "@/lib/cn";
 /**
  * 이미지가 들어갈 자리.
  *
+ * ## 무엇을 그리는지 정하는 순서
+ *
+ *   1. `media`     — 관리자가 CMS 에서 올린 실제 파일. **있으면 언제나 이것을 쓴다.**
+ *   2. `staticSrc` — 시안용 정적 이미지 (`components/site-b/images.ts`)
+ *   3. 둘 다 없으면 CSS 로 만든 면 (gradient · 격자 · 워드마크)
+ *
+ * 이 순서 덕분에 **관리자가 사진을 올리는 순간 시안 이미지가 저절로 밀려난다.**
+ * 코드를 고칠 필요가 없다.
+ *
  * ## 왜 별도 컴포넌트인가
  *
  * A안에는 이미지 자리가 사실상 없다. 사진이 지정된 경우에만 상자를 하나 그린다.
@@ -44,6 +53,8 @@ const ratioClass: Record<Ratio, string> = {
 
 export function BFrame({
   media,
+  staticSrc,
+  staticAlt = "",
   ratio = "4/5",
   watermark,
   priority = false,
@@ -53,6 +64,16 @@ export function BFrame({
   fill = false,
 }: {
   media?: MediaView | null;
+  /** 시안용 정적 이미지 경로. `media` 가 있으면 무시된다. */
+  staticSrc?: string;
+  /**
+   * 정적 이미지의 대체 텍스트.
+   *
+   * 기본값은 빈 문자열이다. 이 사진들은 **분위기를 만드는 장식**이고 옆 글이 내용을
+   * 이미 말하고 있어, 빈 alt 로 두면 화면 읽기 프로그램이 건너뛴다. 그 편이 정확하다.
+   * 사진 자체가 정보를 전할 때만 문구를 넘긴다.
+   */
+  staticAlt?: string;
   ratio?: Ratio;
   watermark?: string;
   priority?: boolean;
@@ -60,6 +81,12 @@ export function BFrame({
   className?: string;
   fill?: boolean;
 }) {
+  const source = media
+    ? { src: media.url, alt: media.alt }
+    : staticSrc
+      ? { src: staticSrc, alt: staticAlt }
+      : null;
+
   return (
     <div
       className={cn(
@@ -69,10 +96,10 @@ export function BFrame({
         className,
       )}
     >
-      {media ? (
+      {source ? (
         <Image
-          src={media.url}
-          alt={media.alt}
+          src={source.src}
+          alt={source.alt}
           fill
           priority={priority}
           sizes={sizes}

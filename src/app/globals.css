@@ -103,8 +103,25 @@
    * display  : Hero 와 페이지 제목
    * headline : 섹션 제목
    * index    : 섹션 번호·목록 번호 */
-  --text-mega: clamp(3rem, 14vw, 13rem);
-  --text-mega--line-height: 0.82;
+  /* ⚠️ 단위가 `vw` 가 아니라 `cqi` 인 이유
+   *
+   * mega 글자는 화면 전체가 아니라 **7/12 칼럼 안**에 놓인다.
+   * 화면 폭(vw)으로 크기를 정하면 1440px 에서 글자가 202px 이 되는데
+   * 그 칼럼의 폭은 719px 뿐이라 `ONLINE`(약 750px)이 칸을 넘어
+   * `ONLIN` / `E` 로 찢어졌다. (실제로 그렇게 깨졌다)
+   *
+   * `cqi` 는 **가장 가까운 container 의 폭**을 기준으로 한다.
+   * 그래서 어떤 칼럼에 놓이든 그 칸 안에 들어가는 크기가 나온다.
+   * 쓰는 쪽에서 `@container` 를 붙여야 한다. (BMega 주석 참고)
+   *
+   * 18cqi 로 잡으면 `ONLINE` 이 칸 폭의 약 80% 를 쓰고 20% 가 남는다.
+   * 실제로 재 본 값 (DejaVu Serif Bold — Georgia 보다 넓은 편이라 보수적):
+   *   1440px → 칸 719px, 글자 129px, ONLINE 578px (여유 20%)
+   *    768px → 칸 688px, 글자 124px, ONLINE 553px (여유 20%)
+   *    390px → 칸 342px, 글자  62px, ONLINE 273px (여유 20%)
+   * 어느 폭에서도 한 줄에 들어가고 가로 스크롤도 생기지 않는다. */
+  --text-mega: clamp(2.5rem, 18cqi, 11rem);
+  --text-mega--line-height: 0.86;
   --text-mega--letter-spacing: -0.03em;
 
   --text-display: clamp(2.5rem, 6.2vw, 5.5rem);

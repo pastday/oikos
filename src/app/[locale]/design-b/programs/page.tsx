@@ -10,6 +10,7 @@ import {
   BPullQuote,
   BRule,
 } from "@/components/site-b/BType";
+import { designBImages } from "@/components/site-b/images";
 import { buildDesignBMetadata } from "@/components/site-b/metadata";
 import { getHomeContent } from "@/content/home";
 import { getPageContent } from "@/content/pages";
@@ -62,6 +63,7 @@ export default async function DesignBProgramsPage({ params }: PageProps) {
           description: home.programs.description,
         }}
         index={3}
+        staticSrc={designBImages.programs}
         watermark={dict.site.wordmark}
       />
 

@@ -37,24 +37,55 @@ export function BEyebrow({
 }
 
 /**
- * 가장 큰 글자. 화면을 가로지른다.
- * 한 낱말 또는 아주 짧은 구절에만 쓴다. 문장을 넣으면 읽히지 않는다.
+ * 가장 큰 글자. 한 낱말 또는 아주 짧은 구절에만 쓴다.
+ *
+ * ## 낱말을 절대 쪼개지 않는다
+ *
+ * 전에 `break-words` 를 붙여 두었더니 `ONLINE` 이 `ONLIN` / `E` 로 찢어졌다.
+ * 그 속성은 **낱말 한가운데서도 줄을 바꾸라**는 뜻이라, 글자가 칸보다 크면
+ * 반드시 그런 결과가 나온다. 지금은 붙이지 않는다. (CSS 기본값은 낱말을 지키는 쪽이다)
+ *
+ * 대신 크기를 칸에 맞춘다. `text-mega` 는 `cqi` 단위라
+ * **부모에 `@container` 가 붙어 있어야** 그 칸 폭을 기준으로 계산된다.
+ * 붙이지 않으면 화면 폭 기준으로 떨어져 다시 칸을 넘칠 수 있다.
+ *
+ * `nowrap` 은 `ONLINE` 처럼 **한 낱말짜리**에만 켠다.
+ * 여러 낱말(예: "2026년 10월")에 켜면 줄을 바꿀 곳이 없어져 칸을 넘친다.
  */
 export function BMega({
   children,
   tone = "dark",
+  nowrap = false,
+  dim = false,
   className,
 }: {
   children: ReactNode;
   tone?: "light" | "dark";
+  nowrap?: boolean;
+  /**
+   * 두 줄짜리 선언에서 **둘째 줄을 한 단계 눌러** 첫 줄이 먼저 읽히게 한다.
+   *
+   * `className` 으로 색을 덮어쓰지 않는 이유: 이 프로젝트의 `cn` 은 tailwind-merge 가
+   * 아니라 단순 연결이라 `text-white` 와 `text-white/35` 가 함께 남고
+   * 어느 쪽이 이길지 CSS 순서에 맡겨진다. 그래서 선택지를 여기서 정한다.
+   */
+  dim?: boolean;
   className?: string;
 }) {
+  const color = dim
+    ? tone === "dark"
+      ? "text-white/35"
+      : "text-ink/25"
+    : tone === "dark"
+      ? "text-white"
+      : "text-ink";
+
   return (
     <span
       className={cn(
-        // 390px 에서도 넘치지 않도록 낱말 단위로 접히게 둔다.
-        "block font-serif text-mega font-bold break-words",
-        tone === "dark" ? "text-white" : "text-ink",
+        "block font-serif text-mega font-bold",
+        nowrap && "whitespace-nowrap",
+        color,
         className,
       )}
     >

@@ -10,6 +10,7 @@ import {
   BHeadline,
   BMega,
 } from "@/components/site-b/BType";
+import { designBImages } from "@/components/site-b/images";
 import { buildDesignBMetadata } from "@/components/site-b/metadata";
 import { getPageContent } from "@/content/pages";
 import { formatKrw } from "@/content/program-facts";
@@ -123,6 +124,7 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
         intro={toPageIntro(sections.intro, content.intro)}
         index={7}
         media={recruit?.media ?? null}
+        staticSrc={designBImages.programs}
         watermark={watermark}
       />
 
@@ -130,7 +132,8 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
         (recruitItems.length > 0 || recruit.document) && (
           <BSection index={1} label={recruit.title ?? undefined} tone="paper">
             <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
-              <div className="lg:col-span-7">
+              {/* `text-mega` 가 cqi 단위라 이 칸에 `@container` 가 필요하다. */}
+              <div className="@container lg:col-span-7">
                 {headline && (
                   <>
                     <BEyebrow>{headline.label}</BEyebrow>

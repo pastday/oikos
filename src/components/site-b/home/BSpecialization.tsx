@@ -1,22 +1,32 @@
 import type { HomeContent } from "@/content/home";
-import { BRowList, type BRow } from "@/components/site-b/BBlocks";
 import { BFrame } from "@/components/site-b/BFrame";
+import { pillarImages } from "@/components/site-b/images";
 import { BSection } from "@/components/site-b/BLayout";
-import { BHeadline, BLead } from "@/components/site-b/BType";
+import { BHeadline, BLead, BRule } from "@/components/site-b/BType";
+import { cn } from "@/lib/cn";
 
 /**
  * 전공의 네 영역 (호텔 · 외식 · 와인 · 관광).
  *
- * ## 이전 시안과 무엇이 다른가
+ * ## 배치
  *
- * 이전에는 같은 크기 판 4개를 2×2 격자에 넣었다. A안의 카드 4장과 구조가 같았다.
- * 지금은 **왼쪽에 세로로 긴 비주얼 자리, 오른쪽에 번호가 붙은 가로선 목록**이다.
- * 네 항목이 대등하게 늘어선 것이 아니라 위에서 아래로 읽히고,
- * 왼쪽 비주얼이 전공의 성격(호텔·와인)을 사진으로 받을 자리가 된다.
+ * 같은 크기 카드 4장으로 늘어놓지 않는다.
+ * 항목마다 **사진과 글의 좌우가 뒤바뀌고 사진 폭도 달라진다.**
+ * 지면이 위에서 아래로 지그재그로 읽히고, 네 영역이 대등하게 나열된 목록이 아니라
+ * 하나씩 소개되는 편집물처럼 보인다.
  *
- * 큰 낱말은 콘텐츠의 전공 이름을 그대로 쓴다.
- * 영문 표기를 따로 지어내지 않는다. 영어판에서는 영어 콘텐츠가 그대로 큰 낱말이 된다.
+ * 사진은 전공의 성격을 가장 빨리 전하는 요소라 이 섹션에서 가장 크게 쓴다.
+ * 큰 낱말은 콘텐츠의 전공 이름을 그대로 쓴다. 영문 표기를 따로 지어내지 않는다.
  */
+
+/** 항목마다 사진 폭과 좌우를 다르게 둔다. 네 항목이 같은 리듬으로 보이지 않게 하려는 것이다. */
+const layouts = [
+  { image: "lg:col-span-5", text: "lg:col-span-7", flip: false },
+  { image: "lg:col-span-4", text: "lg:col-span-8", flip: true },
+  { image: "lg:col-span-6", text: "lg:col-span-6", flip: false },
+  { image: "lg:col-span-4", text: "lg:col-span-8", flip: true },
+] as const;
+
 export function BSpecialization({
   content,
   watermark,
@@ -26,34 +36,59 @@ export function BSpecialization({
 }) {
   const { pillars } = content;
 
-  const rows: BRow[] = pillars.items.map((pillar) => ({
-    id: pillar.key,
-    title: pillar.title,
-    body: pillar.description,
-  }));
-
   return (
     <BSection index={2} label={pillars.title} tone="stone">
-      <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
-        <div className="lg:col-span-4">
-          <div className="lg:sticky lg:top-32">
-            <BHeadline>{pillars.title}</BHeadline>
-            <BLead className="mt-6">{pillars.description}</BLead>
-
-            <BFrame
-              media={null}
-              watermark={watermark}
-              ratio="3/4"
-              className="mt-10"
-              sizes="(min-width: 1024px) 22rem, 100vw"
-            />
-          </div>
-        </div>
-
-        <div className="lg:col-span-8">
-          <BRowList rows={rows} size="large" />
-        </div>
+      <div className="max-w-3xl">
+        <BHeadline>{pillars.title}</BHeadline>
+        <BLead className="mt-6">{pillars.description}</BLead>
       </div>
+
+      <ol className="mt-16 space-y-16 lg:space-y-24">
+        {pillars.items.map((pillar, index) => {
+          const layout = layouts[index % layouts.length];
+
+          return (
+            <li key={pillar.key}>
+              <BRule className="mb-10 bg-rule-2/60" />
+
+              <div className="grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-14">
+                <div
+                  className={cn(
+                    layout.image,
+                    layout.flip && "lg:order-2",
+                  )}
+                >
+                  {/* 사진은 장식이다. 옆 글이 어떤 분야인지 이미 말하고 있으므로
+                      대체 텍스트를 비워 화면 읽기 프로그램이 건너뛰게 한다. */}
+                  <BFrame
+                    staticSrc={pillarImages[pillar.key]}
+                    watermark={watermark}
+                    ratio="4/5"
+                    sizes="(min-width: 1024px) 30rem, 100vw"
+                  />
+                </div>
+
+                <div className={cn(layout.text, layout.flip && "lg:order-1")}>
+                  <span
+                    aria-hidden="true"
+                    className="font-serif text-index font-bold tabular-nums text-bronze"
+                  >
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <h3 className="mt-5 font-serif text-3xl font-bold text-ink sm:text-4xl">
+                    {pillar.title}
+                  </h3>
+
+                  <p className="mt-6 max-w-[52ch] text-[1.0625rem] leading-[1.9] text-ink/75">
+                    {pillar.description}
+                  </p>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
     </BSection>
   );
 }

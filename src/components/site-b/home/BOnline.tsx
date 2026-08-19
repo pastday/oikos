@@ -1,5 +1,7 @@
 import type { HomeContent } from "@/content/home";
 import { BStatement } from "@/components/site-b/BBlocks";
+import { BFrame } from "@/components/site-b/BFrame";
+import { designBImages } from "@/components/site-b/images";
 
 /**
  * 100% 온라인.
@@ -15,7 +17,13 @@ import { BStatement } from "@/components/site-b/BBlocks";
  * 큰 글자는 콘텐츠의 `badge`("100% ONLINE")를 두 조각으로 나눈 것이다.
  * 새 문구를 만들지 않았고, 나눌 수 없는 형태면 통째로 한 줄에 둔다.
  */
-export function BOnline({ content }: { content: HomeContent }) {
+export function BOnline({
+  content,
+  watermark,
+}: {
+  content: HomeContent;
+  watermark: string;
+}) {
   const { online } = content;
 
   // "100% ONLINE" 을 첫 낱말과 나머지로 나눈다. 공백이 없으면 그대로 한 줄이다.
@@ -49,6 +57,15 @@ export function BOnline({ content }: { content: HomeContent }) {
           </li>
         ))}
       </ul>
+
+      {/* 이 섹션의 주인공은 큰 글자다. 사진은 아래에 작게 두어 거들기만 한다. */}
+      <BFrame
+        staticSrc={designBImages.online}
+        watermark={watermark}
+        ratio="16/9"
+        className="mt-10"
+        sizes="(min-width: 1024px) 28rem, 100vw"
+      />
     </BStatement>
   );
 }

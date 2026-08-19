@@ -1,5 +1,7 @@
 import type { Locale } from "@/i18n/config";
 import { BButton } from "./BBlocks";
+import Image from "next/image";
+import { designBImages } from "./images";
 import { BContainer } from "./BLayout";
 import { BDisplay, BEyebrow, BLead } from "./BType";
 import { bPath } from "./paths";
@@ -35,6 +37,19 @@ export function BConsultationCTA({
 }) {
   return (
     <section className="relative overflow-hidden bg-midnight py-28 text-white lg:py-44">
+      {/* 배경 사진. 글자가 주인공이므로 어둡게 눌러 놓는다.
+          장식이라 대체 텍스트를 비운다. */}
+      <Image
+        src={designBImages.architecture}
+        alt=""
+        fill
+        sizes="100vw"
+        className="object-cover opacity-30"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(4,8,15,0.96)_0%,rgba(4,8,15,0.75)_55%,rgba(4,8,15,0.55)_100%)]"
+      />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_15%_0%,rgba(168,130,63,0.22),transparent_62%)]"

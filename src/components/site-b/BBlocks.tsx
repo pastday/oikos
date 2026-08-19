@@ -186,10 +186,17 @@ export function BStatement({
         )}
 
         <div className="grid gap-12 lg:grid-cols-12 lg:items-end lg:gap-16">
-          <div className="lg:col-span-7">
-            <BMega>{mega}</BMega>
+          {/*
+            `@container` 가 있어야 `text-mega`(cqi)가 **이 칸의 폭**을 기준으로 계산된다.
+            빼면 화면 폭 기준으로 커져서 `ONLINE` 이 칸을 넘고 낱말이 찢어진다.
+            여기 들어오는 값은 한 낱말이므로 `nowrap` 도 함께 켠다.
+          */}
+          <div className="@container lg:col-span-7">
+            <BMega nowrap>{mega}</BMega>
             {megaSecondLine && (
-              <BMega className="text-white/35">{megaSecondLine}</BMega>
+              <BMega nowrap dim>
+                {megaSecondLine}
+              </BMega>
             )}
           </div>
 

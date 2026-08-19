@@ -21,18 +21,28 @@ export function BPageHero({
   intro,
   index,
   media = null,
+  staticSrc,
   watermark,
 }: {
   intro: PageIntro;
   /** 레일과 같은 규칙의 페이지 번호. 없으면 표시하지 않는다. */
   index?: number;
   media?: MediaView | null;
+  /** 시안용 정적 이미지. CMS Media 가 있으면 무시된다. */
+  staticSrc?: string;
   watermark: string;
 }) {
   return (
     <section className="relative flex min-h-[62vh] flex-col bg-midnight text-white lg:min-h-[68vh]">
       <div className="absolute inset-y-0 right-0 hidden w-[36%] lg:block">
-        <BFrame media={media} watermark={watermark} fill sizes="40vw" priority />
+        <BFrame
+          media={media}
+          staticSrc={staticSrc}
+          watermark={watermark}
+          fill
+          sizes="40vw"
+          priority
+        />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,8,15,1)_0%,rgba(4,8,15,0.4)_30%,transparent_65%)]"
@@ -62,7 +72,13 @@ export function BPageHero({
       </BContainer>
 
       <div className="relative lg:hidden">
-        <BFrame media={media} watermark={watermark} ratio="21/9" sizes="100vw" />
+        <BFrame
+          media={media}
+          staticSrc={staticSrc}
+          watermark={watermark}
+          ratio="21/9"
+          sizes="100vw"
+        />
       </div>
     </section>
   );

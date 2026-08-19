@@ -3,6 +3,7 @@ import type { ProgramCurriculum } from "@/lib/cms/types";
 import { BRowList, BStatsBand, type BRow } from "./BBlocks";
 import { BCourseList } from "./BCourseList";
 import { BContainer, BSection } from "./BLayout";
+import { designBImages } from "./images";
 import { BPageHero } from "./BPageHero";
 import {
   BBody,
@@ -55,7 +56,13 @@ export function BProgramPage({
 
   return (
     <>
-      <BPageHero intro={content.intro} index={index} watermark={watermark} />
+      {/* 상단 비주얼은 MBA·DBA 가 같은 것을 쓴다. 형제 페이지라 인상을 맞춘다. */}
+      <BPageHero
+        intro={content.intro}
+        index={index}
+        staticSrc={designBImages.programs}
+        watermark={watermark}
+      />
 
       {/* 수치를 Hero 바로 아래에 붙인다. 이 페이지에서 가장 먼저 읽혀야 할 정보다. */}
       <section className="bg-ink text-white">

@@ -32,7 +32,9 @@ export function BAdmissionBand({
     <section className="border-t border-rule bg-paper py-20 lg:py-32">
       <BContainer>
         <div className="grid gap-14 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-7">
+          {/* `text-mega` 가 cqi 단위라 이 칸에 `@container` 가 필요하다.
+              값이 "2026년 10월" 처럼 두 낱말일 수 있어 nowrap 은 켜지 않는다. */}
+          <div className="@container lg:col-span-7">
             <BEyebrow>{admission.eyebrow}</BEyebrow>
 
             {headline && (
