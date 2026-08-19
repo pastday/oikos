@@ -79,7 +79,7 @@ export default async function DesignBHomePage({ params }: PageProps) {
   return (
     <>
       {/* Hero 배경 이미지는 아직 없다. Media 가 생기면 backgroundMedia 로 넘긴다. */}
-      <BHero locale={locale} content={content} watermark={watermark} />
+      <BHero locale={locale} content={content} />
 
       <BIntro content={content} />
       <BSpecialization content={content} watermark={watermark} />
@@ -89,7 +89,7 @@ export default async function DesignBHomePage({ params }: PageProps) {
         programs={programs}
         watermark={watermark}
       />
-      <BOnline content={content} watermark={watermark} />
+      <BOnline content={content} />
       <BCurriculum locale={locale} content={content} courses={courses} />
       <BFacultyHome
         locale={locale}
@@ -99,7 +99,11 @@ export default async function DesignBHomePage({ params }: PageProps) {
         watermark={watermark}
       />
       <BDegreeStrip locale={locale} content={content} />
-      <BAdmissionBand locale={locale} content={content} />
+      <BAdmissionBand
+        locale={locale}
+        content={content}
+        watermark={watermark}
+      />
 
       <BConsultationCTA
         locale={locale}

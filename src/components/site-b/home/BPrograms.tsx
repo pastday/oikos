@@ -33,14 +33,14 @@ export function BPrograms({
         <BLead className="mt-6">{content.programs.description}</BLead>
       </div>
 
-      {/* 두 과정 위에 가로로 긴 사진 한 장을 깔아 이 구간의 성격을 먼저 전한다.
-          아래 두 판은 글자 중심이라 사진이 정보를 가리지 않는다. */}
+      {/* 사진을 지면 폭 밖까지 늘려 화면 끝에 닿게 한다.
+          컨테이너 안의 작은 사각형으로 두면 사진이 장식으로만 보인다. */}
       <BFrame
         staticSrc={designBImages.programs}
         watermark={watermark}
         ratio="21/9"
-        className="mt-14"
-        sizes="(min-width: 1024px) 80rem, 100vw"
+        className="mt-14 -mx-6 sm:-mx-10 lg:-mx-14"
+        sizes="100vw"
       />
 
       <div className="mt-16">

@@ -4,6 +4,8 @@ import type { Locale } from "@/i18n/config";
 import type { FacultyView } from "@/lib/cms/types";
 import { BTextLink } from "@/components/site-b/BBlocks";
 import { BFacultyFeature } from "@/components/site-b/BFacultyFeature";
+import Image from "next/image";
+import { designBImages } from "@/components/site-b/images";
 import { BSection } from "@/components/site-b/BLayout";
 import { BHeadline, BLead } from "@/components/site-b/BType";
 import { bPath } from "@/components/site-b/paths";
@@ -40,8 +42,18 @@ export function BFacultyHome({
   if (!chief) return null;
 
   return (
-    <BSection index={5} label={faculty.eyebrow} tone="stone">
-      <div className="max-w-3xl">
+    <BSection index={5} label={faculty.eyebrow} tone="stone" className="relative isolate">
+      {/* 배경에 아주 옅게 깔리는 건축 사진. 지면이 단색으로 비어 보이지 않게 한다.
+          **사람 사진은 쓰지 않는다.** 모르는 사람이 교수처럼 보이면 안 된다. */}
+      <Image
+        src={designBImages.heroCampus}
+        alt=""
+        fill
+        sizes="100vw"
+        className="pointer-events-none -z-10 object-cover opacity-[0.07]"
+      />
+
+      <div className="relative max-w-3xl">
         <BHeadline>{faculty.title}</BHeadline>
         <BLead className="mt-6">{faculty.description}</BLead>
       </div>

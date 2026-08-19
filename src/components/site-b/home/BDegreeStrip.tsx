@@ -1,6 +1,8 @@
 import type { HomeContent } from "@/content/home";
 import type { Locale } from "@/i18n/config";
 import { BTextLink } from "@/components/site-b/BBlocks";
+import Image from "next/image";
+import { designBImages } from "@/components/site-b/images";
 import { BContainer } from "@/components/site-b/BLayout";
 import { BEyebrow } from "@/components/site-b/BType";
 import { bPath } from "@/components/site-b/paths";
@@ -27,8 +29,22 @@ export function BDegreeStrip({
   const { degree } = content;
 
   return (
-    <section className="bg-ink py-14 text-white lg:py-16">
-      <BContainer>
+    <section className="relative overflow-hidden bg-ink py-16 text-white lg:py-20">
+      {/* 인증 기관 로고는 없다. 대신 건축 사진을 배경으로 깔아 이 띠가
+          단색 검은 면으로 보이지 않게 한다. 로고를 임의로 만들지 않는다. */}
+      <Image
+        src={designBImages.architecture}
+        alt=""
+        fill
+        sizes="100vw"
+        className="object-cover object-center"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,17,31,0.95)_0%,rgba(8,17,31,0.86)_45%,rgba(8,17,31,0.62)_100%)]"
+      />
+
+      <BContainer className="relative">
         <div className="grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-10">
           <div className="lg:col-span-3">
             <BEyebrow tone="dark">{degree.eyebrow}</BEyebrow>

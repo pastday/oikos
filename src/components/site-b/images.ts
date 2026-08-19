@@ -29,7 +29,9 @@
 const BASE = "/images/design-b";
 
 export const designBImages = {
-  /** 메인 Hero. 대학 건물과 가로수 */
+  /** 메인 Hero. 화면 전체를 덮는 가로 판 (960×540, 원본 해상도 그대로 자른 것) */
+  heroCampusWide: `${BASE}/hero-campus-wide.webp`,
+  /** 같은 사진의 세로 판. 상세 페이지 상단처럼 세로로 긴 자리에 쓴다 */
   heroCampus: `${BASE}/hero-campus.webp`,
   /** 기하학적 건축. 사람이 없어 어느 페이지에나 무난하다 */
   architecture: `${BASE}/architecture.webp`,

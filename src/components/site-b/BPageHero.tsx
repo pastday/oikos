@@ -1,21 +1,21 @@
+import Image from "next/image";
 import type { PageIntro } from "@/content/pages";
 import type { MediaView } from "@/lib/cms/types";
-import { BFrame } from "./BFrame";
+import { BFramePlaceholder } from "./BFrame";
 import { BContainer } from "./BLayout";
 import { BDisplay, BEyebrow, BLead } from "./BType";
 
 /**
  * B안 상세 페이지의 상단.
  *
- * 메인 Hero 와 **같은 구조를 축소한 것**이다.
- * 왼쪽에 글자, 오른쪽에 화면 끝까지 닿는 비주얼 자리.
- * 그래서 메인에서 상세로 들어가도 같은 사이트로 읽힌다. (상세만 A안처럼 보이면 실패다)
+ * 메인 Hero 와 **같은 방식**이다. 사진이 영역 전체를 덮고 그 위에
+ * 왼쪽이 진한 가로 gradient 가 얹힌다. 그래서 메인에서 상세로 들어가도
+ * 같은 사이트로 읽히고, 어느 쪽에도 잘린 검은 사각형이 생기지 않는다.
  *
- * A안의 상세 상단은 네이비 띠 안에 eyebrow·제목·설명을 왼쪽 정렬로 쌓은 것이고
- * 이미지 자리가 없다. 구조가 다르다.
+ * 사진이 없는 페이지(FAQ·상담 등)는 `BFramePlaceholder` 가 만든 면이 그대로 남는다.
+ * 억지로 사진을 넣지 않는다.
  *
- * `media` 를 주면 그 페이지의 CMS 이미지가 비주얼 자리에 들어간다.
- * 없으면 `BFrame` 이 만든 면이 그대로 남는다. 빈 회색 사각형은 그리지 않는다.
+ * 그림의 출처 우선순위는 `BFrame` 과 같다. CMS Media → 시안용 정적 이미지 → CSS 면.
  */
 export function BPageHero({
   intro,
@@ -32,54 +32,63 @@ export function BPageHero({
   staticSrc?: string;
   watermark: string;
 }) {
+  const background = media
+    ? { src: media.url, alt: media.alt }
+    : staticSrc
+      ? { src: staticSrc, alt: "" }
+      : null;
+
   return (
-    <section className="relative flex min-h-[62vh] flex-col bg-midnight text-white lg:min-h-[68vh]">
-      <div className="absolute inset-y-0 right-0 hidden w-[36%] lg:block">
-        <BFrame
-          media={media}
-          staticSrc={staticSrc}
-          watermark={watermark}
+    <section className="relative flex min-h-[58vh] flex-col justify-end overflow-hidden bg-midnight text-white lg:min-h-[64vh]">
+      {background ? (
+        <Image
+          src={background.src}
+          alt={background.alt}
           fill
-          sizes="40vw"
           priority
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,8,15,1)_0%,rgba(4,8,15,0.4)_30%,transparent_65%)]"
-        />
-      </div>
-
-      <BContainer className="relative flex flex-1 flex-col justify-end pt-32 pb-16 lg:pt-40 lg:pb-20 lg:pr-[40%]">
-        <div className="flex items-center gap-5">
-          {index !== undefined && (
-            <span className="font-serif text-sm font-bold tabular-nums text-bronze-2">
-              {String(index).padStart(2, "0")}
-            </span>
-          )}
-          <span aria-hidden="true" className="h-px w-10 bg-white/25" />
-          {intro.eyebrow && <BEyebrow tone="dark">{intro.eyebrow}</BEyebrow>}
-        </div>
-
-        <BDisplay as="h1" tone="dark" className="mt-8 max-w-[15ch]">
-          {intro.title}
-        </BDisplay>
-
-        {intro.description && (
-          <BLead tone="dark" className="mt-8 max-w-2xl">
-            {intro.description}
-          </BLead>
-        )}
-      </BContainer>
-
-      <div className="relative lg:hidden">
-        <BFrame
-          media={media}
-          staticSrc={staticSrc}
-          watermark={watermark}
-          ratio="21/9"
           sizes="100vw"
+          className="object-cover object-[70%_center]"
         />
-      </div>
+      ) : (
+        <BFramePlaceholder watermark={watermark} />
+      )}
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(4,8,15,0.95)_0%,rgba(4,8,15,0.88)_30%,rgba(4,8,15,0.60)_62%,rgba(4,8,15,0.30)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(4,8,15,0.72)_0%,rgba(4,8,15,0.15)_35%,rgba(4,8,15,0.55)_100%)]"
+      />
+
+      <BContainer className="relative pt-32 pb-16 lg:pt-40 lg:pb-20">
+        <div className="max-w-2xl lg:max-w-[58%]">
+          <div className="flex items-center gap-5">
+            {index !== undefined && (
+              <span className="font-serif text-sm font-bold tabular-nums text-bronze-2">
+                {String(index).padStart(2, "0")}
+              </span>
+            )}
+            <span aria-hidden="true" className="h-px w-10 bg-white/30" />
+            {intro.eyebrow && <BEyebrow tone="dark">{intro.eyebrow}</BEyebrow>}
+          </div>
+
+          <BDisplay
+            as="h1"
+            tone="dark"
+            className="mt-8 [text-shadow:0_2px_24px_rgba(4,8,15,0.55)]"
+          >
+            {intro.title}
+          </BDisplay>
+
+          {intro.description && (
+            <BLead tone="dark" className="mt-8 text-white/80">
+              {intro.description}
+            </BLead>
+          )}
+        </div>
+      </BContainer>
     </section>
   );
 }

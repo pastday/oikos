@@ -44,11 +44,11 @@ export function BConsultationCTA({
         alt=""
         fill
         sizes="100vw"
-        className="object-cover opacity-30"
+        className="object-cover object-[60%_center] opacity-55"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(4,8,15,0.96)_0%,rgba(4,8,15,0.75)_55%,rgba(4,8,15,0.55)_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(4,8,15,0.94)_0%,rgba(4,8,15,0.78)_50%,rgba(4,8,15,0.45)_100%)]"
       />
       <div
         aria-hidden="true"

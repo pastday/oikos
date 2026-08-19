@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { BContainer } from "./BLayout";
-import { BEyebrow, BMega, BRule } from "./BType";
+import { BRule } from "./BType";
 
 /**
  * B안의 정보 배치 방식.
@@ -145,65 +144,6 @@ export function BRowList({
         );
       })}
     </ul>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 화면을 가로지르는 선언
-// ---------------------------------------------------------------------------
-
-/**
- * 한 낱말을 화면 폭만큼 키워 놓는 면.
- *
- * `100% ONLINE` 처럼 **문장이 아니라 사실 하나**를 전할 때만 쓴다.
- * 오른쪽에 보조 내용을 붙일 수 있다.
- */
-export function BStatement({
-  eyebrow,
-  mega,
-  megaSecondLine,
-  children,
-  tone = "midnight",
-}: {
-  eyebrow?: string;
-  mega: string;
-  megaSecondLine?: string;
-  children?: ReactNode;
-  tone?: "midnight" | "ink";
-}) {
-  return (
-    <section
-      className={cn(
-        "overflow-hidden py-20 text-white lg:py-28",
-        tone === "midnight" ? "bg-midnight" : "bg-ink",
-      )}
-    >
-      <BContainer>
-        {eyebrow && (
-          <BEyebrow tone="dark" className="mb-10">
-            {eyebrow}
-          </BEyebrow>
-        )}
-
-        <div className="grid gap-12 lg:grid-cols-12 lg:items-end lg:gap-16">
-          {/*
-            `@container` 가 있어야 `text-mega`(cqi)가 **이 칸의 폭**을 기준으로 계산된다.
-            빼면 화면 폭 기준으로 커져서 `ONLINE` 이 칸을 넘고 낱말이 찢어진다.
-            여기 들어오는 값은 한 낱말이므로 `nowrap` 도 함께 켠다.
-          */}
-          <div className="@container lg:col-span-7">
-            <BMega nowrap>{mega}</BMega>
-            {megaSecondLine && (
-              <BMega nowrap dim>
-                {megaSecondLine}
-              </BMega>
-            )}
-          </div>
-
-          {children && <div className="lg:col-span-5">{children}</div>}
-        </div>
-      </BContainer>
-    </section>
   );
 }
 

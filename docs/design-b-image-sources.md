@@ -44,7 +44,8 @@
 
 | 파일 | 원본 제목 | StockSnap ID | 라이선스 | 쓰는 곳 |
 | --- | --- | --- | --- | --- |
-| `hero-campus.webp` | Harbad University | `1D180509DF` | CC0 | 메인 Hero · 대학원 소개 상단 |
+| `hero-campus-wide.webp` | Harbad University | `1D180509DF` | CC0 | 메인 Hero (전체 폭 배경) |
+| `hero-campus.webp` | Harbad University | `1D180509DF` | CC0 | 대학원 소개 상단 · 교수진 배경 · 입학안내 |
 | `architecture.webp` | Geometric Architecture | `VX6JNK1WN8` | CC0 | 학위·인증 상단 · 마지막 상담 CTA 배경 |
 | `hospitality-hotel.webp` | Modern Room | `HNJJOEYRQG` | CC0 | 전공 영역 — 호텔경영 |
 | `foodservice-restaurant.webp` | Restaurant Dining | `CCF37A44AB` | CC0 | 전공 영역 — 외식경영 |
@@ -66,12 +67,13 @@
 
 | 용도 | 크기 | 비율 |
 | --- | --- | --- |
-| Hero (세로로 긴 우측 패널) | 720 × 960 | 3:4 |
+| Hero (화면 전체를 덮는 가로 배경) | 960 × 540 | 16:9 |
+| 세로로 긴 프레임 | 720 × 960 | 3:4 |
 | 전공 영역 · 세로 프레임 | 768 × 960 | 4:5 |
 | 가로 밴드 (MBA·DBA, 온라인) | 960 × 540 | 16:9 |
 | CTA 배경 | 960 × 420 | 21:9 |
 
-전체 8장 합계 **약 536KB**. 가장 큰 파일이 112KB 다.
+전체 9장 합계 **약 650KB**. 가장 큰 파일이 116KB 다.
 화면에는 `next/image` 로 그리며 Hero 만 `priority`, 나머지는 지연 로딩된다.
 
 > **Hero 해상도는 아쉬운 부분이다.** 원본이 960px 뿐이라 큰 화면에서 조금 부드럽게 보인다.
