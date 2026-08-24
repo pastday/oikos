@@ -56,7 +56,7 @@ export type FacultyView = {
   education: string[];
   /** 주요 경력. 한 줄이 한 항목 */
   career: string[];
-  /** 전문분야(강의 분야). 한 줄이 한 항목 */
+  /** 전문분야. 한 줄이 한 항목. DB 필드명만 과거 이름인 `lectureFields` 다. */
   lectureFields: string[];
   /** 교수 사진. 없으면 null 이고 화면은 이니셜 아바타를 그린다. */
   photo: MediaView | null;

@@ -76,7 +76,11 @@ export type FacultyContent = {
     bio: string;
     education: string;
     career: string;
-    /** 전문분야. DB 는 `lectureFields` 한 필드로 강의 분야와 함께 관리한다. */
+    /**
+     * 전문분야. **화면 라벨은 어디서나 "전문분야" / "Areas of Expertise" 하나로 통일한다.**
+     * DB 필드명만 과거 이름인 `lectureFields` 로 남아 있다. 두 값이 같은 것이라
+     * 별도 `expertise` 필드를 만들지 않기로 확정했다. (docs/decisions.md 14단계)
+     */
     lectureFields: string;
   };
   /** 공개된 교수가 한 명도 없을 때 */

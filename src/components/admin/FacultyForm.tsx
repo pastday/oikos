@@ -204,7 +204,7 @@ export function FacultyForm({
           />
           <TextAreaField
             name="lectureFieldsKo"
-            label="전문분야 · 강의 분야"
+            label="전문분야"
             hint={LIST_HINT}
             rows={4}
             defaultValue={values.lectureFieldsKo}
@@ -239,7 +239,7 @@ export function FacultyForm({
           />
           <TextAreaField
             name="lectureFieldsEn"
-            label="Areas of expertise"
+            label="Areas of Expertise"
             hint={LIST_HINT_EN}
             rows={4}
             defaultValue={values.lectureFieldsEn}

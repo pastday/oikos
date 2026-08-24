@@ -123,7 +123,7 @@ export function createPagesEn(
       bio: "Biography",
       education: "Education",
       career: "Career",
-      lectureFields: "Areas of expertise",
+      lectureFields: "Areas of Expertise",
     },
     emptyNotice: {
       title: "Faculty",
