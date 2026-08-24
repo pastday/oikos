@@ -6,8 +6,8 @@
  * 임의의 URL 을 추측해서 넣지 않는다. (CLAUDE.md 23항)
  *
  * - Oikos University: 제공된 로고 자료와 주임교수 명함에 모두 www.oikos.edu 로 표기되어 있어 확정.
+ * - FICB: 공식 사이트 https://winebrotherhoods.org/
  *
- * TODO: FICB(세계와인기사단총연합) 공식 URL 은 제공된 자료에 없어 미확정 상태다.
  * 이후 SiteSetting DB 로 옮겨 관리자가 수정할 수 있게 한다. (CLAUDE.md 16항)
  */
 export type ExternalLink = {
@@ -18,5 +18,5 @@ export type ExternalLink = {
 
 export const externalLinks: ExternalLink[] = [
   { key: "oikos", label: "Oikos University", href: "https://www.oikos.edu" },
-  { key: "ficb", label: "FICB", href: null },
+  { key: "ficb", label: "FICB", href: "https://winebrotherhoods.org/" },
 ];
