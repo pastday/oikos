@@ -47,13 +47,32 @@ export type FacultyView = {
   nameAlt: string | null;
   title: string | null;
   major: string | null;
-  career: string | null;
-  lectureFields: string | null;
+  /**
+   * 교수 소개. 빈 줄로 나뉜 문단이며 없으면 빈 배열이다.
+   * 학력·경력과 달리 줄글이라 목록이 아니라 문단으로 그린다.
+   */
+  bio: string[];
+  /** 학력. **한 줄이 한 항목**이다. 없으면 빈 배열 */
+  education: string[];
+  /** 주요 경력. 한 줄이 한 항목 */
+  career: string[];
+  /** 전문분야(강의 분야). 한 줄이 한 항목 */
+  lectureFields: string[];
   /** 교수 사진. 없으면 null 이고 화면은 이니셜 아바타를 그린다. */
   photo: MediaView | null;
   /** 이니셜 아바타용. 사진이 없을 때 쓴다. */
   initials: string;
 };
+
+/** 상세 프로필이 하나라도 있는지. 없으면 화면이 상세 영역을 통째로 생략한다. */
+export function hasFacultyProfile(member: FacultyView): boolean {
+  return (
+    member.bio.length > 0 ||
+    member.education.length > 0 ||
+    member.career.length > 0 ||
+    member.lectureFields.length > 0
+  );
+}
 
 export type FacultyGroup = {
   type: FacultyType;
@@ -159,6 +178,24 @@ export function toParagraphs(body: string | null): string[] {
     .split(/\n\s*\n/)
     .map((block) => block.replace(/\s*\n\s*/g, " ").trim())
     .filter((block) => block.length > 0);
+}
+
+/**
+ * 목록 입력을 항목 배열로 나눈다. **한 줄이 한 항목**이다.
+ *
+ * 학력·경력·전문분야처럼 관리자가 textarea 에 줄 단위로 적는 값에 쓴다.
+ * 문단 글(`toParagraphs`)과 규칙이 다른 이유는, 이런 값은 줄바꿈 하나하나가
+ * 곧 항목 구분이기 때문이다. 빈 줄은 버리고 앞뒤 공백은 지운다.
+ * 관리자가 줄 앞에 붙여 넣은 `- ` `• ` 같은 글머리표도 함께 지운다.
+ * 화면이 자기 글머리표를 그리므로 그대로 두면 두 번 찍힌다.
+ */
+export function toLines(value: string | null): string[] {
+  if (!value) return [];
+
+  return value
+    .split("\n")
+    .map((line) => line.trim().replace(/^[-*\u2022\u00b7]\s+/, "").trim())
+    .filter((line) => line.length > 0);
 }
 
 // ---------------------------------------------------------------------------

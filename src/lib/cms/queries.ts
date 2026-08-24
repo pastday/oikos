@@ -6,6 +6,7 @@ import { admissionNumberKeys } from "./page-catalog";
 import {
   pickLocale,
   pickLocaleOptional,
+  toLines,
   toMediaView,
   toParagraphs,
   type AdmissionNumbers,
@@ -64,6 +65,10 @@ function toFacultyView(
     titleEn: string | null;
     majorKo: string | null;
     majorEn: string | null;
+    bioKo: string | null;
+    bioEn: string | null;
+    educationKo: string | null;
+    educationEn: string | null;
     careerKo: string | null;
     careerEn: string | null;
     lectureFieldsKo: string | null;
@@ -88,11 +93,15 @@ function toFacultyView(
     nameAlt: other && other !== name ? other : null,
     title: pickLocaleOptional(locale, row.titleKo, row.titleEn),
     major: pickLocaleOptional(locale, row.majorKo, row.majorEn),
-    career: pickLocaleOptional(locale, row.careerKo, row.careerEn),
-    lectureFields: pickLocaleOptional(
-      locale,
-      row.lectureFieldsKo,
-      row.lectureFieldsEn,
+    // 소개는 줄글이라 문단으로, 나머지 셋은 한 줄이 한 항목이라 목록으로 나눈다.
+    // 관리자가 입력한 글은 여기서도 화면에서도 HTML 로 해석하지 않는다.
+    bio: toParagraphs(pickLocaleOptional(locale, row.bioKo, row.bioEn)),
+    education: toLines(
+      pickLocaleOptional(locale, row.educationKo, row.educationEn),
+    ),
+    career: toLines(pickLocaleOptional(locale, row.careerKo, row.careerEn)),
+    lectureFields: toLines(
+      pickLocaleOptional(locale, row.lectureFieldsKo, row.lectureFieldsEn),
     ),
     photo: toMediaView(locale, row.photo),
     initials: toInitials(row.nameKo, row.nameEn),
@@ -108,6 +117,10 @@ const facultySelect = {
   titleEn: true,
   majorKo: true,
   majorEn: true,
+  bioKo: true,
+  bioEn: true,
+  educationKo: true,
+  educationEn: true,
   careerKo: true,
   careerEn: true,
   lectureFieldsKo: true,

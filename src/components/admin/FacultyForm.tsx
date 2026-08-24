@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useActionState } from "react";
 import { AdminFormMessage } from "@/components/admin/ui";
 import {
@@ -27,6 +28,10 @@ export type FacultyFormValues = {
   titleEn: string | null;
   majorKo: string | null;
   majorEn: string | null;
+  bioKo: string | null;
+  bioEn: string | null;
+  educationKo: string | null;
+  educationEn: string | null;
   careerKo: string | null;
   careerEn: string | null;
   lectureFieldsKo: string | null;
@@ -41,6 +46,36 @@ const typeOptions = [
   { value: "PROFESSOR", label: "교수" },
   { value: "VISITING_PROFESSOR", label: "객원교수" },
 ];
+
+/**
+ * 목록형 항목의 입력 안내.
+ *
+ * 화면이 줄바꿈을 기준으로 항목을 나누므로 관리자가 그 규칙을 알아야 한다.
+ * 폼 곳곳에 조금씩 다른 문장을 적으면 규칙이 흔들려 보이므로 한 문장을 돌려 쓴다.
+ */
+const LIST_HINT = "한 줄에 한 항목씩 입력하세요. 공개 페이지에서 목록으로 표시됩니다.";
+const LIST_HINT_EN = "Enter one item per line.";
+const BIO_HINT = "문단을 나눌 때는 빈 줄을 넣으세요.";
+const BIO_HINT_EN = "Separate paragraphs with a blank line.";
+
+/**
+ * 폼 안의 묶음 제목.
+ *
+ * 교수 한 명에 입력칸이 열다섯 개가 넘어가서 무엇이 기본정보이고 무엇이 상세
+ * 프로필인지 한눈에 보이지 않으면 관리자가 길을 잃는다. (14단계 지시 21항)
+ *
+ * `section` + 제목이 아니라 `fieldset` + `legend` 를 쓴다. 입력칸 묶음의 이름은
+ * 문서 제목 체계와 별개이고, 여기서 `h2` 를 만들면 이미 `h3` 를 쓰고 있는
+ * `SettingsSection`·`LangSection` 사이에 제목 단계가 뒤집혀 들어간다.
+ */
+function FormGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-3">
+      <legend className="mb-1 text-sm font-semibold text-navy">{title}</legend>
+      <div className="grid gap-5 xl:grid-cols-2">{children}</div>
+    </fieldset>
+  );
+}
 
 export function FacultyForm({
   action,
@@ -57,7 +92,7 @@ export function FacultyForm({
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-col gap-6">
       <SettingsSection title="구분 및 표시 설정">
         <SelectField
           name="type"
@@ -94,7 +129,7 @@ export function FacultyForm({
         />
       </SettingsSection>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <FormGroup title="기본 정보">
         <LangSection lang="ko">
           <TextField
             name="nameKo"
@@ -113,19 +148,6 @@ export function FacultyForm({
             name="majorKo"
             label="전공"
             defaultValue={values.majorKo}
-            disabled={isPending}
-          />
-          <TextAreaField
-            name="careerKo"
-            label="주요 경력"
-            hint="줄바꿈은 그대로 표시됩니다."
-            defaultValue={values.careerKo}
-            disabled={isPending}
-          />
-          <TextAreaField
-            name="lectureFieldsKo"
-            label="강의 분야"
-            defaultValue={values.lectureFieldsKo}
             disabled={isPending}
           />
         </LangSection>
@@ -150,20 +172,81 @@ export function FacultyForm({
             defaultValue={values.majorEn}
             disabled={isPending}
           />
+        </LangSection>
+      </FormGroup>
+
+      {/* 상세 프로필은 전부 선택 입력이다. 비워 두면 공개 페이지에서 그 항목만 빠진다. */}
+      <FormGroup title="상세 프로필 (모두 선택 입력)">
+        <LangSection lang="ko">
+          <TextAreaField
+            name="bioKo"
+            label="교수 소개"
+            hint={BIO_HINT}
+            rows={5}
+            defaultValue={values.bioKo}
+            disabled={isPending}
+          />
+          <TextAreaField
+            name="educationKo"
+            label="학력"
+            hint={LIST_HINT}
+            rows={4}
+            defaultValue={values.educationKo}
+            disabled={isPending}
+          />
+          <TextAreaField
+            name="careerKo"
+            label="주요 경력"
+            hint={LIST_HINT}
+            rows={8}
+            defaultValue={values.careerKo}
+            disabled={isPending}
+          />
+          <TextAreaField
+            name="lectureFieldsKo"
+            label="전문분야 · 강의 분야"
+            hint={LIST_HINT}
+            rows={4}
+            defaultValue={values.lectureFieldsKo}
+            disabled={isPending}
+          />
+        </LangSection>
+
+        <LangSection lang="en">
+          <TextAreaField
+            name="bioEn"
+            label="Biography"
+            hint={BIO_HINT_EN}
+            rows={5}
+            defaultValue={values.bioEn}
+            disabled={isPending}
+          />
+          <TextAreaField
+            name="educationEn"
+            label="Education"
+            hint={LIST_HINT_EN}
+            rows={4}
+            defaultValue={values.educationEn}
+            disabled={isPending}
+          />
           <TextAreaField
             name="careerEn"
-            label="Career"
+            label="Professional experience"
+            hint={LIST_HINT_EN}
+            rows={8}
             defaultValue={values.careerEn}
             disabled={isPending}
           />
           <TextAreaField
             name="lectureFieldsEn"
-            label="Teaching areas"
+            label="Areas of expertise"
+            hint={LIST_HINT_EN}
+            rows={4}
             defaultValue={values.lectureFieldsEn}
             disabled={isPending}
           />
         </LangSection>
-      </div>
+      </FormGroup>
 
       {state.status === "saved" && (
         <AdminFormMessage tone="success" message="저장되었습니다." />

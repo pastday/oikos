@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { Section } from "@/components/page/Section";
 import { getPageContent, type FacultyContent } from "@/content/pages";
 import { getProgramNumbers, getPublishedFacultyGroups } from "@/lib/cms/queries";
-import type { FacultyView } from "@/lib/cms/types";
+import { hasFacultyProfile, type FacultyView } from "@/lib/cms/types";
 import { isLocale } from "@/i18n/config";
+import { cn } from "@/lib/cn";
 import { buildPageMetadata } from "@/lib/metadata";
 
 const PAGE_PATH = "/faculty";
@@ -103,7 +105,15 @@ export default async function FacultyPage({ params }: PageProps) {
   );
 }
 
-/** 교수 한 명. 사진이 없으면 이니셜 아바타를 쓴다. */
+/**
+ * 교수 한 명.
+ *
+ * 위쪽은 **기본정보**(사진·이름·직책·전공), 아래는 **상세 프로필**(소개·학력·경력·전문분야)이다.
+ * 두 덩어리를 선으로 나눠 두면 경력이 20줄이 넘어가도 이름과 직책을 찾기 쉽다.
+ * 상세가 하나도 없는 교수는 아래 영역을 통째로 그리지 않아 카드가 짧게 끝난다.
+ *
+ * 사진이 없으면 이니셜 아바타를 쓴다.
+ */
 function FacultyCard({
   member,
   labels,
@@ -111,62 +121,127 @@ function FacultyCard({
   member: FacultyView;
   labels: FacultyContent["labels"];
 }) {
-  const details = [
-    { label: labels.major, value: member.major },
-    { label: labels.career, value: member.career },
-    { label: labels.lectureFields, value: member.lectureFields },
-  ].filter((detail): detail is { label: string; value: string } =>
-    Boolean(detail.value),
-  );
-
   return (
-    <article className="grid gap-8 rounded-xl border border-line bg-surface p-7 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-10 sm:p-9">
-      {member.photo ? (
-        // 크기가 고정된 원형 아바타라 next/image 로 그린다.
-        // alt 는 Media 에 입력된 값을 쓴다. 비어 있으면 장식용으로 취급되어
-        // 화면 읽기 프로그램이 건너뛴다. 바로 옆에 이름이 글자로 있어 그 편이 정확하다.
-        <Image
-          src={member.photo.url}
-          alt={member.photo.alt}
-          width={96}
-          height={96}
-          className="h-24 w-24 rounded-full object-cover"
-        />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="flex h-24 w-24 items-center justify-center rounded-full bg-navy font-serif text-2xl font-bold tracking-wide text-gold-soft"
-        >
-          {member.initials}
-        </span>
-      )}
-
-      <div className="min-w-0">
-        <h3 className="text-2xl font-bold text-navy">{member.name}</h3>
-        {member.nameAlt && (
-          <p className="mt-1 text-sm text-muted">{member.nameAlt}</p>
+    <article className="rounded-xl border border-line bg-surface p-7 sm:p-9">
+      <div className="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-10">
+        {member.photo ? (
+          // 크기가 고정된 원형 아바타라 next/image 로 그린다.
+          // alt 는 Media 에 입력된 값을 쓴다. 비어 있으면 장식용으로 취급되어
+          // 화면 읽기 프로그램이 건너뛴다. 바로 옆에 이름이 글자로 있어 그 편이 정확하다.
+          <Image
+            src={member.photo.url}
+            alt={member.photo.alt}
+            width={96}
+            height={96}
+            className="h-24 w-24 rounded-full object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex h-24 w-24 items-center justify-center rounded-full bg-navy font-serif text-2xl font-bold tracking-wide text-gold-soft"
+          >
+            {member.initials}
+          </span>
         )}
 
-        {member.title && (
-          <p className="mt-4 inline-block rounded-full bg-navy-tint px-4 py-1.5 text-xs font-semibold text-navy">
-            {member.title}
-          </p>
-        )}
+        <div className="min-w-0">
+          <h3 className="text-2xl font-bold break-words text-navy">{member.name}</h3>
+          {member.nameAlt && (
+            <p className="mt-1 text-sm break-words text-muted">{member.nameAlt}</p>
+          )}
 
-        {details.length > 0 && (
-          <dl className="mt-6 grid gap-x-8 gap-y-3 border-t border-line pt-6">
-            {details.map((detail) => (
-              <div key={detail.label} className="flex gap-3 text-sm">
-                <dt className="w-20 shrink-0 text-muted">{detail.label}</dt>
-                {/* 관리자가 입력한 글이다. HTML 로 렌더링하지 않고 줄바꿈만 살린다. */}
-                <dd className="font-medium whitespace-pre-line text-foreground/85">
-                  {detail.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
+          {member.title && (
+            <p className="mt-4 inline-block rounded-full bg-navy-tint px-4 py-1.5 text-xs font-semibold text-navy">
+              {member.title}
+            </p>
+          )}
+
+          {member.major && (
+            <p className="mt-3 text-sm break-words text-foreground/70">
+              {member.major}
+            </p>
+          )}
+        </div>
       </div>
+
+      {hasFacultyProfile(member) && (
+        <div className="mt-8 grid gap-8 border-t border-line pt-8 lg:grid-cols-2 lg:gap-x-12">
+          {member.bio.length > 0 && (
+            <ProfileBlock label={labels.bio} className="lg:col-span-2">
+              <div className="grid gap-3">
+                {member.bio.map((paragraph, index) => (
+                  <p key={index} className="text-sm leading-relaxed break-words text-foreground/85">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </ProfileBlock>
+          )}
+
+          {member.education.length > 0 && (
+            <ProfileBlock label={labels.education}>
+              <ProfileList items={member.education} />
+            </ProfileBlock>
+          )}
+
+          {member.career.length > 0 && (
+            <ProfileBlock label={labels.career}>
+              <ProfileList items={member.career} />
+            </ProfileBlock>
+          )}
+
+          {member.lectureFields.length > 0 && (
+            <ProfileBlock label={labels.lectureFields} className="lg:col-span-2">
+              <ProfileList items={member.lectureFields} />
+            </ProfileBlock>
+          )}
+        </div>
+      )}
     </article>
+  );
+}
+
+/** 상세 프로필 한 항목. 라벨과 내용을 세로로 쌓는다. */
+function ProfileBlock({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={cn("min-w-0", className)}>
+      <h4 className="text-xs font-semibold tracking-wide text-muted uppercase">
+        {label}
+      </h4>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * 줄 단위로 입력된 값을 목록으로 그린다.
+ *
+ * 관리자가 입력한 글이므로 **HTML 로 해석하지 않는다.** 글머리표는 화면이 그리고
+ * 글자는 그대로 넣는다. 항목이 몇 개든 세로로 이어지므로 길이 제한을 두지 않는다.
+ */
+function ProfileList({ items }: { items: string[] }) {
+  return (
+    <ul className="grid gap-2">
+      {items.map((item, index) => (
+        <li
+          key={index}
+          className="flex gap-2.5 text-sm leading-relaxed text-foreground/85"
+        >
+          <span
+            aria-hidden="true"
+            className="mt-[0.6em] h-1 w-1 shrink-0 rounded-full bg-gold"
+          />
+          <span className="min-w-0 break-words">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -59,11 +59,13 @@ export function BFacultyHome({
       </div>
 
       <div className="mt-14">
+        {/* 메인은 소개까지만 보여주고 나머지는 교수진 페이지로 보낸다. */}
         <BFacultyFeature
           member={chief}
           labels={facultyLabels}
           watermark={watermark}
           size="feature"
+          detail="brief"
         />
       </div>
 

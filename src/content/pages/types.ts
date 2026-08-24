@@ -72,7 +72,11 @@ export type FacultyContent = {
   /** 교수 카드 안의 항목 라벨 */
   labels: {
     major: string;
+    /** 상세 프로필 (14단계). 값이 없는 항목은 라벨째 그리지 않는다. */
+    bio: string;
+    education: string;
     career: string;
+    /** 전문분야. DB 는 `lectureFields` 한 필드로 강의 분야와 함께 관리한다. */
     lectureFields: string;
   };
   /** 공개된 교수가 한 명도 없을 때 */

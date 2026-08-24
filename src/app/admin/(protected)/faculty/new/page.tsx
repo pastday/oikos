@@ -22,7 +22,7 @@ export default async function NewFacultyPage() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <AdminPageHeader
         title="교수 추가"
-        description="한국어 항목만 입력해도 등록됩니다. 영어를 비워 두면 영문 페이지에서 한국어 표기가 그대로 표시됩니다."
+        description="이름만 있어도 등록됩니다. 상세 프로필은 나중에 채워도 되고, 영어를 비워 두면 영문 페이지에서 한국어 표기가 그대로 표시됩니다."
       >
         <Link
           href="/admin/faculty"
@@ -44,6 +44,10 @@ export default async function NewFacultyPage() {
           titleEn: null,
           majorKo: null,
           majorEn: null,
+          bioKo: null,
+          bioEn: null,
+          educationKo: null,
+          educationEn: null,
           careerKo: null,
           careerEn: null,
           lectureFieldsKo: null,

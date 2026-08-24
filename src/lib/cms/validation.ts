@@ -93,6 +93,15 @@ export const facultySchema = z.object({
   titleEn: optionalShort,
   majorKo: optionalShort,
   majorEn: optionalShort,
+  /**
+   * 상세 프로필. 전부 선택 입력이다. (14단계)
+   * 자료가 없는 교수도 이름만으로 등록할 수 있어야 하므로 필수로 만들지 않는다.
+   * 경력이 20줄을 넘는 교수가 있을 수 있어 길이는 다른 긴 텍스트와 같은 한도를 쓴다.
+   */
+  bioKo: optionalLong,
+  bioEn: optionalLong,
+  educationKo: optionalLong,
+  educationEn: optionalLong,
   careerKo: optionalLong,
   careerEn: optionalLong,
   lectureFieldsKo: optionalLong,

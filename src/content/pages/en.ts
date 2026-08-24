@@ -120,8 +120,10 @@ export function createPagesEn(
     },
     labels: {
       major: "Major",
+      bio: "Biography",
+      education: "Education",
       career: "Career",
-      lectureFields: "Teaching areas",
+      lectureFields: "Areas of expertise",
     },
     emptyNotice: {
       title: "Faculty",

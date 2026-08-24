@@ -125,8 +125,10 @@ export function createPagesKo(
     },
     labels: {
       major: "전공",
+      bio: "교수 소개",
+      education: "학력",
       career: "주요 경력",
-      lectureFields: "강의 분야",
+      lectureFields: "전문분야",
     },
     emptyNotice: {
       title: "교수진 안내",

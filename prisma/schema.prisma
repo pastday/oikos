@@ -185,8 +185,20 @@ model Faculty {
   titleEn         String?
   majorKo         String?
   majorEn         String?
+
+  /// 상세 프로필. 전부 nullable 이다. 자료가 없는 교수도 등록할 수 있어야 한다.
+  /// `bio` 는 문단 글, 나머지 셋은 **한 줄에 한 항목**으로 입력해 화면에서 목록으로 그린다.
+  ///
+  /// 경력 한 줄마다 행을 만드는 별도 테이블을 두지 않는다. 홈페이지는 경력을
+  /// 정렬·검색·집계하지 않고 그대로 나열하기만 하므로 관리자가 textarea 에
+  /// 붙여넣는 편이 빠르다. 나중에 구조화가 필요해지면 이 텍스트를 옮기면 된다.
+  bioKo           String?
+  bioEn           String?
+  educationKo     String?
+  educationEn     String?
   careerKo        String?
   careerEn        String?
+  /// 전문분야 겸 강의 분야. 두 값이 사실상 같아 필드를 나누지 않는다.
   lectureFieldsKo String?
   lectureFieldsEn String?
 

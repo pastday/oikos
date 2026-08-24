@@ -300,9 +300,11 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-마이그레이션 3개: `20260814124541_init` (테이블 10개) +
+마이그레이션 5개: `20260814124541_init` (테이블 10개) +
 `20260817155549_allow_nullable_course_semester` (9단계) +
-`20260818125024_add_page_section_items` (10단계 — 순수 additive).
+`20260818125024_add_page_section_items` (10단계 — 순수 additive) +
+`20260818142008_add_media_relations_to_content` (12단계) +
+`20260824140204_add_faculty_profile_fields` (14단계 — 순수 additive, nullable 4개).
 Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken` 테이블은 만들지 않았다.
 
 - **쓰기**: `Consultation`·`SeminarApplication` (신청 폼) / `AdminUser` (`lastLoginAt`) /
@@ -1069,6 +1071,107 @@ Hero 는 `hero-campus-wide.webp`(960×540, 원본을 확대하지 않고 가로�
 
 A안이 채택되면 `app/[locale]/design-b/` 와 `components/site-b/` 를 통째로 지운다.
 `.form-b`(globals.css)와 B안 색·타이포 토큰, `SuccessPanel` 의 `basePath` prop 도 같이 지운다.
+
+---
+
+## 14단계에서 만든 것 (교수 상세 프로필 · A안 갱신 버그)
+
+### 1. `Faculty` 에 상세 프로필 4종
+
+이름·직책·전공만으로는 교수 소개 페이지가 되지 않아 **소개 / 학력 / 주요 경력 / 전문분야**를
+CMS 에서 관리하고 A안·B안 양쪽에 표시하도록 넓혔다.
+
+**이미 있던 필드는 새로 만들지 않았다.** `careerKo/En`(주요 경력)과
+`lectureFieldsKo/En`(강의 분야)이 9단계부터 있었다. 전문분야는 이 프로젝트에서
+강의 분야와 사실상 같은 것이라 **필드를 나누지 않고 `lectureFields` 하나로 쓴다.**
+공개 페이지 라벨만 `강의 분야` → `전문분야` / `Teaching areas` → `Areas of expertise` 로 바꿨다.
+
+그래서 새로 추가한 컬럼은 넷뿐이다.
+
+| 컬럼 | 뜻 | 화면 표현 |
+| --- | --- | --- |
+| `bioKo` `bioEn` | 교수 소개 | **빈 줄로 나눈 문단** (`toParagraphs`) |
+| `educationKo` `educationEn` | 학력 | **한 줄 = 한 항목** 목록 (`toLines`) |
+| (기존) `careerKo` `careerEn` | 주요 경력 | 한 줄 = 한 항목 목록 |
+| (기존) `lectureFieldsKo` `lectureFieldsEn` | 전문분야 | B안은 알약, A안은 목록 |
+
+경력 한 줄마다 행을 만드는 `Career` 테이블은 만들지 않았다. 홈페이지는 경력을
+정렬·검색·집계하지 않고 그대로 나열만 하므로 textarea 에 붙여넣는 편이 빠르다.
+
+`toLines()` 는 빈 줄을 버리고 앞뒤 공백을 지우며, 관리자가 줄 앞에 붙여 넣은
+`- ` `• ` **글머리표도 지운다.** 화면이 자기 글머리표를 그리므로 두 번 찍히는 것을 막는다.
+
+### 2. 그동안 A안이 갱신되지 않고 있었다 (원인과 수정)
+
+증상은 "관리자에서 교수를 추가하면 B안에는 나오는데 A안에는 안 나온다" 였다.
+**교수진만의 문제가 아니라 A안 공개 페이지 전부가 그 상태였다.**
+
+원인은 Next.js 가 페이지 캐시 태그를 만들 때 **route group 을 지우지 않는다**는 것이다.
+빌드 산출물의 태그가 증거다.
+
+```
+.next/server/app/ko/faculty.meta           _N_T_/[locale]/(site)/faculty/page
+.next/server/app/ko/design-b/faculty.meta  _N_T_/[locale]/design-b/faculty/page
+```
+
+9단계에 `revalidate.ts` 를 만들 때는 A안이 route group 밖에 있어 `/[locale]/faculty` 가
+맞았다. 13단계에서 B안을 넣으며 A안을 `(site)/` 로 옮겼는데 **이 경로 문자열을 같이
+고치지 않았다.** 그때부터 A안 태그와 보내는 태그가 어긋났고, route group 이 없는
+B안만 계속 맞아떨어져 "B안에만 나온다" 로 보였다.
+
+수정은 `SITE_A_SEGMENT = "(site)"` 를 패턴에 넣은 것이다.
+
+```ts
+revalidatePath(`/[locale]/${SITE_A_SEGMENT}${path}`, "page");
+revalidatePath(`/[locale]/${DESIGN_B_SEGMENT}${path}`, "page");
+```
+
+> ⚠️ **`src/app/[locale]/(site)/` 디렉터리 이름을 바꾸면 이 상수도 함께 고쳐야 한다.**
+> 안 고쳐도 빌드는 통과하고 화면도 정상으로 보인다. 저장한 내용이 반영되지 않을 뿐이다.
+
+검증은 눈으로 하지 않았다. 빌드된 `.meta` 의 `x-next-cache-tags` 와
+`revalidate.ts` 가 만드는 문자열을 **직접 비교**해 7개 경로 전부 일치를 확인했다.
+
+### 3. A안 · B안이 같은 데이터를 쓰는지
+
+원래부터 둘 다 `getPublishedFacultyGroups()` 하나만 쓰고 있었다. **A안에 정적 데이터가
+남아 있지는 않았다.** 공개 조건(`isPublished`)·정렬(`sortOrder` → `nameKo`)도 같다.
+갈라진 것은 위 2번의 캐시 무효화뿐이었다.
+
+임시 교수 3명(공개 2 / 비공개 1)을 넣고 네 페이지를 실제로 받아 확인했다.
+
+| 확인 | 결과 |
+| --- | --- |
+| `/ko/faculty` `/en/faculty` `/ko/design-b/faculty` `/en/design-b/faculty` 교수 수 | 넷 다 동일 |
+| 비공개 교수 | 네 페이지 어디에도 없음 |
+| 경력 22줄 | 전부 표시, 잘리지 않음 |
+| `- ` 글머리표 붙여넣기 | 화면에 한 번만 |
+| `lectureFieldsEn` 만 비움 | 기존 정책대로 한국어 값 노출 (새 fallback 규칙을 만들지 않았다) |
+| 상세가 하나도 없는 교수 | 상세 영역을 통째로 안 그림 (빈 라벨 0개) |
+
+확인이 끝난 뒤 임시 교수를 전부 지웠다. **실제 교수(김동준 주임교수) 데이터는
+`id`·`createdAt`·`updatedAt` 까지 그대로다.** 새 컬럼만 `null` 로 붙었다.
+
+### 4. 화면
+
+- **A안**: 위쪽 기본정보(사진·이름·직책·전공) / 선 아래 상세 프로필. 넓은 화면에서
+  학력·경력이 2단, 소개와 전문분야는 전체 폭. 상세가 없으면 아래가 통째로 빠진다.
+- **B안**: 기존 편집 지면 그대로. 라벨을 왼쪽에 작은 대문자로 세우고 얇은 선으로만 나눈다.
+  **작은 카드 여럿으로 쪼개지 않는다.** 전문분야는 항목이 전부 30자 이하일 때만 알약으로
+  그리고, 하나라도 길면 목록으로 되돌린다. 긴 글을 알약에 넣으면 모양이 무너지기 때문이다.
+- **B안 메인**은 `detail="brief"` 로 **소개까지만** 보여준다. 학력·경력까지 옮기면
+  교수진 페이지와 같아져 "교수진 보기" 링크가 무의미해진다. A안 메인은 그대로 두었다.
+- 목록은 `ul`/`li` 로 그리고 글머리표는 CSS 가 아니라 별도 `span`(`aria-hidden`)으로 얹는다.
+  관리자가 입력한 글은 **HTML 로 해석하지 않는다.**
+- 제목 단계는 `h1`(Hero) → `h2`(구분) → `h3`(교수 이름) → `h4`(상세 항목)로 건너뜀이 없다.
+
+### 5. 390px 에서 밀리지 않게
+
+교수 이름에 `break-keep`(`word-break: keep-all`)을 붙였다가 **되돌렸다.**
+공백 없는 긴 한글 이름은 그 설정에서 아예 끊기지 않아 칸을 넘긴다.
+지금은 파일 나머지와 같은 `break-words`(`overflow-wrap: break-word`)를 쓴다.
+평소에는 공백에서 줄을 바꾸고, 낱말 하나가 칸보다 클 때만 끊는다.
+B안 전문분야 알약에는 `max-w-full` 도 함께 붙였다. flex 항목은 기본적으로 줄어들지 않는다.
 
 ---
 
