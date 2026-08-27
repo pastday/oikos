@@ -95,8 +95,19 @@ export type FacultyBookView = {
   id: string;
   title: string;
   subtitle: string | null;
-  /** 저자 · 출판사 · 발행연도를 이어 붙인 한 줄. 없으면 null */
-  meta: string | null;
+  /**
+   * 저자. 출판사·연도와 **줄을 나눠서** 넘긴다.
+   *
+   * 15단계에는 셋을 가운뎃점으로 이어 붙인 `meta` 한 줄이었다. 그런데 저자와
+   * 서지정보는 성격이 다르다 — 저자는 사람 이름이고 나머지는 책의 출처다.
+   * 한 줄에 이어 붙이면 이름이 출판사에 묻힌다. 조립은 여기서 끝내 두고
+   * (A안·B안이 각자 이어 붙이면 두 화면의 표기가 갈린다) 화면은 줄만 그린다.
+   */
+  author: string | null;
+  /** 출판사 · 발행연도. 있는 것만 이어 붙인다. 둘 다 없으면 null */
+  imprint: string | null;
+  /** 발행연도만. 표지가 없을 때 글자 표지에 넣는다. */
+  year: string | null;
   description: string | null;
   /** 검증을 통과한 http(s) 주소. 없으면 화면이 링크를 그리지 않는다. */
   url: string | null;
@@ -114,8 +125,16 @@ export type FacultyArticleView = {
   id: string;
   title: string;
   summary: string | null;
-  /** 게시처 · 게시일. 없으면 null */
-  meta: string | null;
+  /**
+   * 게시처와 게시일. **따로 넘긴다.**
+   *
+   * 카드 맨 위에 두 값을 나란히 세우는 배치라 (게시처 · 구분선 · 게시일)
+   * 화면이 둘을 따로 잡을 수 있어야 한다. 하나로 이어 붙여 두면
+   * 그 배치를 만들 수 없고, 한쪽만 있는 경우의 구분선 처리도 화면이 못 한다.
+   */
+  publisher: string | null;
+  /** 사람이 읽는 형식으로 이미 맞춰진 게시일. 없으면 null */
+  publishedOn: string | null;
   url: string | null;
   image: MediaView | null;
 };

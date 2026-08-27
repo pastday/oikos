@@ -131,6 +131,7 @@ export function createPagesKo(
       lectureFields: "전문분야",
       books: "주요 저서",
       articles: "언론 · 미디어",
+      bookEyebrow: "저서",
     },
     externalLinks: {
       book: "도서 보기",

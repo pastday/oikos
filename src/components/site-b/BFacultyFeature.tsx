@@ -153,10 +153,10 @@ export function BFacultyFeature({
 
             {showAll && member.books.length > 0 && (
               <BProfileRow label={labels.books}>
-                <ul className="space-y-8">
+                <ul className="space-y-10">
                   {member.books.map((book) => (
-                    <li key={book.id}>
-                      <BBook book={book} links={links} />
+                    <li key={book.id} className="min-w-0">
+                      <BBook book={book} labels={labels} links={links} />
                     </li>
                   ))}
                 </ul>
@@ -165,9 +165,10 @@ export function BFacultyFeature({
 
             {showAll && member.articles.length > 0 && (
               <BProfileRow label={labels.articles}>
-                <ul className="space-y-7">
+                {/* 여러 건이 들어오면 얇은 선으로만 나눈다. 상자를 쓰지 않는다. */}
+                <ul className="space-y-8 divide-y divide-rule [&>li+li]:pt-8">
                   {member.articles.map((article) => (
-                    <li key={article.id}>
+                    <li key={article.id} className="min-w-0">
                       <BArticle article={article} links={links} />
                     </li>
                   ))}
@@ -250,59 +251,64 @@ function BExpertise({ items }: { items: string[] }) {
 }
 
 /**
- * 저서 한 권. (15단계)
+ * 저서 한 권. (16단계에서 배치를 다시 잡았다)
  *
- * A안은 작은 카드에 담지만 B안은 상자를 쓰지 않는다. **세로로 긴 표지 자리**를
- * 왼쪽에 세우고 오른쪽에 글을 흘린다. 다른 항목과 같은 규칙이다.
+ * A안은 카드에 담지만 B안은 상자를 쓰지 않는다. **세로로 긴 표지 자리**를 왼쪽에
+ * 세우고 오른쪽에 작은 대문자 표시 → 세리프 제목 → 저자 → 서지 → 소개 → 링크를
+ * 흘린다. 프로필의 다른 항목(학력·경력)과 같은 규칙이라 저서가 "덧붙인 기능" 처럼
+ * 따로 놀지 않고 지면의 마지막 절로 이어진다.
  *
- * 표지가 없을 때 회색 사각형을 그리지 않는다. `BFrame` 이 만드는 면 위에 제목을
- * 세로로 앉혀 **책등처럼** 보이게 한다. 그 글자는 옆의 제목과 같은 내용이라
- * 화면 읽기 프로그램에서는 숨긴다.
+ * 표지가 없을 때 회색 사각형을 그리지 않는다. `BBookCover` 가 그 자리를 채운다.
  */
 function BBook({
   book,
+  labels,
   links,
 }: {
   book: FacultyBookView;
+  labels: FacultyContent["labels"];
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="flex min-w-0 gap-6 sm:gap-8">
-      <div className="w-20 shrink-0 sm:w-28">
+    <article className="flex min-w-0 flex-col gap-6 sm:flex-row sm:gap-8">
+      <div className="w-24 shrink-0 sm:w-32">
         {/* 비율과 잘림은 `BFrame` 이 정한다. 여기서는 겹쳐 놓을 자리만 만든다. */}
-        <div className="relative">
-          <BFrame media={book.cover} ratio="3/4" sizes="112px" />
-
-          {!book.cover && (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 flex items-center justify-center px-2 text-center font-serif text-[0.6875rem] leading-tight font-bold break-words text-white/80"
-            >
-              {book.title}
-            </span>
-          )}
+        <div className="relative shadow-[0_10px_30px_-12px_rgba(11,20,36,0.55)]">
+          <BFrame media={book.cover} ratio="3/4" sizes="128px" />
+          {!book.cover && <BBookCover book={book} />}
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-col gap-2">
-        <h4 className="font-serif text-lg leading-snug font-bold break-words text-ink">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <p className="text-[0.625rem] font-semibold tracking-[0.24em] text-bronze uppercase">
+          {labels.bookEyebrow}
+        </p>
+
+        <h4 className="font-serif text-xl leading-snug font-bold break-words text-ink sm:text-2xl">
           {book.title}
         </h4>
 
         {book.subtitle && (
-          <p className="text-sm leading-snug break-words text-ink/70">
+          <p className="text-sm leading-snug break-words text-ink/65">
             {book.subtitle}
           </p>
         )}
 
-        {book.meta && (
-          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] break-words text-quiet uppercase">
-            {book.meta}
-          </p>
-        )}
+        <div className="flex flex-col gap-1">
+          {book.author && (
+            <p className="text-sm font-semibold break-words text-ink/80">
+              {book.author}
+            </p>
+          )}
+          {book.imprint && (
+            <p className="text-[0.6875rem] font-semibold tracking-[0.16em] break-words text-quiet uppercase">
+              {book.imprint}
+            </p>
+          )}
+        </div>
 
         {book.description && (
-          <p className="max-w-[52ch] text-sm leading-[1.8] break-words text-ink/75">
+          <p className="max-w-[52ch] text-sm leading-[1.85] break-words text-ink/75">
             {book.description}
           </p>
         )}
@@ -321,7 +327,44 @@ function BBook({
 }
 
 /**
- * 기사 한 건. (15단계)
+ * 표지가 없을 때 그 자리를 채우는 면. (16단계)
+ *
+ * `BFrame` 이 이미 midnight 바탕과 격자·워드마크를 깔아 두었다.
+ * 그 위에 **가는 bronze 선 · 제목 · 발행연도**만 얹는다. 표지 그림을 흉내내지 않는다.
+ * 실제 책 표지로 오해되면 안 된다.
+ *
+ * 오른쪽 칸에 이미 `저서` 표시가 붙어 있어 여기서 그 말을 되풀이하지 않는다.
+ * (A안 `BookCoverPlaceholder` 와 같은 판단)
+ *
+ * 옆 칸에 같은 내용이 이미 글자로 있으므로 전체를 `aria-hidden` 으로 숨긴다.
+ */
+function BBookCover({ book }: { book: FacultyBookView }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2.5 px-3 py-4 text-center"
+    >
+      <span className="h-px w-6 shrink-0 bg-bronze-2" />
+
+      {/* `line-clamp` 은 display 를 -webkit-box 로 바꾼다. 정렬은 바깥에서 건다. */}
+      <span className="line-clamp-4 font-serif text-xs leading-tight font-bold break-words text-white/90">
+        {book.title}
+      </span>
+
+      {book.year && (
+        <span className="text-[0.5rem] font-semibold tracking-[0.18em] text-white/40">
+          {book.year}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * 기사 한 건. (16단계에서 배치를 다시 잡았다)
+ *
+ * **단순 링크 목록처럼 보이지 않게** 게시처와 게시일을 맨 위에 세우고 제목을
+ * 세리프로 크게 둔다. 항목 사이는 상자가 아니라 얇은 선으로만 나눈다. B안의 규칙이다.
  *
  * 제목 · 게시처 · 게시일 · 짧은 소개 · 원문 링크까지만이다.
  * **기사 본문도, 기사에 실린 사진도 가져오지 않는다.** (CLAUDE.md 22항)
@@ -335,7 +378,7 @@ function BArticle({
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="flex min-w-0 flex-col gap-2">
+    <article className="flex min-w-0 flex-col gap-3">
       {article.image && (
         <div className="relative mb-1 aspect-[16/9] w-full max-w-sm overflow-hidden">
           <Image
@@ -348,18 +391,26 @@ function BArticle({
         </div>
       )}
 
-      <h4 className="font-serif text-lg leading-snug font-bold break-words text-ink">
-        {article.title}
-      </h4>
-
-      {article.meta && (
-        <p className="text-[0.6875rem] font-semibold tracking-[0.14em] break-words text-quiet uppercase">
-          {article.meta}
+      {(article.publisher || article.publishedOn) && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.625rem] font-semibold tracking-[0.2em] uppercase">
+          {article.publisher && (
+            <span className="break-words text-bronze">{article.publisher}</span>
+          )}
+          {article.publisher && article.publishedOn && (
+            <span aria-hidden="true" className="h-3 w-px bg-rule-2" />
+          )}
+          {article.publishedOn && (
+            <span className="break-words text-quiet">{article.publishedOn}</span>
+          )}
         </p>
       )}
 
+      <h4 className="font-serif text-xl leading-snug font-bold break-words text-ink sm:text-2xl">
+        {article.title}
+      </h4>
+
       {article.summary && (
-        <p className="max-w-[52ch] text-sm leading-[1.8] break-words text-ink/75">
+        <p className="max-w-[52ch] text-sm leading-[1.85] break-words text-ink/75">
           {article.summary}
         </p>
       )}

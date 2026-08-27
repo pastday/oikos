@@ -90,23 +90,26 @@ type FacultyBookRow = {
 /**
  * 저서 한 권.
  *
- * 저자 · 출판사 · 발행연도는 **한 줄로 합쳐서** 넘긴다. 화면마다 이 셋을 다시 조립하면
- * A안과 B안의 표기가 갈린다. 발행일은 연도까지만 쓴다. 카드 안의 보조 정보라
- * 날짜까지 적으면 제목보다 줄이 길어진다.
+ * **화면이 쓸 줄을 여기서 다 만들어 둔다.** 저자는 한 줄, 출판사와 발행연도는
+ * 이어 붙여 또 한 줄이다. A안과 B안이 각자 조립하면 두 화면의 표기가 갈린다.
+ * 발행일은 연도까지만 쓴다. 카드 안의 보조 정보라 날짜까지 적으면 제목보다 길어진다.
  */
 function toFacultyBookView(
   locale: Locale,
   row: FacultyBookRow,
 ): FacultyBookView {
+  const year = formatPublishedYear(row.publishedAt);
+
   return {
     id: row.id,
     title: pickLocale(locale, row.titleKo, row.titleEn),
     subtitle: pickLocaleOptional(locale, row.subtitleKo, row.subtitleEn),
-    meta: joinMeta([
-      pickLocaleOptional(locale, row.authorKo, row.authorEn),
+    author: pickLocaleOptional(locale, row.authorKo, row.authorEn),
+    imprint: joinMeta([
       pickLocaleOptional(locale, row.publisherKo, row.publisherEn),
-      formatPublishedYear(row.publishedAt),
+      year,
     ]),
+    year,
     description: pickLocaleOptional(
       locale,
       row.descriptionKo,
@@ -130,7 +133,13 @@ type FacultyArticleRow = {
   image: MediaRow | null;
 };
 
-/** 기사 한 건. 게시처와 게시일을 한 줄로 합친다. 저서와 달리 날짜까지 적는다. */
+/**
+ * 기사 한 건.
+ *
+ * 게시처와 게시일을 **따로** 넘긴다. 카드가 둘을 맨 위에 나란히 세우고
+ * 사이에 구분선을 그리기 때문이다. 저서와 달리 날짜까지 적는다.
+ * 기사는 "언제 난 기사인지" 가 연도만으로는 부족하다.
+ */
 function toFacultyArticleView(
   locale: Locale,
   row: FacultyArticleRow,
@@ -139,10 +148,8 @@ function toFacultyArticleView(
     id: row.id,
     title: pickLocale(locale, row.titleKo, row.titleEn),
     summary: pickLocaleOptional(locale, row.summaryKo, row.summaryEn),
-    meta: joinMeta([
-      pickLocaleOptional(locale, row.publisherKo, row.publisherEn),
-      formatPublishedDate(locale, row.publishedAt),
-    ]),
+    publisher: pickLocaleOptional(locale, row.publisherKo, row.publisherEn),
+    publishedOn: formatPublishedDate(locale, row.publishedAt),
     url: toSafeUrl(row.externalUrl),
     image: toMediaView(locale, row.image),
   };

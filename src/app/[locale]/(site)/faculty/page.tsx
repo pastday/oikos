@@ -210,10 +210,11 @@ function FacultyCard({
           {/* 저서 · 언론보도는 항목마다 줄이 여러 개라 늘 지면 전체 폭을 쓴다. (15단계) */}
           {member.books.length > 0 && (
             <ProfileBlock label={labels.books} className="lg:col-span-2">
-              <ul className="grid gap-4 sm:grid-cols-2">
+              {/* 카드가 커서 sm 에서는 한 열로 둔다. 여러 권이 들어오면 xl 에서 2열. */}
+              <ul className="grid gap-4 xl:grid-cols-2">
                 {member.books.map((book) => (
-                  <li key={book.id}>
-                    <BookCard book={book} links={links} />
+                  <li key={book.id} className="min-w-0">
+                    <BookCard book={book} labels={labels} links={links} />
                   </li>
                 ))}
               </ul>
@@ -224,7 +225,7 @@ function FacultyCard({
             <ProfileBlock label={labels.articles} className="lg:col-span-2">
               <ul className="grid gap-3">
                 {member.articles.map((article) => (
-                  <li key={article.id}>
+                  <li key={article.id} className="min-w-0">
                     <ArticleCard article={article} links={links} />
                   </li>
                 ))}
@@ -238,51 +239,48 @@ function FacultyCard({
 }
 
 /**
- * 저서 한 권. (15단계)
+ * 저서 한 권. (16단계에서 배치를 다시 잡았다)
  *
- * 표지 자리를 **먼저 잡아 두고** 사진이 없으면 제목을 글자로 앉힌 면으로 채운다.
- * 회색 빈 사각형은 그리지 않는다. 그 글자는 바로 옆 제목과 같은 내용이라
- * `aria-hidden` 으로 숨긴다. 화면 읽기 프로그램이 제목을 두 번 읽지 않게 한다.
+ * 15단계에는 저자·출판사·연도가 한 줄이었고 카드가 작아 목록처럼 보였다.
+ * 지금은 **표지 자리를 크게 잡고** 오른쪽에 작은 표시 → 제목 → 저자 → 서지 →
+ * 소개 → 링크를 세로로 세운다. 자료가 한 권뿐이어도 지면이 비어 보이지 않는다.
  *
- * 표지가 없는 것이 기본 상태다. 서점 이미지를 내려받거나 걸어 두지 않는다. (CLAUDE.md 22항)
+ * 표지가 없는 것이 기본 상태다. 서점 이미지를 내려받거나 걸어 두지 않는다.
+ * (CLAUDE.md 22항) 그 자리는 `BookCoverPlaceholder` 가 채운다.
  */
 function BookCard({
   book,
+  labels,
   links,
 }: {
   book: FacultyBookView;
+  labels: FacultyContent["labels"];
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="flex h-full min-w-0 gap-4 rounded-lg border border-line bg-background p-4">
-      <div className="w-16 shrink-0 sm:w-20">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-sm border border-line bg-navy">
+    <article className="flex h-full min-w-0 gap-5 rounded-xl border border-line bg-background p-5">
+      <div className="w-[4.5rem] shrink-0 sm:w-24">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-sm ring-1 ring-navy/15">
           {book.cover ? (
             <Image
               src={book.cover.url}
               alt={book.cover.alt}
               fill
-              sizes="80px"
+              sizes="96px"
               className="object-cover"
             />
           ) : (
-            // `line-clamp` 은 `display: -webkit-box` 를 건다. 같은 요소에 `flex` 를
-            // 함께 주면 두 display 가 부딪혀 어느 쪽이 이길지 CSS 순서에 맡겨진다.
-            // 가운데 정렬은 바깥에서, 줄 수 제한은 안쪽에서 따로 건다.
-            <span
-              aria-hidden="true"
-              className="flex h-full w-full items-center justify-center px-1.5"
-            >
-              <span className="line-clamp-5 text-center font-serif text-[0.625rem] leading-snug font-bold break-words text-gold-soft">
-                {book.title}
-              </span>
-            </span>
+            <BookCoverPlaceholder book={book} />
           )}
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <h5 className="text-sm leading-snug font-bold break-words text-navy">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <p className="text-[0.625rem] font-semibold tracking-[0.18em] text-gold uppercase">
+          {labels.bookEyebrow}
+        </p>
+
+        <h5 className="font-serif text-base leading-snug font-bold break-words text-navy">
           {book.title}
         </h5>
 
@@ -292,18 +290,30 @@ function BookCard({
           </p>
         )}
 
-        {book.meta && (
-          <p className="text-xs break-words text-muted">{book.meta}</p>
+        {book.author && (
+          <p className="text-xs font-semibold break-words text-foreground/80">
+            {book.author}
+          </p>
+        )}
+
+        {book.imprint && (
+          <p className="text-xs break-words text-muted">{book.imprint}</p>
         )}
 
         {book.description && (
-          <p className="text-xs leading-relaxed break-words text-foreground/80">
+          <p className="mt-1 text-xs leading-relaxed break-words text-foreground/80">
             {book.description}
           </p>
         )}
 
         {book.url && (
-          <ExternalLink href={book.url} label={links.book} context={book.title} newTab={links.newTab} />
+          <ExternalLink
+            href={book.url}
+            label={links.book}
+            context={book.title}
+            newTab={links.newTab}
+            className="mt-auto pt-2"
+          />
         )}
       </div>
     </article>
@@ -311,7 +321,47 @@ function BookCard({
 }
 
 /**
- * 기사 한 건. (15단계)
+ * 표지가 없을 때 그 자리를 채우는 면. (16단계)
+ *
+ * **회색 빈 사각형을 그리지 않는다.** 그건 "이미지를 못 불러왔다" 처럼 보인다.
+ * navy 바탕에 ivory·gold 글자를 얹어 편집 디자인처럼 만든다.
+ *
+ * 실제 표지처럼 오해되지 않도록 **표지 그림을 흉내내지 않는다.**
+ * 가는 금색 선 · 제목 · 발행연도, 이 셋뿐이다.
+ *
+ * 오른쪽 칸에 이미 `저서` 표시가 붙어 있어 **여기서 그 말을 되풀이하지 않는다.**
+ * 손바닥만 한 폭 안에서 같은 낱말이 두 번 보이면 표지가 아니라 라벨처럼 읽힌다.
+ *
+ * 제목·연도가 옆 칸에 이미 글자로 있으므로 전체를 `aria-hidden` 으로 숨긴다.
+ * 화면 읽기 프로그램이 제목을 두 번 읽지 않는다.
+ */
+function BookCoverPlaceholder({ book }: { book: FacultyBookView }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-navy px-2 py-3 text-center"
+    >
+      <span className="h-px w-5 shrink-0 bg-gold" />
+
+      {/* `line-clamp` 은 display 를 -webkit-box 로 바꾼다. 정렬은 바깥에서 건다. */}
+      <span className="line-clamp-4 font-serif text-[0.6875rem] leading-tight font-bold break-words text-beige">
+        {book.title}
+      </span>
+
+      {book.year && (
+        <span className="text-[0.5rem] font-semibold tracking-[0.12em] text-white/45">
+          {book.year}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * 기사 한 건. (16단계에서 배치를 다시 잡았다)
+ *
+ * **단순 링크 목록처럼 보이지 않게** 게시처와 게시일을 맨 위에 작은 글씨로 세우고
+ * 그 아래 제목을 크게 둔다. 신문 기사의 머리 부분과 같은 순서다.
  *
  * **기사 본문을 옮겨 담지 않는다.** 제목 · 게시처 · 게시일 · 우리가 쓴 짧은 소개 ·
  * 원문 링크까지만이다. 기사에 실린 사진도 쓰지 않는 것이 기본이다. (CLAUDE.md 22항)
@@ -325,9 +375,9 @@ function ArticleCard({
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="flex min-w-0 gap-4 rounded-lg border border-line bg-background p-4">
+    <article className="flex min-w-0 gap-4 rounded-xl border border-line bg-background p-5">
       {article.image && (
-        <div className="w-20 shrink-0 sm:w-28">
+        <div className="hidden w-28 shrink-0 sm:block">
           <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-surface">
             <Image
               src={article.image.url}
@@ -340,14 +390,24 @@ function ArticleCard({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <h5 className="text-sm leading-snug font-bold break-words text-navy">
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {(article.publisher || article.publishedOn) && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] text-muted">
+            {article.publisher && (
+              <span className="font-semibold tracking-wide break-words text-navy">
+                {article.publisher}
+              </span>
+            )}
+            {article.publisher && article.publishedOn && (
+              <span aria-hidden="true" className="h-2.5 w-px bg-line" />
+            )}
+            {article.publishedOn && <span>{article.publishedOn}</span>}
+          </p>
+        )}
+
+        <h5 className="font-serif text-base leading-snug font-bold break-words text-navy">
           {article.title}
         </h5>
-
-        {article.meta && (
-          <p className="text-xs break-words text-muted">{article.meta}</p>
-        )}
 
         {article.summary && (
           <p className="text-xs leading-relaxed break-words text-foreground/80">
@@ -361,6 +421,7 @@ function ArticleCard({
             label={links.article}
             context={article.title}
             newTab={links.newTab}
+            className="pt-1"
           />
         )}
       </div>
@@ -381,18 +442,24 @@ function ExternalLink({
   label,
   context,
   newTab,
+  className,
 }: {
   href: string;
   label: string;
   context: string;
   newTab: string;
+  /** 카드마다 위 여백이 달라 바깥에서 정한다. */
+  className?: string;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-0.5 inline-flex w-fit items-center gap-1 text-xs font-semibold text-navy underline-offset-4 hover:underline"
+      className={cn(
+        "inline-flex w-fit items-center gap-1 text-xs font-semibold text-navy underline-offset-4 hover:underline",
+        className,
+      )}
     >
       {label}
       <span aria-hidden="true">→</span>

@@ -126,10 +126,11 @@ export function createPagesEn(
       lectureFields: "Areas of Expertise",
       books: "Selected Publications",
       articles: "Media & Press",
+      bookEyebrow: "Selected Publication",
     },
     externalLinks: {
-      book: "View book",
-      article: "Read article",
+      book: "View Book",
+      article: "Read Article",
       newTab: "opens in a new window",
     },
     emptyNotice: {
