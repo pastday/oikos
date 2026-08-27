@@ -72,7 +72,12 @@ export default async function FacultyPage({ params }: PageProps) {
             title={content.groupTitles[group.type]}
             tone={index % 2 === 1 ? "surface" : "light"}
           >
-            <ul className="grid gap-6">
+            {/*
+              교수 사이를 **카드가 아니라 선과 여백으로** 나눈다. (17단계)
+              전에는 교수 한 명이 통째로 회색 상자에 들어가 있었는데, 경력이 길어질수록
+              그 상자가 화면을 가득 채워 이력서 양식처럼 보였다.
+            */}
+            <ul className="grid gap-16 lg:gap-20 [&>li+li]:border-t [&>li+li]:border-line [&>li+li]:pt-16 lg:[&>li+li]:pt-20">
               {group.members.map((member) => (
                 <li key={member.id}>
                   <FacultyCard
@@ -115,13 +120,21 @@ export default async function FacultyPage({ params }: PageProps) {
 }
 
 /**
- * 교수 한 명.
+ * 교수 한 명. (17단계에서 editorial profile 로 다시 짰다)
  *
- * 위쪽은 **기본정보**(사진·이름·직책·전공), 아래는 **상세 프로필**(소개·학력·경력·전문분야)이다.
- * 두 덩어리를 선으로 나눠 두면 경력이 20줄이 넘어가도 이름과 직책을 찾기 쉽다.
- * 상세가 하나도 없는 교수는 아래 영역을 통째로 그리지 않아 카드가 짧게 끝난다.
+ * ## 왜 상자를 걷어냈는가
  *
- * 사진이 없으면 이니셜 아바타를 쓴다.
+ * 전에는 기본정보부터 언론보도까지 전부 `rounded-xl border bg-surface` 상자 하나에
+ * 들어 있었다. 김동준 교수처럼 경력이 15줄이 넘어가면 그 상자가 화면을 가득 채워
+ * **대학 교수 소개가 아니라 행정 서식처럼** 보였다.
+ *
+ * 지금은 상자를 쓰지 않는다. 대신
+ *
+ *   1. 기본정보와 상세 프로필을 가는 선 하나로 나누고
+ *   2. 상세 프로필의 각 절은 **제목 + 짧은 금색 밑줄 + 넉넉한 세로 여백**으로만 나눈다
+ *
+ * 교수가 여럿일 때는 목록 쪽에서 `li` 사이에 선을 그어 구분한다.
+ * 상세가 하나도 없는 교수는 아래 영역을 통째로 그리지 않는다.
  */
 function FacultyCard({
   member,
@@ -133,8 +146,8 @@ function FacultyCard({
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="rounded-xl border border-line bg-surface p-7 sm:p-9">
-      <div className="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-10">
+    <article className="min-w-0">
+      <header className="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-9">
         {member.photo ? (
           // 크기가 고정된 원형 아바타라 next/image 로 그린다.
           // alt 는 Media 에 입력된 값을 쓴다. 비어 있으면 장식용으로 취급되어
@@ -142,46 +155,67 @@ function FacultyCard({
           <Image
             src={member.photo.url}
             alt={member.photo.alt}
-            width={96}
-            height={96}
-            className="h-24 w-24 rounded-full object-cover"
+            width={128}
+            height={128}
+            className="h-28 w-28 rounded-full object-cover ring-1 ring-navy/10 sm:h-32 sm:w-32"
           />
         ) : (
           <span
             aria-hidden="true"
-            className="flex h-24 w-24 items-center justify-center rounded-full bg-navy font-serif text-2xl font-bold tracking-wide text-gold-soft"
+            className="flex h-28 w-28 items-center justify-center rounded-full bg-navy font-serif text-3xl font-bold tracking-wide text-gold-soft sm:h-32 sm:w-32"
           >
             {member.initials}
           </span>
         )}
 
         <div className="min-w-0">
-          <h3 className="text-2xl font-bold break-words text-navy">{member.name}</h3>
+          {/*
+            이름 크기는 페이지 제목(h1 `text-3xl`/`lg:text-4xl`)보다 한 단계 아래로 둔다.
+            같은 크기로 키웠더니 페이지 제목과 교수 이름 중 무엇이 위인지 읽히지 않았다.
+            지금 위계는 h1 36 → 이름 28 → 구분 제목 24 → 절 라벨 14 다.
+          */}
+          <h3 className="font-serif text-[1.75rem] leading-tight font-bold break-words text-navy">
+            {member.name}
+          </h3>
+
           {member.nameAlt && (
-            <p className="mt-1 text-sm break-words text-muted">{member.nameAlt}</p>
-          )}
-
-          {member.title && (
-            <p className="mt-4 inline-block rounded-full bg-navy-tint px-4 py-1.5 text-xs font-semibold text-navy">
-              {member.title}
+            <p className="mt-1.5 text-sm tracking-wide break-words text-muted">
+              {member.nameAlt}
             </p>
           )}
 
-          {member.major && (
-            <p className="mt-3 text-sm break-words text-foreground/70">
-              {member.major}
-            </p>
+          {(member.title || member.major) && (
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+              {member.title && (
+                <span className="inline-block max-w-full rounded-full bg-navy-tint px-4 py-1.5 text-xs font-semibold break-words text-navy">
+                  {member.title}
+                </span>
+              )}
+              {member.title && member.major && (
+                <span aria-hidden="true" className="h-3.5 w-px bg-line" />
+              )}
+              {member.major && (
+                <span className="text-sm break-words text-foreground/70">
+                  {member.major}
+                </span>
+              )}
+            </div>
           )}
         </div>
-      </div>
+      </header>
 
       {hasFacultyProfile(member) && (
-        <div className="mt-8 grid gap-8 border-t border-line pt-8 lg:grid-cols-2 lg:gap-x-12">
+        // 절 사이 여백이 곧 구분선 역할을 한다. 상자를 쓰지 않는 이유다.
+        <div className="mt-10 flex flex-col gap-12 border-t border-line pt-10 lg:gap-14">
           {member.bio.length > 0 && (
-            <ProfileBlock label={labels.bio} className="lg:col-span-2">
-              <div className="grid gap-3">
+            <ProfileBlock label={labels.bio}>
+              {/* 한 줄이 너무 길면 눈이 다음 줄을 놓친다. 폭을 글자 수로 묶는다. */}
+              <div className="grid max-w-[68ch] gap-4">
                 {member.bio.map((paragraph, index) => (
-                  <p key={index} className="text-sm leading-relaxed break-words text-foreground/85">
+                  <p
+                    key={index}
+                    className="text-[0.9375rem] leading-[1.85] break-words text-foreground/85"
+                  >
                     {paragraph}
                   </p>
                 ))}
@@ -189,29 +223,39 @@ function FacultyCard({
             </ProfileBlock>
           )}
 
-          {member.education.length > 0 && (
-            <ProfileBlock label={labels.education}>
-              <ProfileList items={member.education} />
-            </ProfileBlock>
-          )}
+          {/*
+            학력과 주요 경력은 넓은 화면에서 나란히 둔다.
+            `items-start` 라 두 제목의 윗선이 정확히 맞는다. 좁은 화면에서는 한 열이다.
+          */}
+          {(member.education.length > 0 || member.career.length > 0) && (
+            <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-x-14">
+              {member.education.length > 0 && (
+                <ProfileBlock label={labels.education}>
+                  <ProfileList items={member.education} />
+                </ProfileBlock>
+              )}
 
-          {member.career.length > 0 && (
-            <ProfileBlock label={labels.career}>
-              <ProfileList items={member.career} />
-            </ProfileBlock>
+              {member.career.length > 0 && (
+                <ProfileBlock label={labels.career}>
+                  <ProfileList items={member.career} />
+                </ProfileBlock>
+              )}
+            </div>
           )}
 
           {member.lectureFields.length > 0 && (
-            <ProfileBlock label={labels.lectureFields} className="lg:col-span-2">
-              <ProfileList items={member.lectureFields} />
+            <ProfileBlock label={labels.lectureFields}>
+              <Expertise items={member.lectureFields} />
             </ProfileBlock>
           )}
 
-          {/* 저서 · 언론보도는 항목마다 줄이 여러 개라 늘 지면 전체 폭을 쓴다. (15단계) */}
+          {/*
+            저서와 언론보도는 **같은 폭으로 묶는다.** 한쪽은 작은 카드, 한쪽은
+            화면을 가로지르는 긴 막대가 되면 두 절이 서로 다른 화면처럼 보인다.
+          */}
           {member.books.length > 0 && (
-            <ProfileBlock label={labels.books} className="lg:col-span-2">
-              {/* 카드가 커서 sm 에서는 한 열로 둔다. 여러 권이 들어오면 xl 에서 2열. */}
-              <ul className="grid gap-4 xl:grid-cols-2">
+            <ProfileBlock label={labels.books}>
+              <ul className="grid max-w-work gap-5">
                 {member.books.map((book) => (
                   <li key={book.id} className="min-w-0">
                     <BookCard book={book} labels={labels} links={links} />
@@ -222,8 +266,8 @@ function FacultyCard({
           )}
 
           {member.articles.length > 0 && (
-            <ProfileBlock label={labels.articles} className="lg:col-span-2">
-              <ul className="grid gap-3">
+            <ProfileBlock label={labels.articles}>
+              <ul className="grid max-w-work gap-4">
                 {member.articles.map((article) => (
                   <li key={article.id} className="min-w-0">
                     <ArticleCard article={article} links={links} />
@@ -235,6 +279,38 @@ function FacultyCard({
         </div>
       )}
     </article>
+  );
+}
+
+/**
+ * 전문분야. (17단계)
+ *
+ * 전에는 학력·경력과 같은 글머리표 목록이었다. `호텔` `외식` 처럼 **한 낱말짜리**
+ * 항목이 여섯 줄을 차지해 세로 공간만 먹고 정보는 적었다. 지금은 낱말 조각으로 늘어놓는다.
+ *
+ * **누를 수 있는 것처럼 보이면 안 된다.** 실제로 아무 동작도 하지 않으므로
+ * 그림자·hover·손가락 커서를 주지 않고 얇은 테두리와 옅은 바탕만 쓴다.
+ *
+ * 관리자가 낱말이 아니라 문장을 적어 넣을 수도 있다. **하나라도 길면 목록으로 되돌린다.**
+ * 긴 글을 조각 안에 넣으면 여러 줄로 접혀 모양이 무너진다. (B안 `BExpertise` 와 같은 규칙)
+ */
+const EXPERTISE_CHIP_MAX = 30;
+
+function Expertise({ items }: { items: string[] }) {
+  const fitsChips = items.every((item) => item.length <= EXPERTISE_CHIP_MAX);
+  if (!fitsChips) return <ProfileList items={items} />;
+
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {items.map((item, index) => (
+        <li
+          key={index}
+          className="max-w-full rounded-md border border-navy/15 bg-navy-tint/60 px-3.5 py-1.5 text-sm break-words text-navy"
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -258,15 +334,16 @@ function BookCard({
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="flex h-full min-w-0 gap-5 rounded-xl border border-line bg-background p-5">
-      <div className="w-[4.5rem] shrink-0 sm:w-24">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-sm ring-1 ring-navy/15">
+    <article className="flex h-full min-w-0 flex-col gap-5 rounded-lg border border-line bg-background p-5 sm:flex-row sm:gap-7 sm:p-6">
+      {/* 표지는 실물 책처럼 보이도록 그림자를 얕게 준다. 좁은 화면에서는 위로 올라간다. */}
+      <div className="w-[6.5rem] shrink-0 sm:w-[8.5rem]">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-md ring-1 ring-navy/15">
           {book.cover ? (
             <Image
               src={book.cover.url}
               alt={book.cover.alt}
               fill
-              sizes="96px"
+              sizes="136px"
               className="object-cover"
             />
           ) : (
@@ -280,7 +357,7 @@ function BookCard({
           {labels.bookEyebrow}
         </p>
 
-        <h5 className="font-serif text-base leading-snug font-bold break-words text-navy">
+        <h5 className="font-serif text-lg leading-snug font-bold break-words text-navy">
           {book.title}
         </h5>
 
@@ -301,7 +378,7 @@ function BookCard({
         )}
 
         {book.description && (
-          <p className="mt-1 text-xs leading-relaxed break-words text-foreground/80">
+          <p className="mt-1 text-sm leading-[1.75] break-words text-foreground/80">
             {book.description}
           </p>
         )}
@@ -375,7 +452,7 @@ function ArticleCard({
   links: FacultyContent["externalLinks"];
 }) {
   return (
-    <article className="flex min-w-0 gap-4 rounded-xl border border-line bg-background p-5">
+    <article className="flex min-w-0 gap-5 rounded-lg border border-line bg-background p-5 sm:p-6">
       {article.image && (
         <div className="hidden w-28 shrink-0 sm:block">
           <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-surface">
@@ -405,12 +482,12 @@ function ArticleCard({
           </p>
         )}
 
-        <h5 className="font-serif text-base leading-snug font-bold break-words text-navy">
+        <h5 className="font-serif text-lg leading-snug font-bold break-words text-navy">
           {article.title}
         </h5>
 
         {article.summary && (
-          <p className="text-xs leading-relaxed break-words text-foreground/80">
+          <p className="text-sm leading-[1.75] break-words text-foreground/80">
             {article.summary}
           </p>
         )}
@@ -483,10 +560,16 @@ function ProfileBlock({
 }) {
   return (
     <section className={cn("min-w-0", className)}>
-      <h4 className="text-xs font-semibold tracking-wide text-muted uppercase">
-        {label}
-      </h4>
-      <div className="mt-3">{children}</div>
+      {/*
+        절 제목. (17단계에서 손봤다)
+
+        전에는 옅은 회색 소문자 한 줄이라 본문에 묻혀 절이 어디서 나뉘는지 보이지 않았다.
+        지금은 navy 로 올리고 **짧은 금색 밑줄**을 하나 붙인다.
+        굵은 가로선을 화면 폭만큼 긋지 않는다. 그러면 표처럼 보인다.
+      */}
+      <h4 className="text-sm font-bold tracking-[0.08em] text-navy">{label}</h4>
+      <span aria-hidden="true" className="mt-2 block h-0.5 w-7 bg-gold" />
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -499,15 +582,15 @@ function ProfileBlock({
  */
 function ProfileList({ items }: { items: string[] }) {
   return (
-    <ul className="grid gap-2">
+    <ul className="grid gap-2.5">
       {items.map((item, index) => (
         <li
           key={index}
-          className="flex gap-2.5 text-sm leading-relaxed text-foreground/85"
+          className="flex gap-3 text-[0.9375rem] leading-[1.7] text-foreground/85"
         >
           <span
             aria-hidden="true"
-            className="mt-[0.6em] h-1 w-1 shrink-0 rounded-full bg-gold"
+            className="mt-[0.62em] h-1 w-1 shrink-0 rounded-full bg-gold"
           />
           <span className="min-w-0 break-words">{item}</span>
         </li>

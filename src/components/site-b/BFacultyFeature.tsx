@@ -106,7 +106,7 @@ export function BFacultyFeature({
         )}
 
         {member.title && (
-          <p className="mt-6 text-[0.6875rem] font-semibold tracking-[0.22em] text-bronze uppercase">
+          <p className="mt-6 text-[0.6875rem] font-semibold tracking-[0.22em] break-words text-bronze uppercase">
             {member.title}
           </p>
         )}
@@ -153,7 +153,7 @@ export function BFacultyFeature({
 
             {showAll && member.books.length > 0 && (
               <BProfileRow label={labels.books}>
-                <ul className="space-y-10">
+                <ul className="max-w-work space-y-10">
                   {member.books.map((book) => (
                     <li key={book.id} className="min-w-0">
                       <BBook book={book} labels={labels} links={links} />
@@ -166,7 +166,7 @@ export function BFacultyFeature({
             {showAll && member.articles.length > 0 && (
               <BProfileRow label={labels.articles}>
                 {/* 여러 건이 들어오면 얇은 선으로만 나눈다. 상자를 쓰지 않는다. */}
-                <ul className="space-y-8 divide-y divide-rule [&>li+li]:pt-8">
+                <ul className="max-w-work space-y-8 divide-y divide-rule [&>li+li]:pt-8">
                   {member.articles.map((article) => (
                     <li key={article.id} className="min-w-0">
                       <BArticle article={article} links={links} />
@@ -192,8 +192,13 @@ function BProfileRow({
 }) {
   return (
     <div>
-      <div className="grid gap-2 py-6 sm:grid-cols-[10rem_1fr] sm:gap-8">
-        <dt className="text-[0.625rem] font-semibold tracking-[0.2em] text-quiet uppercase">
+      <div className="grid gap-2 py-7 sm:grid-cols-[10rem_1fr] sm:gap-8 lg:py-8">
+        {/*
+          절 제목. 17단계에서 한 단계 키웠다. 0.625rem 은 본문 옆에서 거의 읽히지 않아
+          절이 어디서 나뉘는지 보이지 않았다. 굵은 선을 더 긋는 대신 글자만 손봤다.
+          (B안은 상자 대신 얇은 선으로 나누는 것이 원칙이다)
+        */}
+        <dt className="text-[0.6875rem] font-semibold tracking-[0.18em] text-ink/55 uppercase">
           {label}
         </dt>
         {/* 관리자가 입력한 글이다. HTML 로 렌더링하지 않는다. */}
@@ -228,7 +233,16 @@ function BProfileList({ items }: { items: string[] }) {
  *
  * 항목이 전부 짧으면 낱말 형태로 늘어놓는 편이 B안 지면에 어울린다.
  * 다만 관리자가 문장을 적어 넣을 수도 있으므로, **하나라도 길면 목록으로 되돌린다.**
- * 긴 글을 알약 모양 안에 넣으면 여러 줄로 접혀 모양이 무너진다.
+ * 긴 글을 조각 안에 넣으면 여러 줄로 접혀 모양이 무너진다.
+ *
+ * ## 왜 밝은 알약이 아니라 어두운 조각인가 (17단계)
+ *
+ * 전에는 옅은 테두리만 두른 알약이라 A안과 거의 같아 보였다. B안의 지면은
+ * 종이색 바탕에 얇은 선뿐이어서 **어딘가 한 곳은 색이 앉아야** 지면이 산다.
+ * midnight 바탕에 bronze 글자를 얹어 그 자리를 여기로 잡았다.
+ *
+ * 모서리는 알약이 아니라 `rounded-sm` 이다. 완전한 알약은 누르는 것처럼 보인다.
+ * **아무 동작도 하지 않으므로** hover·그림자·손가락 커서를 주지 않는다.
  */
 const EXPERTISE_CHIP_MAX = 30;
 
@@ -237,11 +251,11 @@ function BExpertise({ items }: { items: string[] }) {
   if (!fitsChips) return <BProfileList items={items} />;
 
   return (
-    <ul className="flex flex-wrap gap-x-2.5 gap-y-2">
+    <ul className="flex flex-wrap gap-x-2 gap-y-2">
       {items.map((item, index) => (
         <li
           key={index}
-          className="max-w-full rounded-full border border-rule-2 px-3.5 py-1 text-[0.8125rem] break-words text-ink/75"
+          className="max-w-full rounded-sm bg-midnight px-3 py-1.5 text-[0.75rem] font-semibold tracking-[0.08em] break-words text-bronze-2"
         >
           {item}
         </li>
