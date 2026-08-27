@@ -74,6 +74,7 @@ export default async function DesignBFacultyPage({ params }: PageProps) {
                   <BFacultyFeature
                     member={member}
                     labels={content.labels}
+                    links={content.externalLinks}
                     watermark={watermark}
                   />
                 </li>

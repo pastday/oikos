@@ -177,14 +177,14 @@ model PageSectionItem {
 
 /// 교수진 정보. 연락처 등은 모든 교수에게 존재하지 않으므로 nullable.
 model Faculty {
-  id              String      @id @default(cuid())
-  type            FacultyType
-  nameKo          String
-  nameEn          String?
-  titleKo         String?
-  titleEn         String?
-  majorKo         String?
-  majorEn         String?
+  id      String      @id @default(cuid())
+  type    FacultyType
+  nameKo  String
+  nameEn  String?
+  titleKo String?
+  titleEn String?
+  majorKo String?
+  majorEn String?
 
   /// 상세 프로필. 전부 nullable 이다. 자료가 없는 교수도 등록할 수 있어야 한다.
   /// `bio` 는 문단 글, 나머지 셋은 **한 줄에 한 항목**으로 입력해 화면에서 목록으로 그린다.
@@ -215,9 +215,109 @@ model Faculty {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  /// 주요 저서 · 언론 보도. 교수가 지워지면 함께 지운다. (아래 두 모델 주석 참고)
+  books    FacultyBook[]
+  articles FacultyArticle[]
+
   /// 교수 구분별 목록 조회 + 표시순서 정렬용
   @@index([type, sortOrder])
   @@map("faculties")
+}
+
+/// 교수의 **주요 저서** 한 권. (15단계)
+///
+/// 학력·경력과 달리 textarea 한 칸에 줄 단위로 적지 않고 행으로 나눈다.
+/// 한 권마다 출판사·발행일·ISBN·외부 링크·표지가 따로 붙고 화면도 카드로 그리기 때문이다.
+/// (경력을 왜 텍스트로 두었는지는 `Faculty.careerKo` 주석 참고 — 기준이 다르다)
+///
+/// **한국어 제목만 필수다.** 나머지는 전부 nullable 이다. 원본에 없는 값을
+/// 지어내지 않는 것이 이 프로젝트의 원칙이라 (CLAUDE.md 23항) 확인되지 않은 칸은
+/// 비워 둔 채로 저장할 수 있어야 한다. 영문 제목이 비면 영문 페이지에서
+/// 한국어 원표기를 그대로 쓴다. (`pickLocale`)
+///
+/// 표지 이미지는 **사용권이 확인된 파일만** Media 로 올려 연결한다.
+/// 서점 CDN 이미지를 내려받거나 hotlink 하지 않는다. 없으면 화면이 글자 표지를 그린다.
+model FacultyBook {
+  id        String  @id @default(cuid())
+  facultyId String
+  /// 교수를 지우면 저서도 함께 사라진다. 교수 없이 남은 저서는 화면에 나올 곳이 없다.
+  /// `Course` → `Program` 과 같은 정책이다.
+  faculty   Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+
+  titleKo     String
+  titleEn     String?
+  subtitleKo  String?
+  subtitleEn  String?
+  /// 공저·역서가 있을 수 있어 자유 입력이다. 교수 본인 이름만 넣는 칸이 아니다.
+  authorKo    String?
+  authorEn    String?
+  publisherKo String?
+  publisherEn String?
+
+  /// 발행일. **날짜만** 저장한다. (`@db.Date`)
+  /// 시각 개념이 없는 값이라 timestamp 로 두면 표시할 때 시간대 때문에 하루가 밀린다.
+  publishedAt DateTime? @db.Date
+
+  /// 원본에 표기된 것만 넣는다. 형식은 서버에서 숫자·하이픈으로만 제한한다.
+  isbn String?
+
+  /// 홈페이지용 짧은 소개. **서점 상품설명을 그대로 옮기지 않는다.** (CLAUDE.md 22항)
+  descriptionKo String?
+  descriptionEn String?
+
+  /// 서점·출판사 상품 페이지. http/https 만 허용한다. 없으면 링크를 그리지 않는다.
+  externalUrl String?
+
+  coverMediaId String?
+  cover        Media?  @relation("FacultyBookCover", fields: [coverMediaId], references: [id], onDelete: Restrict)
+
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// 교수별 → 표시순서 조회용. foreign key 인덱스 역할도 겸한다.
+  @@index([facultyId, sortOrder])
+  @@map("faculty_books")
+}
+
+/// 교수 관련 **언론 · 미디어 보도** 한 건. (15단계)
+///
+/// 홈페이지에는 **제목 · 게시처 · 게시일 · 우리가 쓴 짧은 소개 · 원문 링크**만 둔다.
+/// 기사 본문을 옮겨 저장하지 않는다. 저작권 때문이다. (CLAUDE.md 22항)
+/// 같은 이유로 기사에 실린 사진도 내려받지 않는다. `imageMediaId` 는 학교가 가지고 있거나
+/// 사용권이 확인된 이미지가 있을 때만 연결하는 칸이며, 비어 있는 것이 기본 상태다.
+model FacultyArticle {
+  id        String  @id @default(cuid())
+  facultyId String
+  faculty   Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+
+  titleKo String
+  titleEn String?
+
+  /// 우리가 직접 쓴 1~2문장 소개. 기사 원문 문장을 옮겨 오지 않는다.
+  summaryKo String?
+  summaryEn String?
+
+  /// 게시처(매체명). 확인된 공식 영문명이 있을 때만 En 을 채운다.
+  publisherKo String?
+  publisherEn String?
+
+  /// 게시일. 저서와 같은 이유로 날짜만 저장한다.
+  publishedAt DateTime? @db.Date
+
+  externalUrl String?
+
+  imageMediaId String?
+  image        Media?  @relation("FacultyArticleImage", fields: [imageMediaId], references: [id], onDelete: Restrict)
+
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([facultyId, sortOrder])
+  @@map("faculty_articles")
 }
 
 // ---------------------------------------------------------------------------
@@ -370,6 +470,8 @@ model Media {
   pageSectionDocuments PageSection[]     @relation("PageSectionDocument")
   pageSectionItems     PageSectionItem[]
   facultyPhotos        Faculty[]
+  facultyBookCovers    FacultyBook[]     @relation("FacultyBookCover")
+  facultyArticleImages FacultyArticle[]  @relation("FacultyArticleImage")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

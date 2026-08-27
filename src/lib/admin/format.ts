@@ -41,6 +41,17 @@ export function toIsoString(value: Date): string {
   return value.toISOString();
 }
 
+/**
+ * `<input type="date">` 에 넣을 값. (15단계 — 저서 발행일 · 기사 게시일)
+ *
+ * 위의 날짜/시간과 달리 **한국 시간으로 바꾸지 않는다.** `@db.Date` 컬럼이라
+ * 애초에 시각이 없는 값이고, 여기서 시간대를 한 번 더 적용하면 하루가 밀린다.
+ * 값이 없는 것은 정상이며 그때는 빈 칸이 된다.
+ */
+export function toDateInputValue(value: Date | null): string {
+  return value ? value.toISOString().slice(0, 10) : "";
+}
+
 /** 긴 문의내용을 목록에서 한 줄로 줄여 보여준다. */
 export function truncate(value: string | null, length: number): string {
   if (!value) return "";

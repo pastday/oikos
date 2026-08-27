@@ -95,6 +95,7 @@ export default async function DesignBHomePage({ params }: PageProps) {
         locale={locale}
         content={content}
         facultyLabels={pages.faculty.labels}
+        facultyLinks={pages.faculty.externalLinks}
         chief={chief}
         watermark={watermark}
       />

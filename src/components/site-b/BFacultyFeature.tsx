@@ -1,6 +1,12 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 import type { FacultyContent } from "@/content/pages";
-import { hasFacultyProfile, type FacultyView } from "@/lib/cms/types";
+import {
+  hasFacultyProfile,
+  type FacultyArticleView,
+  type FacultyBookView,
+  type FacultyView,
+} from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
 import { BFrame } from "./BFrame";
 import { BRule } from "./BType";
@@ -33,12 +39,15 @@ import { BRule } from "./BType";
 export function BFacultyFeature({
   member,
   labels,
+  links,
   watermark,
   size = "normal",
   detail = "full",
 }: {
   member: FacultyView;
   labels: FacultyContent["labels"];
+  /** 저서·기사 원문으로 나가는 링크 문구. 메인(`brief`)에서는 쓰이지 않는다. */
+  links: FacultyContent["externalLinks"];
   watermark: string;
   /** `feature` 는 메인처럼 한 명만 크게 보여줄 때 쓴다. */
   size?: "normal" | "feature";
@@ -141,6 +150,30 @@ export function BFacultyFeature({
                 <BExpertise items={member.lectureFields} />
               </BProfileRow>
             )}
+
+            {showAll && member.books.length > 0 && (
+              <BProfileRow label={labels.books}>
+                <ul className="space-y-8">
+                  {member.books.map((book) => (
+                    <li key={book.id}>
+                      <BBook book={book} links={links} />
+                    </li>
+                  ))}
+                </ul>
+              </BProfileRow>
+            )}
+
+            {showAll && member.articles.length > 0 && (
+              <BProfileRow label={labels.articles}>
+                <ul className="space-y-7">
+                  {member.articles.map((article) => (
+                    <li key={article.id}>
+                      <BArticle article={article} links={links} />
+                    </li>
+                  ))}
+                </ul>
+              </BProfileRow>
+            )}
           </dl>
         )}
       </div>
@@ -213,5 +246,168 @@ function BExpertise({ items }: { items: string[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * 저서 한 권. (15단계)
+ *
+ * A안은 작은 카드에 담지만 B안은 상자를 쓰지 않는다. **세로로 긴 표지 자리**를
+ * 왼쪽에 세우고 오른쪽에 글을 흘린다. 다른 항목과 같은 규칙이다.
+ *
+ * 표지가 없을 때 회색 사각형을 그리지 않는다. `BFrame` 이 만드는 면 위에 제목을
+ * 세로로 앉혀 **책등처럼** 보이게 한다. 그 글자는 옆의 제목과 같은 내용이라
+ * 화면 읽기 프로그램에서는 숨긴다.
+ */
+function BBook({
+  book,
+  links,
+}: {
+  book: FacultyBookView;
+  links: FacultyContent["externalLinks"];
+}) {
+  return (
+    <article className="flex min-w-0 gap-6 sm:gap-8">
+      <div className="w-20 shrink-0 sm:w-28">
+        {/* 비율과 잘림은 `BFrame` 이 정한다. 여기서는 겹쳐 놓을 자리만 만든다. */}
+        <div className="relative">
+          <BFrame media={book.cover} ratio="3/4" sizes="112px" />
+
+          {!book.cover && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 flex items-center justify-center px-2 text-center font-serif text-[0.6875rem] leading-tight font-bold break-words text-white/80"
+            >
+              {book.title}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-2">
+        <h4 className="font-serif text-lg leading-snug font-bold break-words text-ink">
+          {book.title}
+        </h4>
+
+        {book.subtitle && (
+          <p className="text-sm leading-snug break-words text-ink/70">
+            {book.subtitle}
+          </p>
+        )}
+
+        {book.meta && (
+          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] break-words text-quiet uppercase">
+            {book.meta}
+          </p>
+        )}
+
+        {book.description && (
+          <p className="max-w-[52ch] text-sm leading-[1.8] break-words text-ink/75">
+            {book.description}
+          </p>
+        )}
+
+        {book.url && (
+          <BExternalLink
+            href={book.url}
+            label={links.book}
+            context={book.title}
+            newTab={links.newTab}
+          />
+        )}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * 기사 한 건. (15단계)
+ *
+ * 제목 · 게시처 · 게시일 · 짧은 소개 · 원문 링크까지만이다.
+ * **기사 본문도, 기사에 실린 사진도 가져오지 않는다.** (CLAUDE.md 22항)
+ * 사용권이 확인된 이미지가 등록된 경우에만 가로 이미지가 위에 붙는다.
+ */
+function BArticle({
+  article,
+  links,
+}: {
+  article: FacultyArticleView;
+  links: FacultyContent["externalLinks"];
+}) {
+  return (
+    <article className="flex min-w-0 flex-col gap-2">
+      {article.image && (
+        <div className="relative mb-1 aspect-[16/9] w-full max-w-sm overflow-hidden">
+          <Image
+            src={article.image.url}
+            alt={article.image.alt}
+            fill
+            sizes="(min-width: 640px) 24rem, 100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
+
+      <h4 className="font-serif text-lg leading-snug font-bold break-words text-ink">
+        {article.title}
+      </h4>
+
+      {article.meta && (
+        <p className="text-[0.6875rem] font-semibold tracking-[0.14em] break-words text-quiet uppercase">
+          {article.meta}
+        </p>
+      )}
+
+      {article.summary && (
+        <p className="max-w-[52ch] text-sm leading-[1.8] break-words text-ink/75">
+          {article.summary}
+        </p>
+      )}
+
+      {article.url && (
+        <BExternalLink
+          href={article.url}
+          label={links.article}
+          context={article.title}
+          newTab={links.newTab}
+        />
+      )}
+    </article>
+  );
+}
+
+/**
+ * 원문으로 나가는 링크.
+ *
+ * `href` 에는 조회 단계에서 `toSafeUrl()` 을 통과한 http(s) 주소만 들어온다.
+ * 새 탭이므로 `rel="noopener noreferrer"` 를 함께 둔다.
+ * "도서 보기" 같은 짧은 문구가 목록에서 여러 번 반복되므로, 무엇의 링크이고
+ * 새 창으로 열린다는 사실을 숨긴 글자로 덧붙인다.
+ */
+function BExternalLink({
+  href,
+  label,
+  context,
+  newTab,
+}: {
+  href: string;
+  label: string;
+  context: string;
+  newTab: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-1 inline-flex w-fit items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.2em] text-bronze uppercase underline-offset-[6px] hover:underline"
+    >
+      {label}
+      <span aria-hidden="true">→</span>
+      <span className="sr-only">
+        {" "}
+        — {context} ({newTab})
+      </span>
+    </a>
   );
 }

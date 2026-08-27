@@ -206,6 +206,76 @@ export function NumberField({
   );
 }
 
+/**
+ * 날짜 입력. (15단계 — 저서 발행일 · 기사 게시일)
+ *
+ * `YYYY-MM-DD` 만 오간다. 비워 두면 "미입력(null)" 이며, 발행연도만 아는 자료를
+ * 억지로 날짜로 만들지 않기 위해 비우는 것을 허용한다.
+ * 값은 날짜만 다루므로 시간대 문제가 없다. (`FacultyBook.publishedAt` 주석 참고)
+ */
+export function DateField({
+  name,
+  label,
+  hint,
+  defaultValue,
+  disabled,
+}: FieldProps) {
+  const { id, hintId } = useFieldIds(hint);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id} label={label} />
+      <input
+        id={id}
+        name={name}
+        type="date"
+        defaultValue={defaultValue ?? ""}
+        disabled={disabled}
+        aria-describedby={hintId}
+        className={cn(controlClassName, "max-w-[14rem]")}
+      />
+      <Hint id={hintId} text={hint} />
+    </div>
+  );
+}
+
+/**
+ * 외부 링크 입력. (15단계)
+ *
+ * `type="url"` 이라 브라우저가 형식을 한 번 걸러 준다. **그건 편의일 뿐이다.**
+ * `http` / `https` 만 허용하는 실제 검증은 서버(`validation.ts` 의 `externalUrl`)가 한다.
+ * 여기서 `pattern` 으로 스킴까지 막지 않는 이유는, 브라우저 검증은 우회할 수 있어
+ * 두 곳에 규칙을 적어 두면 어긋나기만 하기 때문이다.
+ */
+export function UrlField({
+  name,
+  label,
+  hint,
+  defaultValue,
+  disabled,
+}: FieldProps) {
+  const { id, hintId } = useFieldIds(hint);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id} label={label} />
+      <input
+        id={id}
+        name={name}
+        type="url"
+        inputMode="url"
+        placeholder="https://"
+        defaultValue={defaultValue ?? ""}
+        maxLength={500}
+        disabled={disabled}
+        aria-describedby={hintId}
+        className={controlClassName}
+      />
+      <Hint id={hintId} text={hint} />
+    </div>
+  );
+}
+
 export function SelectField({
   name,
   label,

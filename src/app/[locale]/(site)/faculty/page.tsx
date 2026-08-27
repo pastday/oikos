@@ -7,7 +7,12 @@ import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { Section } from "@/components/page/Section";
 import { getPageContent, type FacultyContent } from "@/content/pages";
 import { getProgramNumbers, getPublishedFacultyGroups } from "@/lib/cms/queries";
-import { hasFacultyProfile, type FacultyView } from "@/lib/cms/types";
+import {
+  hasFacultyProfile,
+  type FacultyArticleView,
+  type FacultyBookView,
+  type FacultyView,
+} from "@/lib/cms/types";
 import { isLocale } from "@/i18n/config";
 import { cn } from "@/lib/cn";
 import { buildPageMetadata } from "@/lib/metadata";
@@ -70,7 +75,11 @@ export default async function FacultyPage({ params }: PageProps) {
             <ul className="grid gap-6">
               {group.members.map((member) => (
                 <li key={member.id}>
-                  <FacultyCard member={member} labels={content.labels} />
+                  <FacultyCard
+                    member={member}
+                    labels={content.labels}
+                    links={content.externalLinks}
+                  />
                 </li>
               ))}
             </ul>
@@ -117,9 +126,11 @@ export default async function FacultyPage({ params }: PageProps) {
 function FacultyCard({
   member,
   labels,
+  links,
 }: {
   member: FacultyView;
   labels: FacultyContent["labels"];
+  links: FacultyContent["externalLinks"];
 }) {
   return (
     <article className="rounded-xl border border-line bg-surface p-7 sm:p-9">
@@ -195,9 +206,201 @@ function FacultyCard({
               <ProfileList items={member.lectureFields} />
             </ProfileBlock>
           )}
+
+          {/* 저서 · 언론보도는 항목마다 줄이 여러 개라 늘 지면 전체 폭을 쓴다. (15단계) */}
+          {member.books.length > 0 && (
+            <ProfileBlock label={labels.books} className="lg:col-span-2">
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {member.books.map((book) => (
+                  <li key={book.id}>
+                    <BookCard book={book} links={links} />
+                  </li>
+                ))}
+              </ul>
+            </ProfileBlock>
+          )}
+
+          {member.articles.length > 0 && (
+            <ProfileBlock label={labels.articles} className="lg:col-span-2">
+              <ul className="grid gap-3">
+                {member.articles.map((article) => (
+                  <li key={article.id}>
+                    <ArticleCard article={article} links={links} />
+                  </li>
+                ))}
+              </ul>
+            </ProfileBlock>
+          )}
         </div>
       )}
     </article>
+  );
+}
+
+/**
+ * 저서 한 권. (15단계)
+ *
+ * 표지 자리를 **먼저 잡아 두고** 사진이 없으면 제목을 글자로 앉힌 면으로 채운다.
+ * 회색 빈 사각형은 그리지 않는다. 그 글자는 바로 옆 제목과 같은 내용이라
+ * `aria-hidden` 으로 숨긴다. 화면 읽기 프로그램이 제목을 두 번 읽지 않게 한다.
+ *
+ * 표지가 없는 것이 기본 상태다. 서점 이미지를 내려받거나 걸어 두지 않는다. (CLAUDE.md 22항)
+ */
+function BookCard({
+  book,
+  links,
+}: {
+  book: FacultyBookView;
+  links: FacultyContent["externalLinks"];
+}) {
+  return (
+    <article className="flex h-full min-w-0 gap-4 rounded-lg border border-line bg-background p-4">
+      <div className="w-16 shrink-0 sm:w-20">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-sm border border-line bg-navy">
+          {book.cover ? (
+            <Image
+              src={book.cover.url}
+              alt={book.cover.alt}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          ) : (
+            // `line-clamp` 은 `display: -webkit-box` 를 건다. 같은 요소에 `flex` 를
+            // 함께 주면 두 display 가 부딪혀 어느 쪽이 이길지 CSS 순서에 맡겨진다.
+            // 가운데 정렬은 바깥에서, 줄 수 제한은 안쪽에서 따로 건다.
+            <span
+              aria-hidden="true"
+              className="flex h-full w-full items-center justify-center px-1.5"
+            >
+              <span className="line-clamp-5 text-center font-serif text-[0.625rem] leading-snug font-bold break-words text-gold-soft">
+                {book.title}
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <h5 className="text-sm leading-snug font-bold break-words text-navy">
+          {book.title}
+        </h5>
+
+        {book.subtitle && (
+          <p className="text-xs leading-snug break-words text-foreground/70">
+            {book.subtitle}
+          </p>
+        )}
+
+        {book.meta && (
+          <p className="text-xs break-words text-muted">{book.meta}</p>
+        )}
+
+        {book.description && (
+          <p className="text-xs leading-relaxed break-words text-foreground/80">
+            {book.description}
+          </p>
+        )}
+
+        {book.url && (
+          <ExternalLink href={book.url} label={links.book} context={book.title} newTab={links.newTab} />
+        )}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * 기사 한 건. (15단계)
+ *
+ * **기사 본문을 옮겨 담지 않는다.** 제목 · 게시처 · 게시일 · 우리가 쓴 짧은 소개 ·
+ * 원문 링크까지만이다. 기사에 실린 사진도 쓰지 않는 것이 기본이다. (CLAUDE.md 22항)
+ * 사용권이 확인된 이미지가 등록되면 그때만 왼쪽에 나온다.
+ */
+function ArticleCard({
+  article,
+  links,
+}: {
+  article: FacultyArticleView;
+  links: FacultyContent["externalLinks"];
+}) {
+  return (
+    <article className="flex min-w-0 gap-4 rounded-lg border border-line bg-background p-4">
+      {article.image && (
+        <div className="w-20 shrink-0 sm:w-28">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-surface">
+            <Image
+              src={article.image.url}
+              alt={article.image.alt}
+              fill
+              sizes="112px"
+              className="object-cover"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <h5 className="text-sm leading-snug font-bold break-words text-navy">
+          {article.title}
+        </h5>
+
+        {article.meta && (
+          <p className="text-xs break-words text-muted">{article.meta}</p>
+        )}
+
+        {article.summary && (
+          <p className="text-xs leading-relaxed break-words text-foreground/80">
+            {article.summary}
+          </p>
+        )}
+
+        {article.url && (
+          <ExternalLink
+            href={article.url}
+            label={links.article}
+            context={article.title}
+            newTab={links.newTab}
+          />
+        )}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * 원문으로 나가는 링크.
+ *
+ * `href` 는 조회 단계에서 `toSafeUrl()` 을 통과한 http(s) 주소만 들어온다.
+ * 새 탭으로 여는 링크에는 `rel="noopener noreferrer"` 를 반드시 함께 둔다.
+ * 링크 문구가 "도서 보기" 처럼 짧아 목록에서 여러 개가 같은 말이 되므로,
+ * 무엇의 링크인지와 새 창으로 열린다는 사실을 숨긴 글자로 덧붙인다.
+ */
+function ExternalLink({
+  href,
+  label,
+  context,
+  newTab,
+}: {
+  href: string;
+  label: string;
+  context: string;
+  newTab: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-0.5 inline-flex w-fit items-center gap-1 text-xs font-semibold text-navy underline-offset-4 hover:underline"
+    >
+      {label}
+      <span aria-hidden="true">→</span>
+      <span className="sr-only">
+        {" "}
+        — {context} ({newTab})
+      </span>
+    </a>
   );
 }
 

@@ -25,7 +25,9 @@
 | 11 | 파일 업로드 · 미디어 관리 | ✅ 완료 |
 | 12 | 미디어를 공개 콘텐츠에 연결 | ✅ 완료 |
 | 13 | 디자인 B안 — 공개 사이트 한 벌 전체 (preview) | ✅ 완료 (교수 검수 대기) |
-| 14 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
+| 14 | 교수 상세 프로필 (소개·학력·경력·전문분야) | ✅ 완료 |
+| 15 | 교수 주요 저서 · 언론 · 미디어 | ✅ 완료 |
+| 16 | **테스트 / SEO / 보안 점검** | ⏭ 다음 |
 
 **현재 서비스 중**: https://oikos.pastday.co.kr — **12단계까지 반영됨**
 ⚠️ **13단계는 아직 운영에 반영되지 않았다.** `systemctl restart oikos` 를 하면 반영된다.
@@ -41,7 +43,7 @@
 | 항목 | 상태 |
 | --- | --- |
 | Git | `main` = `origin/main`, working tree clean |
-| DB | Faculty 1 · Program 2 · Course 33 · PageSection 19 · PageSectionItem 30 · FAQ 8 · SiteSetting 8 · Media 0 · 상담/설명회 0 |
+| DB | Faculty 1 · **FacultyBook 1 · FacultyArticle 1** · Program 2 · Course 33 · PageSection 19 · PageSectionItem 30 · FAQ 8 · SiteSetting 8 · Media 0 · 상담/설명회 0 |
 | 검증 | `tsc` · `lint` · `build` 전부 통과한 상태로 커밋됨 |
 | 테스트 데이터 | 전부 정리 완료 (잔여 0건) |
 | 운영 | ⚠️ 12단계까지만 반영됨. **13단계(디자인 B안)는 재시작 대기** |
@@ -76,13 +78,13 @@ npm run dev                  # 개발 서버 3000
 | FICB 공식 URL | `src/lib/site-links.ts` (여기만 코드다) |
 
 **B. 결정이 필요한 것** — 아래 "미결 항목" 절 참고.
-특히 교수 검수가 필요한 원본 자료 불일치 12건은 자료 확정 전에는 진행할 수 없다.
+특히 교수 검수가 필요한 원본 자료 불일치 13건은 자료 확정 전에는 진행할 수 없다.
 
 **C. 남은 단계**
 
 - **교수 디자인 검수** — A안(`/ko`)과 B안(`/ko/design-b`)을 나란히 보여주고 한쪽을 고른다.
   B안이 채택되면 아래 "B안을 정식 디자인으로 승격하기" 절을 따른다.
-- **14단계 — 테스트 / SEO / 보안 점검**
+- **16단계 — 테스트 / SEO / 보안 점검**
   각 단계에서 그때그때 확인해 왔지만, 전체를 한 번에 훑는 작업은 아직 하지 않았다.
   SEO 는 `buildPageMetadata` 로 title·description·canonical·OG 를 넣어 두었으나
   sitemap.xml · robots.txt 는 없다. (B안은 sitemap 에 넣지 않는다)
@@ -300,11 +302,13 @@ assets/source/           원본 이미지 (Git 미포함)
 로컬 PostgreSQL 14, 포트 **5433**, DB `oikos_dev`, 사용자 `oikos_app` (superuser 아님, `CREATEDB` 만 보유).
 비밀번호는 `.env` 에만 있고 Git·문서 어디에도 없다. 재구성은 `scripts/setup-local-db.sh`.
 
-마이그레이션 5개: `20260814124541_init` (테이블 10개) +
+마이그레이션 6개: `20260814124541_init` (테이블 10개) +
 `20260817155549_allow_nullable_course_semester` (9단계) +
 `20260818125024_add_page_section_items` (10단계 — 순수 additive) +
 `20260818142008_add_media_relations_to_content` (12단계) +
-`20260824140204_add_faculty_profile_fields` (14단계 — 순수 additive, nullable 4개).
+`20260824140204_add_faculty_profile_fields` (14단계 — 순수 additive, nullable 4개) +
+`20260827122142_add_faculty_books_and_articles` (15단계 — 순수 additive, 새 테이블 2개.
+기존 테이블은 건드리지 않는다).
 Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken` 테이블은 만들지 않았다.
 
 - **쓰기**: `Consultation`·`SeminarApplication` (신청 폼) / `AdminUser` (`lastLoginAt`) /
@@ -319,8 +323,8 @@ Auth.js 를 붙였지만 JWT 세션이라 `Account`/`Session`/`VerificationToken
 - 사용자 페이지는 여전히 정적 생성(SSG)이다. 관리자가 CMS 에서 저장할 때만 해당 경로를 다시 만든다.
 - **관리자 화면(`/admin/*`)은 동적 렌더링(ƒ)이다.** 세션 쿠키와 DB 를 읽기 때문이다.
 
-모델: `AdminUser` `PageSection` `PageSectionItem` `Faculty` `Program` `Course` `FAQ`
-`Consultation` `SeminarApplication` `Media` `SiteSetting`
+모델: `AdminUser` `PageSection` `PageSectionItem` `Faculty` **`FacultyBook` `FacultyArticle`**
+`Program` `Course` `FAQ` `Consultation` `SeminarApplication` `Media` `SiteSetting`
 
 > `Media` 는 11단계부터 쓰인다. 11단계에서는 스키마를 바꾸지 않았고,
 > 12단계에서 **역참조(사용처)만 추가**했다.
@@ -1216,9 +1220,144 @@ DB 는 김동준 교수 1건의 상세 프로필 8개 필드만 바꿨다. 기�
 
 ---
 
+## 15단계에서 만든 것 (교수 주요 저서 · 언론 · 미디어)
+
+교수 프로필에 **주요 저서**와 **언론 · 미디어** 두 영역을 더했다.
+김동준 교수 한 명을 위한 것이 아니라 **모든 교수가 쓰는 구조**다.
+
+### 1. 새 테이블 두 개 — `FacultyBook` · `FacultyArticle`
+
+학력·경력은 textarea 한 칸에 줄 단위로 적지만 (14단계), 저서·기사는 **행으로 나눴다.**
+한 건마다 출판사·발행일·ISBN·외부 링크·이미지가 따로 붙고 화면도 카드로 그리기 때문이다.
+
+| 정책 | 값 |
+| --- | --- |
+| 필수 | **한국어 제목만.** 나머지는 전부 nullable |
+| 삭제 | `Faculty` 삭제 시 **Cascade** (`Course` → `Program` 과 같다) |
+| 이미지 | `Media` 참조 + `onDelete: Restrict` (기존 사진 정책과 같다) |
+| 정렬 | `sortOrder` → `createdAt`. 공개 화면은 `isPublished` 인 것만 조회 |
+| 발행일 | `DateTime? @db.Date` — **날짜만.** 시각을 두면 시간대 때문에 하루가 밀린다 |
+
+`publisher` 는 지시서에 단일 필드로 적혀 있었지만 **`publisherKo` / `publisherEn` 로 나눴다.**
+이 프로젝트는 모든 표시용 텍스트를 Ko/En 쌍으로 관리하고, 실제로 이번 기사의
+게시처는 영문 표기(`News Repository`)가 원본에 함께 있었다.
+
+`externalUrl` 은 지시서에 필수로 적혀 있었지만 **nullable 로 두었다.**
+링크가 없는 저서·기사도 등록할 수 있어야 한다는 기존 원칙(원본에 없는 값을 만들지 않는다)을
+따랐고, 비어 있으면 화면이 링크를 아예 그리지 않는다.
+
+### 2. 외부 링크 보안
+
+관리자가 입력한 주소가 그대로 `<a href>` 에 들어간다. **두 겹으로 막는다.**
+
+1. 저장할 때 — `validation.ts` 의 `externalUrl` 이 `new URL()` 로 파싱해
+   `http:` / `https:` 만 통과시킨다. 문자열 비교가 아니라 파싱인 이유는
+   `java\nscript:` 처럼 공백·개행을 섞은 우회를 문자열로는 막기 어렵기 때문이다.
+2. 그릴 때 — `toSafeUrl()` 이 한 번 더 본다. DB 행이 CMS 를 거치지 않고
+   들어올 수 있어서다 (이관 스크립트, psql). 통과 못 하면 링크를 그리지 않는다.
+
+`javascript:` `JavaScript:` `java\nscript:` `data:` `vbscript:` 가 두 겹 모두에서
+막히는 것을 확인했다. 링크는 전부 `target="_blank" rel="noopener noreferrer"` 다.
+
+### 3. 저작권 — 무엇을 저장하지 않았는가
+
+**기사 본문도, 서점 상품설명도 저장하지 않는다.** 홈페이지에 두는 것은
+제목 · 게시처 · 날짜 · **우리가 새로 쓴 1~3문장 요약** · 원문 링크까지다.
+
+**이미지는 한 장도 넣지 않았다.** 네이버 기사 사진과 교보문고 표지 모두
+사용권이 확인되지 않았다. 내려받지도, hotlink 하지도 않았다.
+표지 자리는 **구조만** 만들어 두었다 — 사용권이 확인된 파일을 [미디어] 에 올려
+CMS 에서 고르면 그 자리에 바로 들어간다. 그전까지 화면은 글자 표지를 그린다.
+
+### 4. 관리자 CMS
+
+교수 수정 화면(`/admin/faculty/[id]/edit`) 아래에 두 목록을 붙였다.
+섹션 항목 관리와 같은 배치다 — 관리자가 "이 교수" 를 고칠 때 프로필과 저서를 같이 본다.
+
+| 경로 | 내용 |
+| --- | --- |
+| `/admin/faculty/[id]/books/new` · `/books/[bookId]/edit` | 저서 추가 · 수정 · 삭제 |
+| `/admin/faculty/[id]/articles/new` · `/articles/[articleId]/edit` | 기사 추가 · 수정 · 삭제 |
+
+수정·삭제는 **교수 id 를 함께 걸어** 조회한다. 주소를 바꿔 다른 교수의 저서를
+이 교수 밑에서 열거나 고치지 못한다. 저장 액션도 같은 조건을 다시 건다.
+
+폼에 `DateField`(날짜) · `UrlField`(외부 링크)를 새로 만들어 썼다.
+서점·언론사 이미지를 내려받아 올리면 안 된다는 것은 코드가 막을 수 없는 규칙이라
+**이미지 고르는 자리 바로 옆에 안내를 적어 두었다.**
+
+### 5. 공개 페이지
+
+A안·B안이 **같은 데이터**를 쓰고 표현만 다르다. 표시 순서는 양쪽 모두
+소개 → 학력 → 주요 경력 → 전문분야 → **주요 저서 → 언론 · 미디어** 다.
+
+| | A안 | B안 |
+| --- | --- | --- |
+| 저서 | 카드 2열. 작은 표지 + 제목 + 저자·출판사·연도 + 소개 + [도서 보기] | 지면형. 세로 표지 + 세리프 제목 + 대문자 메타 + 소개 + [도서 보기] |
+| 기사 | 카드 1열 | 얇은 선으로 나뉜 지면 |
+
+라벨: 한국어 `주요 저서` / `언론 · 미디어`,
+영어 `Selected Publications` / `Media & Press`.
+
+갱신은 **기존 `revalidateFaculty()` 를 그대로 재사용한다.** 새 helper 를 만들지 않았다.
+빌드 산출물의 캐시 태그가 이 helper 가 보내는 패턴과 일치하는 것을 확인했다.
+
+    /ko/faculty          _N_T_/[locale]/(site)/faculty/page
+    /en/faculty          _N_T_/[locale]/(site)/faculty/page
+    /ko/design-b/faculty _N_T_/[locale]/design-b/faculty/page
+    /en/design-b/faculty _N_T_/[locale]/design-b/faculty/page
+
+### 6. 넣은 데이터 (원본에서 직접 확인한 값만)
+
+`npm run seed:works` — `seed:cms` · `seed:pages` 와 같은 **일회성·멱등** 이관 스크립트다.
+자연키(교수 + 외부 링크)로 찾아 이미 있으면 아무것도 하지 않는다. 지우는 동작은 없다.
+
+**저서** — https://product.kyobobook.co.kr/detail/S000218752366
+
+| 칸 | 값 |
+| --- | --- |
+| 도서명 | 오늘 저녁은 와인 어때요? |
+| 저자 | 김동준 (`저자(글)`) |
+| 출판사 | 백산출판사 |
+| 발행일 | 2025-12-10 |
+| ISBN | 9791173850844 |
+| 부제 | **없음** (상품 페이지의 `titleAlias` 가 비어 있다) |
+
+**기사** — https://m.blog.naver.com/news-repository/224338806566
+
+| 칸 | 값 |
+| --- | --- |
+| 제목 | `[현장에서] "와인은 술이 아니라 문화였다"…안동에서 피어난 한국 와인기사단의 품격` |
+| 게시처 | 뉴스보고 / News Repository |
+| 게시일 | 2026-07-07 |
+
+게시물 제목 앞에는 블로그명 접두어 `뉴스보고- ` 가 붙어 있다. 그건 떼고 기사 제목만 넣었다.
+게시물 안에 원문 출처(`newspf.net/9602`)가 함께 있지만, **지시받은 URL 을 그대로** 저장했다.
+
+**확인이 필요한 것** (추측해서 채우지 않고 비워 둔 칸)
+
+- **교보문고 상품 페이지에 저자 소개가 없다.** 저자명이 `김동준` 이라는 것만 확인된다.
+  이 책의 저자가 우리 김동준 주임교수와 동일인이라는 근거는 **그 페이지에 없다.**
+  (`교수` `오이코스` `소믈리에` 어느 낱말도 페이지에 없다) 교수 검수 때 확인해야 한다.
+- **저서·기사의 공식 영문 제목이 원본에 없다.** 지어내지 않고 `titleEn` 을 비워 두었다.
+  영문 페이지에는 한국어 원제가 그대로 나오고, 내용은 우리가 쓴 영문 요약이 설명한다.
+  (영문명이 없으면 한국어 원표기를 그대로 쓰는 기존 정책 — `pickLocale`)
+- **백산출판사의 공식 영문 사명이 상품 페이지에 없다.** `publisherEn` 을 비워 두었다.
+- 기사 안의 직함 표기는 `김동준 FICB 한국 총사령관` · `오이코스대학교 호텔외식와인경영
+  전공 주임교수` 다. 기존 DB 의 `주임교수` 와 어긋나지 않아 기본정보는 건드리지 않았다.
+  다만 `총사령관` 의 공식 영문 직함은 확인되지 않아 영문 요약에서 직함 대신
+  "그 행사를 이끌었다" 로 풀어 썼다.
+- 저자 영문명 `Dong-Joon Kim` 은 **DB 의 `Faculty.nameEn` 에 이미 확정되어 있던 표기**를
+  그대로 가져온 것이다. 교보문고 페이지에서 확인한 값이 아니다.
+
+기존 김동준 교수 행은 **한 칸도 바꾸지 않았다.** 이름·직책·전공·소개·학력·경력·
+전문분야·사진·`sortOrder`·`isPublished` 모두 그대로이고, 다른 테이블도 건수가 같다.
+
+---
+
 ## 미결 항목 (누가 결정해야 하는가)
 
-### 교수 검수가 필요한 원본 자료 불일치 12건
+### 교수 검수가 필요한 원본 자료 불일치 13건
 
 `decisions.md` 의 표에 전부 정리되어 있다. 대표적인 것:
 
@@ -1234,6 +1373,9 @@ DB 는 김동준 교수 1건의 상세 프로필 8개 필드만 바꿨다. 기�
 10. LMS 사용료 금액 불명확 (원본에 `-` 로만 표기)
 11. 대표 연락처 미확정 (명함과 모집 이미지의 연락처가 다름)
 12. 총장 인사말 본문 없음 / 주임교수 외 교수진 명단 없음
+13. **(15단계)** 교보문고 `오늘 저녁은 와인 어때요?` 의 저자 `김동준` 이 우리 김동준 주임교수와
+    동일인이라는 근거가 **그 상품 페이지에 없다.** (저자 소개가 실려 있지 않다)
+    지시받은 URL 이므로 그대로 등록했으나 교수 확인이 필요하다.
 
 ### 자료가 들어오면 할 일
 
@@ -1242,6 +1384,9 @@ DB 는 김동준 교수 1건의 상세 프로필 8개 필드만 바꿨다. 기�
   9단계 CMS 에 `photoUrl` 직접 입력은 있으나 **파일 업로드는 11단계**다
 - 배경 이미지 → 현재 Hero 는 gradient. 모집 이미지의 캠퍼스 사진은 출처 불명이라 사용하지 않았다
 - 총장 인사말 / 교수진 명단 → 각 페이지의 "준비 중" 안내 대체
+- **책 표지 · 기사 사진** (15단계) → 사용권이 확인된 파일을 [미디어] 에 올려
+  저서/기사 수정 화면에서 고르면 그 자리에 바로 들어간다. 지금은 글자 표지로 나온다.
+  서점·언론사 이미지를 내려받거나 hotlink 하지 않는다.
 
 ### 기술적으로 나중에 정할 것
 
@@ -1272,6 +1417,7 @@ npm run admin:create         # 관리자 계정 생성 (.env 의 SEED_ADMIN_* �
                              #   비밀번호를 바꾸려면: npm run admin:create -- --force-password
 npm run seed:cms             # 교수진·과정·교과목 이관 (9단계, 멱등)
 npm run seed:pages           # 페이지 콘텐츠·FAQ·입학안내 수치 이관 (10단계, 멱등)
+npm run seed:works           # 교수 저서·언론보도 이관 (15단계, 멱등)
 npx prisma migrate dev       # 스키마 변경 후 마이그레이션
 
 systemctl status oikos       # 운영 서비스 상태

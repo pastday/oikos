@@ -129,6 +129,13 @@ export function createPagesKo(
       education: "학력",
       career: "주요 경력",
       lectureFields: "전문분야",
+      books: "주요 저서",
+      articles: "언론 · 미디어",
+    },
+    externalLinks: {
+      book: "도서 보기",
+      article: "기사 보기",
+      newTab: "새 창에서 열림",
     },
     emptyNotice: {
       title: "교수진 안내",

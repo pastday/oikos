@@ -21,8 +21,11 @@ import { resolveMediaId } from "@/lib/media/select";
 import {
   admissionNumberSchema,
   courseSchema,
+  facultyArticleSchema,
+  facultyBookSchema,
   facultySchema,
   faqSchema,
+  firstIssueMessage,
   formDataToObject,
   pageSectionItemSchema,
   pageSectionSchema,
@@ -122,6 +125,176 @@ export async function deleteFaculty(formData: FormData): Promise<void> {
 
   revalidateFaculty();
   redirect("/admin/faculty");
+}
+
+// ---------------------------------------------------------------------------
+// 교수 저서 · 언론보도 (15단계)
+// ---------------------------------------------------------------------------
+
+/**
+ * 저서·기사가 붙을 교수가 실제로 있는지 확인한다.
+ *
+ * 교수 id 는 주소에서 오므로 **없는 id 나 남의 id 가 올 수 있다.**
+ * FK 제약이 어차피 막지만 그때는 사용자에게 원인 모를 오류로 보인다.
+ */
+async function findFacultyId(facultyId: string): Promise<string | null> {
+  const faculty = await prisma.faculty.findUnique({
+    where: { id: facultyId },
+    select: { id: true },
+  });
+
+  return faculty?.id ?? null;
+}
+
+/** 교수 상세(수정) 화면. 저장·삭제 후 여기로 돌아온다. */
+function facultyEditPath(facultyId: string): string {
+  return `/admin/faculty/${facultyId}/edit`;
+}
+
+export async function saveFacultyBook(
+  facultyId: string,
+  id: string | null,
+  _prevState: CmsFormState,
+  formData: FormData,
+): Promise<CmsFormState> {
+  await requireAdmin();
+
+  if (!(await findFacultyId(facultyId))) {
+    return { status: "error", message: CMS_NOT_FOUND_ERROR };
+  }
+
+  const parsed = facultyBookSchema.safeParse(formDataToObject(formData));
+  if (!parsed.success) {
+    // 링크·ISBN·날짜는 무엇이 잘못됐는지 알려 줘야 고칠 수 있다.
+    return { status: "error", message: firstIssueMessage(parsed.error) };
+  }
+
+  // 표지는 사용권이 확인되어 [미디어] 에 올라간 이미지만 연결할 수 있다.
+  const coverMediaId = await resolveMediaId(parsed.data.coverMediaId, "image");
+  if (coverMediaId === "invalid") {
+    return { status: "error", message: MEDIA_IMAGE_ERROR };
+  }
+
+  const data = { ...parsed.data, coverMediaId };
+
+  try {
+    if (id) {
+      // 다른 교수의 저서 id 를 넘겨 남의 데이터를 고치지 못하게 facultyId 를 함께 건다.
+      const updated = await prisma.facultyBook.updateMany({
+        where: { id, facultyId },
+        data,
+      });
+
+      if (updated.count === 0) {
+        return { status: "error", message: CMS_NOT_FOUND_ERROR };
+      }
+    } else {
+      await prisma.facultyBook.create({ data: { ...data, facultyId } });
+    }
+  } catch (error) {
+    return toErrorState("faculty-book", error);
+  }
+
+  revalidateFaculty();
+
+  if (!id) redirect(facultyEditPath(facultyId));
+
+  return { status: "saved" };
+}
+
+export async function deleteFacultyBook(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = formData.get("id");
+  if (typeof id !== "string" || id.length === 0) return;
+
+  let facultyId: string;
+
+  try {
+    const deleted = await prisma.facultyBook.delete({
+      where: { id },
+      select: { facultyId: true },
+    });
+    facultyId = deleted.facultyId;
+  } catch (error) {
+    console.error("[admin][cms][faculty-book] 삭제 실패", error);
+    return;
+  }
+
+  revalidateFaculty();
+  redirect(facultyEditPath(facultyId));
+}
+
+export async function saveFacultyArticle(
+  facultyId: string,
+  id: string | null,
+  _prevState: CmsFormState,
+  formData: FormData,
+): Promise<CmsFormState> {
+  await requireAdmin();
+
+  if (!(await findFacultyId(facultyId))) {
+    return { status: "error", message: CMS_NOT_FOUND_ERROR };
+  }
+
+  const parsed = facultyArticleSchema.safeParse(formDataToObject(formData));
+  if (!parsed.success) {
+    return { status: "error", message: firstIssueMessage(parsed.error) };
+  }
+
+  // 기사에 실린 사진을 내려받아 넣는 칸이 아니다. 사용권이 확인된 이미지만 연결한다.
+  const imageMediaId = await resolveMediaId(parsed.data.imageMediaId, "image");
+  if (imageMediaId === "invalid") {
+    return { status: "error", message: MEDIA_IMAGE_ERROR };
+  }
+
+  const data = { ...parsed.data, imageMediaId };
+
+  try {
+    if (id) {
+      const updated = await prisma.facultyArticle.updateMany({
+        where: { id, facultyId },
+        data,
+      });
+
+      if (updated.count === 0) {
+        return { status: "error", message: CMS_NOT_FOUND_ERROR };
+      }
+    } else {
+      await prisma.facultyArticle.create({ data: { ...data, facultyId } });
+    }
+  } catch (error) {
+    return toErrorState("faculty-article", error);
+  }
+
+  revalidateFaculty();
+
+  if (!id) redirect(facultyEditPath(facultyId));
+
+  return { status: "saved" };
+}
+
+export async function deleteFacultyArticle(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = formData.get("id");
+  if (typeof id !== "string" || id.length === 0) return;
+
+  let facultyId: string;
+
+  try {
+    const deleted = await prisma.facultyArticle.delete({
+      where: { id },
+      select: { facultyId: true },
+    });
+    facultyId = deleted.facultyId;
+  } catch (error) {
+    console.error("[admin][cms][faculty-article] 삭제 실패", error);
+    return;
+  }
+
+  revalidateFaculty();
+  redirect(facultyEditPath(facultyId));
 }
 
 // ---------------------------------------------------------------------------

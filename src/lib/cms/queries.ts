@@ -1,16 +1,23 @@
 import { cache } from "react";
+import type { Prisma } from "@/generated/prisma/client";
 import type { ProgramType } from "@/generated/prisma/enums";
 import type { Locale } from "@/i18n/config";
 import { prisma } from "@/lib/prisma";
 import { admissionNumberKeys } from "./page-catalog";
 import {
+  formatPublishedDate,
+  formatPublishedYear,
+  joinMeta,
   pickLocale,
   pickLocaleOptional,
   toLines,
   toMediaView,
   toParagraphs,
+  toSafeUrl,
   type AdmissionNumbers,
   type CourseView,
+  type FacultyArticleView,
+  type FacultyBookView,
   type FacultyGroup,
   type FacultyView,
   type FaqView,
@@ -54,9 +61,98 @@ function toInitials(nameKo: string, nameEn: string | null): string {
   return nameKo.slice(-2);
 }
 
+/** Media 조회에서 실제로 쓰는 칸. 표지·기사 이미지도 교수 사진과 같은 모양이다. */
+type MediaRow = {
+  path: string;
+  altKo: string | null;
+  altEn: string | null;
+  originalName: string;
+  size: number;
+};
+
+type FacultyBookRow = {
+  id: string;
+  titleKo: string;
+  titleEn: string | null;
+  subtitleKo: string | null;
+  subtitleEn: string | null;
+  authorKo: string | null;
+  authorEn: string | null;
+  publisherKo: string | null;
+  publisherEn: string | null;
+  publishedAt: Date | null;
+  descriptionKo: string | null;
+  descriptionEn: string | null;
+  externalUrl: string | null;
+  cover: MediaRow | null;
+};
+
+/**
+ * 저서 한 권.
+ *
+ * 저자 · 출판사 · 발행연도는 **한 줄로 합쳐서** 넘긴다. 화면마다 이 셋을 다시 조립하면
+ * A안과 B안의 표기가 갈린다. 발행일은 연도까지만 쓴다. 카드 안의 보조 정보라
+ * 날짜까지 적으면 제목보다 줄이 길어진다.
+ */
+function toFacultyBookView(
+  locale: Locale,
+  row: FacultyBookRow,
+): FacultyBookView {
+  return {
+    id: row.id,
+    title: pickLocale(locale, row.titleKo, row.titleEn),
+    subtitle: pickLocaleOptional(locale, row.subtitleKo, row.subtitleEn),
+    meta: joinMeta([
+      pickLocaleOptional(locale, row.authorKo, row.authorEn),
+      pickLocaleOptional(locale, row.publisherKo, row.publisherEn),
+      formatPublishedYear(row.publishedAt),
+    ]),
+    description: pickLocaleOptional(
+      locale,
+      row.descriptionKo,
+      row.descriptionEn,
+    ),
+    url: toSafeUrl(row.externalUrl),
+    cover: toMediaView(locale, row.cover),
+  };
+}
+
+type FacultyArticleRow = {
+  id: string;
+  titleKo: string;
+  titleEn: string | null;
+  summaryKo: string | null;
+  summaryEn: string | null;
+  publisherKo: string | null;
+  publisherEn: string | null;
+  publishedAt: Date | null;
+  externalUrl: string | null;
+  image: MediaRow | null;
+};
+
+/** 기사 한 건. 게시처와 게시일을 한 줄로 합친다. 저서와 달리 날짜까지 적는다. */
+function toFacultyArticleView(
+  locale: Locale,
+  row: FacultyArticleRow,
+): FacultyArticleView {
+  return {
+    id: row.id,
+    title: pickLocale(locale, row.titleKo, row.titleEn),
+    summary: pickLocaleOptional(locale, row.summaryKo, row.summaryEn),
+    meta: joinMeta([
+      pickLocaleOptional(locale, row.publisherKo, row.publisherEn),
+      formatPublishedDate(locale, row.publishedAt),
+    ]),
+    url: toSafeUrl(row.externalUrl),
+    image: toMediaView(locale, row.image),
+  };
+}
+
 function toFacultyView(
   locale: Locale,
   row: {
+    books: FacultyBookRow[];
+    articles: FacultyArticleRow[];
     id: string;
     type: FacultyView["type"];
     nameKo: string;
@@ -105,6 +201,10 @@ function toFacultyView(
     ),
     photo: toMediaView(locale, row.photo),
     initials: toInitials(row.nameKo, row.nameEn),
+    books: row.books.map((book) => toFacultyBookView(locale, book)),
+    articles: row.articles.map((article) =>
+      toFacultyArticleView(locale, article),
+    ),
   };
 }
 
@@ -126,7 +226,57 @@ const facultySelect = {
   lectureFieldsKo: true,
   lectureFieldsEn: true,
   photo: true,
-} as const;
+  /**
+   * 주요 저서 · 언론보도. (15단계)
+   *
+   * **공개된 것만 가져온다.** 비공개 항목은 화면에서 빠져야 하는데, 여기서 전부 가져와
+   * 화면에서 거르면 걸러야 한다는 사실을 화면마다 기억해야 한다. 한 곳에서 막는다.
+   *
+   * `sortOrder` 가 같으면 `createdAt` 으로 안정적으로 정렬한다.
+   * 교수진 목록 정렬(`sortOrder` → 이름)과 같은 이유다.
+   */
+  books: {
+    where: { isPublished: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      titleKo: true,
+      titleEn: true,
+      subtitleKo: true,
+      subtitleEn: true,
+      authorKo: true,
+      authorEn: true,
+      publisherKo: true,
+      publisherEn: true,
+      publishedAt: true,
+      descriptionKo: true,
+      descriptionEn: true,
+      externalUrl: true,
+      cover: true,
+    },
+  },
+  articles: {
+    where: { isPublished: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      titleKo: true,
+      titleEn: true,
+      summaryKo: true,
+      summaryEn: true,
+      publisherKo: true,
+      publisherEn: true,
+      publishedAt: true,
+      externalUrl: true,
+      image: true,
+    },
+  },
+  /**
+   * `as const` 가 아니라 `satisfies` 를 쓴다. `as const` 로 굳히면 위 `orderBy` 배열이
+   * readonly 가 되어 Prisma 가 받아 주지 않는다. `satisfies` 는 오타를 그대로 잡아 주면서
+   * 배열을 그대로 둔다.
+   */
+} satisfies Prisma.FacultySelect;
 
 /**
  * 공개된 교수진을 구분별로 묶어 돌려준다.

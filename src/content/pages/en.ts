@@ -124,6 +124,13 @@ export function createPagesEn(
       education: "Education",
       career: "Career",
       lectureFields: "Areas of Expertise",
+      books: "Selected Publications",
+      articles: "Media & Press",
+    },
+    externalLinks: {
+      book: "View book",
+      article: "Read article",
+      newTab: "opens in a new window",
     },
     emptyNotice: {
       title: "Faculty",

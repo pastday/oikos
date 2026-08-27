@@ -82,6 +82,21 @@ export type FacultyContent = {
      * 별도 `expertise` 필드를 만들지 않기로 확정했다. (docs/decisions.md 14단계)
      */
     lectureFields: string;
+    /** 주요 저서 · 언론보도 (15단계). 등록된 것이 없으면 라벨째 그리지 않는다. */
+    books: string;
+    articles: string;
+  };
+  /**
+   * 저서·기사의 원문으로 나가는 링크 문구. (15단계)
+   *
+   * 링크가 어디로 가는지 글자만으로 알 수 있어야 한다. "더보기" 같은 말을 쓰지 않는다.
+   * 새 탭으로 열리므로 화면 읽기 프로그램용 보충 설명도 함께 둔다.
+   */
+  externalLinks: {
+    book: string;
+    article: string;
+    /** 링크 뒤에 숨겨 붙는 말. 예: "(새 창)" */
+    newTab: string;
   };
   /** 공개된 교수가 한 명도 없을 때 */
   emptyNotice: NoticeBlock;

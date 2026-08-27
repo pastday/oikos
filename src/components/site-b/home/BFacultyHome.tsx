@@ -28,12 +28,22 @@ export function BFacultyHome({
   locale,
   content,
   facultyLabels,
+  facultyLinks,
   chief,
   watermark,
 }: {
   locale: Locale;
   content: HomeContent;
   facultyLabels: FacultyContent["labels"];
+  /**
+   * 저서·기사 링크 문구.
+   *
+   * 메인은 `detail="brief"` 라 저서·기사를 그리지 않으므로 실제로 쓰이지는 않는다.
+   * 그래도 넘긴다. 교수진 화면이 쓰는 문구 묶음을 **한 벌로 함께 넘기는 편이**
+   * 나중에 메인이 보여 주는 범위를 넓힐 때 빠뜨릴 곳이 없다.
+   * (`facultyLabels` 도 같은 이유로 전부 넘기고 있다)
+   */
+  facultyLinks: FacultyContent["externalLinks"];
   chief: FacultyView | null;
   watermark: string;
 }) {
@@ -63,6 +73,7 @@ export function BFacultyHome({
         <BFacultyFeature
           member={chief}
           labels={facultyLabels}
+          links={facultyLinks}
           watermark={watermark}
           size="feature"
           detail="brief"

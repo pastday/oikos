@@ -115,6 +115,135 @@ export const facultySchema = z.object({
 export type FacultyInput = z.infer<typeof facultySchema>;
 
 // ---------------------------------------------------------------------------
+// 교수 저서 · 언론보도 (15단계)
+// ---------------------------------------------------------------------------
+
+/**
+ * 외부 링크.
+ *
+ * **`http` / `https` 만 허용한다.** 관리자가 입력한 값이 그대로 `<a href>` 에 들어가므로
+ * `javascript:` `data:` 같은 스킴이 통과하면 그 자체가 XSS 가 된다.
+ * 문자열 검사가 아니라 `new URL()` 로 파싱해 프로토콜을 본다.
+ * (`java\nscript:` 처럼 공백·개행을 섞어 넣는 우회를 문자열 비교로는 막기 어렵다)
+ *
+ * 빈 값은 정상이다. 링크가 없는 저서·기사도 등록할 수 있어야 하고,
+ * 그때 화면은 링크를 아예 그리지 않는다.
+ */
+const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
+
+const externalUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .transform((value) =>
+    value === undefined || value.length === 0 ? null : value,
+  )
+  .refine((value) => {
+    if (value === null) return true;
+    try {
+      return HTTP_PROTOCOLS.has(new URL(value).protocol);
+    } catch {
+      return false;
+    }
+  }, "http:// 또는 https:// 로 시작하는 주소만 입력할 수 있습니다.");
+
+/**
+ * 발행일 · 게시일.
+ *
+ * `<input type="date">` 가 보내는 `YYYY-MM-DD` 만 받는다.
+ * **정오(UTC)로 만들어 `@db.Date` 에 넣는다.** 자정으로 만들면 드라이버·DB 의
+ * 시간대 해석이 한 시간만 어긋나도 날짜가 하루 밀린다.
+ *
+ * 값이 없는 것은 정상이다. 발행연도만 아는 자료를 억지로 날짜로 만들지 않는다.
+ */
+const optionalDate = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) =>
+    value === undefined || value.length === 0 ? null : value,
+  )
+  .refine(
+    (value) => value === null || /^\d{4}-\d{2}-\d{2}$/.test(value),
+    "날짜 형식이 올바르지 않습니다.",
+  )
+  .transform((value) => (value === null ? null : new Date(`${value}T12:00:00Z`)))
+  .refine(
+    (value) => value === null || !Number.isNaN(value.getTime()),
+    "실제로 없는 날짜입니다.",
+  );
+
+/**
+ * ISBN.
+ *
+ * 숫자와 하이픈, 그리고 ISBN-10 의 마지막 자리에만 쓰이는 `X` 를 허용한다.
+ * 체크디지트까지 검산하지는 않는다. **원본에 적힌 값을 그대로 옮겨 적는 칸**이고,
+ * 계산이 맞지 않는다고 저장을 막으면 원본을 그대로 둘 수 없게 된다.
+ */
+const optionalIsbn = z
+  .string()
+  .trim()
+  .max(20)
+  .optional()
+  .transform((value) =>
+    value === undefined || value.length === 0 ? null : value,
+  )
+  .refine(
+    (value) => value === null || /^[0-9Xx-]+$/.test(value),
+    "ISBN 은 숫자와 하이픈만 입력할 수 있습니다.",
+  );
+
+/**
+ * 주요 저서.
+ *
+ * 한국어 제목만 필수다. 나머지는 원본에서 확인되지 않을 수 있어 전부 선택 입력이다.
+ * 소개는 **우리가 직접 쓴 짧은 글**이 들어가는 칸이라 긴 텍스트 한도를 그대로 쓴다.
+ * (서점 상품설명을 통째로 옮겨 넣는 용도가 아니다 — CLAUDE.md 22항)
+ */
+export const facultyBookSchema = z.object({
+  titleKo: requiredShort,
+  titleEn: optionalShort,
+  subtitleKo: optionalShort,
+  subtitleEn: optionalShort,
+  authorKo: optionalShort,
+  authorEn: optionalShort,
+  publisherKo: optionalShort,
+  publisherEn: optionalShort,
+  publishedAt: optionalDate,
+  isbn: optionalIsbn,
+  descriptionKo: optionalLong,
+  descriptionEn: optionalLong,
+  externalUrl,
+  coverMediaId: mediaRef,
+  sortOrder,
+  isPublished: checkbox,
+});
+
+export type FacultyBookInput = z.infer<typeof facultyBookSchema>;
+
+/**
+ * 언론 · 미디어.
+ *
+ * 기사 본문을 담는 칸은 없다. `summary` 는 우리가 쓴 1~2문장 소개다.
+ */
+export const facultyArticleSchema = z.object({
+  titleKo: requiredShort,
+  titleEn: optionalShort,
+  summaryKo: optionalLong,
+  summaryEn: optionalLong,
+  publisherKo: optionalShort,
+  publisherEn: optionalShort,
+  publishedAt: optionalDate,
+  externalUrl,
+  imageMediaId: mediaRef,
+  sortOrder,
+  isPublished: checkbox,
+});
+
+export type FacultyArticleInput = z.infer<typeof facultyArticleSchema>;
+
+// ---------------------------------------------------------------------------
 
 /**
  * 과정 수정.
@@ -196,6 +325,21 @@ export const CMS_GENERIC_ERROR =
   "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 export const CMS_INVALID_ERROR = "입력값을 확인해 주세요.";
 export const CMS_NOT_FOUND_ERROR = "대상을 찾을 수 없습니다.";
+
+/**
+ * 검증 실패 안내 한 줄.
+ *
+ * **우리가 직접 쓴 안내문(`refine` 의 메시지)이 있을 때만 그것을 보여 준다.**
+ * zod 가 스스로 만드는 문구는 영어인 데다 (`Too big: expected string…`)
+ * 관리자에게는 무슨 칸이 문제인지 알려 주지도 못한다. 그런 경우는 일반 안내로 돌린다.
+ *
+ * 링크 형식·ISBN·날짜처럼 **무엇이 잘못됐는지 알아야 고칠 수 있는** 칸이 생겨
+ * 15단계에서 만들었다.
+ */
+export function firstIssueMessage(error: z.ZodError): string {
+  const custom = error.issues.find((issue) => issue.code === "custom");
+  return custom?.message ?? CMS_INVALID_ERROR;
+}
 
 // ---------------------------------------------------------------------------
 // 페이지 콘텐츠 (10단계)
