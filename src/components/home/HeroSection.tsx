@@ -36,7 +36,7 @@ export function HeroSection({
         <div className="py-16 sm:py-20 lg:py-28">
           <div className="flex items-center gap-4">
             <Image
-              src="/images/oikos-seal.png"
+              src="/images/oikos-seal-transparent.png"
               alt={hero.logoAlt}
               width={295}
               height={220}
