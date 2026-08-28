@@ -9,6 +9,7 @@ import { getPageContent, type FacultyContent } from "@/content/pages";
 import { getProgramNumbers, getPublishedFacultyGroups } from "@/lib/cms/queries";
 import {
   hasFacultyProfile,
+  isYouTubeUrl,
   type FacultyArticleView,
   type FacultyBookView,
   type FacultyView,
@@ -454,7 +455,7 @@ function ArticleCard({
   return (
     <article className="flex min-w-0 gap-5 rounded-lg border border-line bg-background p-5 sm:p-6">
       {article.image && (
-        <div className="hidden w-28 shrink-0 sm:block">
+        <div className="w-24 shrink-0 sm:w-28">
           <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-surface">
             <Image
               src={article.image.url}
@@ -495,7 +496,7 @@ function ArticleCard({
         {article.url && (
           <ExternalLink
             href={article.url}
-            label={links.article}
+            label={isYouTubeUrl(article.url) ? links.youtube : links.article}
             context={article.title}
             newTab={links.newTab}
             className="pt-1"

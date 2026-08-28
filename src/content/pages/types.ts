@@ -101,6 +101,8 @@ export type FacultyContent = {
   externalLinks: {
     book: string;
     article: string;
+    /** 유튜브 채널·영상으로 나갈 때. "기사 보기"와 구분해 쓴다. */
+    youtube: string;
     /** 링크 뒤에 숨겨 붙는 말. 예: "(새 창)" */
     newTab: string;
   };

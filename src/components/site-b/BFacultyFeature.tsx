@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { FacultyContent } from "@/content/pages";
 import {
   hasFacultyProfile,
+  isYouTubeUrl,
   type FacultyArticleView,
   type FacultyBookView,
   type FacultyView,
@@ -432,7 +433,7 @@ function BArticle({
       {article.url && (
         <BExternalLink
           href={article.url}
-          label={links.article}
+          label={isYouTubeUrl(article.url) ? links.youtube : links.article}
           context={article.title}
           newTab={links.newTab}
         />

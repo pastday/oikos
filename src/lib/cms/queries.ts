@@ -13,6 +13,7 @@ import {
   toLines,
   toMediaView,
   toParagraphs,
+  pinFacultyArticles,
   toSafeUrl,
   type AdmissionNumbers,
   type CourseView,
@@ -209,8 +210,8 @@ function toFacultyView(
     photo: toMediaView(locale, row.photo),
     initials: toInitials(row.nameKo, row.nameEn),
     books: row.books.map((book) => toFacultyBookView(locale, book)),
-    articles: row.articles.map((article) =>
-      toFacultyArticleView(locale, article),
+    articles: pinFacultyArticles(
+      row.articles.map((article) => toFacultyArticleView(locale, article)),
     ),
   };
 }

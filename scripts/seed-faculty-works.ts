@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { PINNED_FACULTY_MEDIA_URL } from "../src/lib/cms/types";
 import { prisma } from "../src/lib/prisma";
 
 /**
@@ -20,7 +21,7 @@ import { prisma } from "../src/lib/prisma";
  *
  * > ⚠️ 그래서 **관리자가 CMS 에서 다듬은 문구는 이 스크립트를 다시 돌리면 덮인다.**
  * > 운영에서 문구를 고친 뒤에는 이 스크립트를 돌리지 않거나, 고친 내용을
- * > 여기에도 함께 반영한다. 갱신 대상은 아래 두 건뿐이고 다른 행은 건드리지 않는다.
+ * > 여기에도 함께 반영한다. 갱신 대상은 아래 세 건뿐이고 다른 행은 건드리지 않는다.
  *
  * 지우는 동작은 하나도 없다. `sortOrder` · `isPublished` 는 **처음 만들 때만** 정하고
  * 갱신할 때는 손대지 않는다. 관리자가 순서를 바꾸거나 감춰 둔 것을 되돌리지 않기 위해서다.
@@ -31,6 +32,8 @@ import { prisma } from "../src/lib/prisma";
  *
  *   기사 — https://m.blog.naver.com/news-repository/224338806566
  *          제목·게시처·게시일·본문 모두 그 게시물에서 확인했다.
+ *   유튜브 — https://www.youtube.com/@TV-cg4gc
+ *          채널명(김동준와인TV)은 해당 채널 페이지에서 확인했다.
  *   저서 — https://product.kyobobook.co.kr/detail/S000218752366
  *          도서명·저자·출판사·발행일·ISBN 모두 그 상품 페이지에서 확인했다.
  *
@@ -40,8 +43,9 @@ import { prisma } from "../src/lib/prisma";
  * **소개 문구는 원문을 옮긴 것이 아니라 우리가 새로 쓴 요약이다.** (CLAUDE.md 22항)
  * 기사 본문도 서점 상품설명도 통째로 저장하지 않는다.
  *
- * **이미지는 넣지 않는다.** 기사 사진과 책 표지의 사용권이 확인되지 않았다.
- * 표지·사진이 필요해지면 사용권이 확인된 파일을 [미디어] 에 올려 CMS 에서 연결한다.
+ * **이 스크립트는 이미지를 넣지 않는다.** 기사 사진과 책 표지의 사용권이 확인되지 않았다.
+ * 유튜브 채널 썸네일은 우리가 만든 원본 이미지를 [미디어] 에 올려 연결한다.
+ * 갱신 때 `imageMediaId` 를 비우지 않으므로, 다시 실행해도 그 연결은 유지된다.
  *
  * ## 확인되지 않아 비워 둔 칸
  *
@@ -138,6 +142,53 @@ async function main() {
   // 언론 · 미디어
   // -------------------------------------------------------------------------
 
+  // 유튜브 채널은 언론 · 미디어 **안**에서 맨 위에 고정한다. (표시순서 0)
+  // 공개 화면은 주소로 한 번 더 끌어올린다. (`pinFacultyArticles`)
+  const youtubeUrl = PINNED_FACULTY_MEDIA_URL;
+
+  const youtube = {
+    // 채널 공식 이름. https://www.youtube.com/@TV-cg4gc 에서 확인했다.
+    titleKo: "김동준와인TV",
+    // 채널에 공식 영문명이 없다. 지어내지 않는다.
+    titleEn: null,
+    summaryKo: "주임교수 김동준 교수의 유튜브 채널입니다.",
+    summaryEn: "YouTube channel of Professor Dong-Joon Kim.",
+    publisherKo: "YouTube",
+    publisherEn: "YouTube",
+    publishedAt: null,
+    externalUrl: youtubeUrl,
+  };
+
+  const existingYoutube = await prisma.facultyArticle.findFirst({
+    where: { facultyId, externalUrl: youtubeUrl },
+    select: { id: true },
+  });
+
+  if (existingYoutube) {
+    await prisma.facultyArticle.update({
+      where: { id: existingYoutube.id },
+      data: youtube,
+    });
+    console.log("- 미디어: 갱신 (김동준와인TV)");
+  } else {
+    // 이미 있는 기사보다 앞에 두기 위해 나머지를 한 칸씩 민다.
+    // 갱신 때는 순서를 건드리지 않는다. 관리자가 바꾼 값을 되돌리지 않기 위해서다.
+    await prisma.facultyArticle.updateMany({
+      where: { facultyId },
+      data: { sortOrder: { increment: 1 } },
+    });
+    await prisma.facultyArticle.create({
+      data: {
+        ...youtube,
+        facultyId,
+        sortOrder: 0,
+        isPublished: true,
+        imageMediaId: null,
+      },
+    });
+    console.log("- 미디어: 등록 (김동준와인TV)");
+  }
+
   const articleUrl = "https://m.blog.naver.com/news-repository/224338806566";
 
   const article = {
@@ -175,7 +226,7 @@ async function main() {
     console.log("- 기사: 갱신 (안동 기사작위식 보도)");
   } else {
     await prisma.facultyArticle.create({
-      data: { ...article, facultyId, sortOrder: 0, isPublished: true },
+      data: { ...article, facultyId, sortOrder: 1, isPublished: true },
     });
     console.log("- 기사: 등록 (안동 기사작위식 보도)");
   }

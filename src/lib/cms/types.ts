@@ -203,6 +203,47 @@ export function toSafeUrl(value: string | null): string | null {
   }
 }
 
+/**
+ * 언론 · 미디어 목록에서 **표시순서와 관계없이** 맨 위에 둘 주소.
+ *
+ * 주임교수 유튜브 채널(김동준와인TV). 관리자가 다른 기사를 앞에 두어도
+ * 이 칸은 언론 · 미디어 영역 안에서 고정이다. 주소가 바뀌면 시드와 함께 고친다.
+ */
+export const PINNED_FACULTY_MEDIA_URL = "https://www.youtube.com/@TV-cg4gc";
+
+/** YouTube 주소인지. 링크 문구를 "기사 보기" 대신 "채널 보기"로 바꿀 때 쓴다. */
+export function isYouTubeUrl(value: string | null): boolean {
+  if (!value) return false;
+
+  try {
+    const host = new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+    return host === "youtube.com" || host === "youtu.be";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 고정 주소를 언론 · 미디어 목록의 맨 앞으로 끌어올린다.
+ * 나머지는 원래 순서(표시순서 → 등록순)를 유지한다.
+ */
+export function pinFacultyArticles(
+  articles: FacultyArticleView[],
+): FacultyArticleView[] {
+  const pinned: FacultyArticleView[] = [];
+  const rest: FacultyArticleView[] = [];
+
+  for (const article of articles) {
+    if (article.url === PINNED_FACULTY_MEDIA_URL) {
+      pinned.push(article);
+    } else {
+      rest.push(article);
+    }
+  }
+
+  return [...pinned, ...rest];
+}
+
 export type FacultyGroup = {
   type: FacultyType;
   members: FacultyView[];

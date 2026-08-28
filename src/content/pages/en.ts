@@ -131,6 +131,7 @@ export function createPagesEn(
     externalLinks: {
       book: "View Book",
       article: "Read Article",
+      youtube: "Watch on YouTube",
       newTab: "opens in a new window",
     },
     emptyNotice: {

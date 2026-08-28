@@ -136,6 +136,7 @@ export function createPagesKo(
     externalLinks: {
       book: "도서 보기",
       article: "기사 보기",
+      youtube: "채널 보기",
       newTab: "새 창에서 열림",
     },
     emptyNotice: {
