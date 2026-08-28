@@ -108,7 +108,6 @@ const facultySeeds = [
     careerEn: null,
     lectureFieldsKo: null,
     lectureFieldsEn: null,
-    photoUrl: null,
     sortOrder: 0,
   },
 ];
