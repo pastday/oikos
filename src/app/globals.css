@@ -192,3 +192,42 @@
 .form-b [class*="rounded-"]:not([class*="rounded-full"]) {
   border-radius: 0;
 }
+
+/* ---------------------------------------------------------------------------
+ * 관리자 인쇄 (18단계 — 입학원서 출력)
+ *
+ * 서버에서 PDF 를 만들지 않고 브라우저의 "PDF 로 저장" 을 쓴다. (지시 23항)
+ * 그래서 인쇄할 때 화면 조작부(사이드바·상단 바·버튼)를 숨기고
+ * 본문만 남기는 규칙이 필요하다.
+ *
+ * 클래스를 붙여야 숨는 방식(`admin-print-hide`)을 택했다. 반대로 "본문만 보이기" 로
+ * 만들면 새 화면을 추가할 때마다 인쇄가 조용히 깨진다.
+ * ------------------------------------------------------------------------ */
+@media print {
+  .admin-print-hide {
+    display: none !important;
+  }
+
+  /* 인쇄 지면에는 관리자 배경색과 여백이 필요 없다. */
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* 확인서 3종과 자기소개서는 각각 새 쪽에서 시작한다. */
+  .admin-print-break {
+    break-before: page;
+  }
+
+  /* 표가 쪽 경계에서 잘리지 않게 한다. */
+  table {
+    break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+}

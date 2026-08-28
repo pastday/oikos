@@ -12,7 +12,10 @@ import {
 } from "@/components/admin/ui";
 import { InquiryEditForm } from "@/components/admin/InquiryEditForm";
 import { updateConsultation } from "../../inquiry-actions";
-import { consultationStatusLabels } from "@/lib/admin/inquiry";
+import {
+  consultationStatusLabels,
+  inquiryStatuses,
+} from "@/lib/admin/inquiry";
 import { localeLabels } from "@/lib/admin/format";
 
 export const metadata: Metadata = {
@@ -124,6 +127,7 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
         <InquiryEditForm
           id={consultation.id}
           action={updateConsultation}
+          statuses={inquiryStatuses}
           currentStatus={consultation.status}
           currentMemo={consultation.adminMemo}
           statusLabels={consultationStatusLabels}

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { InquiryStatus } from "@/generated/prisma/enums";
+import type {
+  AdmissionStatus,
+  InquiryStatus,
+} from "@/generated/prisma/enums";
 import { cn } from "@/lib/cn";
 import { formatDateTime, toIsoString } from "@/lib/admin/format";
 import type { PaginationInfo } from "@/lib/admin/inquiry";
@@ -49,12 +52,17 @@ export function StatusBadge({
   status,
   label,
 }: {
-  status: InquiryStatus;
+  /**
+   * 상담·설명회(`InquiryStatus`)와 입학신청(`AdmissionStatus`)이 함께 쓴다.
+   * 두 enum 은 값이 다르지만 "신규 → 진행 → 완료" 라는 뜻이 같아 색을 공유한다.
+   */
+  status: InquiryStatus | AdmissionStatus;
   label: string;
 }) {
   const tone = {
     NEW: "border-navy/25 bg-navy-tint text-navy",
     IN_PROGRESS: "border-gold/40 bg-beige text-[#7a5c2b]",
+    IN_REVIEW: "border-gold/40 bg-beige text-[#7a5c2b]",
     COMPLETED: "border-line bg-surface text-muted",
   }[status];
 

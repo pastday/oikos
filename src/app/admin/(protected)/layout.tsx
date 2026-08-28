@@ -32,7 +32,7 @@ export default async function ProtectedAdminLayout({
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <aside className="flex shrink-0 flex-col gap-7 bg-navy px-4 py-6 lg:w-60">
+      <aside className="admin-print-hide flex shrink-0 flex-col gap-7 bg-navy px-4 py-6 lg:w-60">
         <Link
           href="/admin"
           className="px-3 font-serif text-base font-bold tracking-[0.12em] text-white"
@@ -44,7 +44,7 @@ export default async function ProtectedAdminLayout({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-background px-5 py-3.5 lg:px-8">
+        <header className="admin-print-hide flex flex-wrap items-center justify-between gap-3 border-b border-line bg-background px-5 py-3.5 lg:px-8">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-navy">
               {admin.name}

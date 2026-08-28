@@ -492,3 +492,230 @@ model SiteSetting {
 
   @@map("site_settings")
 }
+
+// ---------------------------------------------------------------------------
+// 온라인 입학신청 (18단계)
+//
+// 범위를 의도적으로 좁게 잡았다. 학사관리 시스템이 아니라
+// **종이 입학원서를 온라인 폼으로 옮긴 것 + 관리자 확인 화면**이다.
+//
+// 그래서 다음을 만들지 않는다.
+//   - 지원자 계정 / 로그인 / 임시저장(DRAFT)  → 한 번에 작성하고 한 번에 저장한다
+//   - 추천인 전용 URL / 이메일 발송           → 추천서는 지원자가 완성본을 업로드한다
+//   - 확인서 version 관리 / audit 테이블      → 확인서 본문은 코드 상수, 기록은 adminMemo 하나
+//
+// 필드는 `docs/source/입학서류/1.Application 한글-2-2.hwp` 의 칸을 그대로 옮긴 것이다.
+// 원본에 없는 칸(전공, 경력 상세설명 등)은 만들지 않는다. (CLAUDE.md 23항)
+// ---------------------------------------------------------------------------
+
+/// 입학신청 처리 상태. 상담(`InquiryStatus`)과 흐름이 달라 따로 둔다.
+/// 화면 표기는 신규 / 확인중 / 완료.
+enum AdmissionStatus {
+  NEW
+  IN_REVIEW
+  COMPLETED
+}
+
+/// 입학 학기. 원본 입학원서에 Spring / Fall 두 칸만 있다.
+enum AdmissionTerm {
+  SPRING
+  FALL
+}
+
+/// 성별. 원본 입학원서의 "남 / 여" 두 칸.
+enum AdmissionGender {
+  MALE
+  FEMALE
+}
+
+/// 혼인상태. 원본 입학원서의 "미혼 / 기혼" 두 칸. 선택 항목이다.
+enum AdmissionMaritalStatus {
+  SINGLE
+  MARRIED
+}
+
+/// 첨부파일 종류.
+///
+/// 서명 3종(`SIGNATURE_*`)도 여기 들어간다. 확인서 서명은 PNG 파일이고
+/// 저장·다운로드 규칙이 다른 첨부파일과 완전히 같기 때문에 표를 나누지 않는다.
+/// 어떤 확인서의 서명인지는 type 이 구분한다.
+///
+/// `GENERATED_PDF` 는 자리만 잡아 둔다. 이번 단계의 PDF 는 서버가 파일을 만들지 않고
+/// 관리자가 인쇄용 화면에서 브라우저로 저장한다. (지시 23항)
+enum AdmissionFileType {
+  GRADUATION_CERTIFICATE
+  TRANSCRIPT
+  PASSPORT
+  PHOTO
+  INSURANCE
+  PHONE_BILL
+  ELECTRIC_BILL
+  RENT_BILL
+  RECOMMENDATION
+  SIGNATURE_INSTITUTIONAL_PURPOSE
+  SIGNATURE_CODE_OF_CONDUCT
+  SIGNATURE_STATEMENT_OF_FAITH
+  GENERATED_PDF
+}
+
+/// 온라인 입학신청서 한 건.
+///
+/// **임시저장이 없으므로 이 행은 "제출된 신청서"만 뜻한다.** 작성 중 상태가 없어
+/// 모든 필수 칸이 채워진 뒤에야 만들어진다. 그래서 필수 필드를 nullable 로 두지 않는다.
+///
+/// ⚠️ `residentNumberEncrypted` 는 **암호문만** 담는다. 평문 컬럼은 존재하지 않는다.
+///    읽고 쓰는 곳은 `src/lib/admission/crypto.ts` 하나뿐이다.
+model AdmissionApplication {
+  id String @id @default(cuid())
+
+  /// 사람이 보는 접수번호. 예: 2026-000001
+  /// DB id 와 분리한다. id 는 URL·FK 용이고 이 값은 지원자·관리자가 주고받는 번호다.
+  applicationNo String          @unique
+  status        AdmissionStatus @default(NEW)
+
+  /// 지원 과정. 온라인 신청은 MBA / DBA 만 받는다. (기존 enum 재사용)
+  program       ProgramType
+  admissionYear Int
+  admissionTerm AdmissionTerm
+
+  nameKo String
+  nameEn String
+
+  /// AES-256-GCM 암호문. 형식은 `v1:<iv>:<tag>:<ciphertext>` (전부 base64)
+  /// 관리자 목록에서는 조회조차 하지 않고, 상세에서는 마스킹해서만 보여준다.
+  residentNumberEncrypted String
+
+  birthDate   DateTime        @db.Date
+  gender      AdmissionGender
+  nationality String
+  birthplace  String
+
+  addressKo String
+  addressEn String
+  phone     String
+  email     String
+
+  usCitizen              Boolean
+  /// 원본 입학원서에는 있으나 국내 지원자에게 해당하지 않을 수 있어 선택 항목이다.
+  driversLicenseNumber   String?
+  driversLicenseIssuedAt String?
+
+  emergencyName         String
+  emergencyRelationship String
+  emergencyPhone        String
+  emergencyAddress      String
+
+  maritalStatus AdmissionMaritalStatus?
+
+  /// 자기소개서 3문항. 질문 문구는 원본 서식에 없어 우리가 정한 것이며
+  /// `src/content/admission` 에 코드 상수로 둔다. CMS 로 관리하지 않는다. (지시 12항)
+  personalIntroduction String
+  motivation           String
+  studyPlan            String
+
+  /// 확인서 3종. 각각 별도 동의 + 별도 서명이다. (지시 13항)
+  /// 서명 이미지 자체는 `AdmissionFile` 의 `SIGNATURE_*` 행에 있다.
+  /// 여기 두 값을 함께 저장하는 이유는 **서명 당시 적어 낸 이름과 시각**이 문서의 일부이기 때문이다.
+  institutionalPurposeAgreed     Boolean   @default(false)
+  institutionalPurposeSignedName String?
+  institutionalPurposeSignedAt   DateTime?
+
+  codeOfConductAgreed     Boolean   @default(false)
+  codeOfConductSignedName String?
+  codeOfConductSignedAt   DateTime?
+
+  statementOfFaithAgreed     Boolean   @default(false)
+  statementOfFaithSignedName String?
+  statementOfFaithSignedAt   DateTime?
+
+  /// 개인정보 수집 동의. 기존 상담 폼과 같은 방식이다.
+  privacyAgreed Boolean @default(false)
+
+  /// 신청서를 작성한 사이트 언어. "ko" 또는 "en"
+  locale String @default("ko")
+
+  /// 관리자만 보는 내부 기록. 별도 audit 표를 만들지 않고 이 칸 하나로 둔다. (지시 26항)
+  adminMemo String?
+
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  educations AdmissionEducation[]
+  careers    AdmissionCareer[]
+  files      AdmissionFile[]
+
+  /// 관리자 목록의 상태 필터 + 최신순 정렬용
+  @@index([status, submittedAt])
+  @@index([program, status])
+  @@map("admission_applications")
+}
+
+/// 학력 한 줄. 원본 입학원서의 학력표 칸(학교명 / 학교 주소 / 재학기간 / 학위명)을 그대로 옮겼다.
+/// **전공 칸은 원본에 없으므로 만들지 않는다.** (지시 9항)
+///
+/// `period` 를 날짜 두 개가 아니라 문자열로 두는 이유: 원본이 "재학기간" 한 칸이고
+/// 지원자가 "2015.03 ~ 2019.02" 처럼 자유롭게 적는다. 날짜로 쪼개면 정확한 일자를
+/// 모르는 지원자가 입력할 수 없고, 홈페이지는 이 값을 정렬·집계하지 않는다.
+model AdmissionEducation {
+  id            String               @id @default(cuid())
+  applicationId String
+  application   AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  schoolName    String
+  schoolAddress String?
+  period        String?
+  degreeName    String?
+  sortOrder     Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, sortOrder])
+  @@map("admission_educations")
+}
+
+/// 경력 한 줄. 원본 입학원서의 경력표 칸(직장명 / 기간 / 직위).
+/// **주요업무·설명 칸은 원본에 없으므로 만들지 않는다.** (지시 10항)
+model AdmissionCareer {
+  id            String               @id @default(cuid())
+  applicationId String
+  application   AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  organization String
+  period       String?
+  position     String?
+  sortOrder    Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, sortOrder])
+  @@map("admission_careers")
+}
+
+/// 입학신청에 딸린 파일.
+///
+/// ⚠️ **`Media` 와 절대 섞지 않는다.**
+/// `Media.path` 는 **공개 URL**(`/media/<uuid>.jpg`)이고 그 라우트에는 인증이 없다.
+/// 여기 `path` 는 **비공개 저장소의 상대 경로**(`<applicationId>/<uuid>.jpg`)이며
+/// 공개 라우트가 존재하지 않는다. 관리자 로그인 뒤 전용 다운로드 라우트로만 나간다.
+model AdmissionFile {
+  id            String               @id @default(cuid())
+  applicationId String
+  application   AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  type AdmissionFileType
+
+  /// 지원자가 올린 원본 파일명. **표시·다운로드 파일명으로만 쓰고 저장 경로에는 쓰지 않는다.**
+  originalName String
+  /// 실제 저장 파일명. `<uuid>.<확장자>` 이며 확장자는 magic byte 판정 결과에서 나온다.
+  storedName   String           @unique
+  mimeType     String
+  size         Int
+  /// 업로드 루트 기준 상대 경로. 공개 URL 이 아니다.
+  path         String
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, type])
+  @@map("admission_files")
+}

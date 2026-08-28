@@ -34,10 +34,11 @@ const navGroups: NavGroup[] = [
     items: [{ label: "대시보드", href: "/admin" }],
   },
   {
-    title: "상담 관리",
+    title: "상담 · 입학",
     items: [
       { label: "입학상담", href: "/admin/consultations" },
       { label: "설명회 신청", href: "/admin/seminars" },
+      { label: "입학신청", href: "/admin/admissions" },
     ],
   },
   {

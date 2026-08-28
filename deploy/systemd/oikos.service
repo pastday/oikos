@@ -42,13 +42,16 @@ ProtectHome=read-only
 # ProtectHome=read-only 때문에 /home 전체가 읽기 전용이다.
 # 서비스가 써야 하는 경로만 여기에 다시 열어 준다.
 #   .next          Next.js 런타임 캐시 (이미지 최적화 등)
-#   oikos-data     관리자 업로드 파일 (11단계)
+#   uploads        관리자 업로드 파일 (11단계, 공개)
+#   admissions     입학신청 첨부파일 (18단계, 비공개)
 #
 # ⚠️ 업로드 디렉터리를 빠뜨리면 관리자 파일 업로드가 EROFS/EACCES 로 실패한다.
 #    업로드 파일을 소스 트리 밖에 둔 이유는 git 작업이나 배포 디렉터리 교체로
 #    운영 데이터가 사라지지 않게 하기 위해서다.
 ReadWritePaths=/home/pastday/oikos/.next
 ReadWritePaths=/home/pastday/oikos-data/uploads
+# 입학신청 첨부파일 (18단계). 공개 uploads 와 분리된 비공개 저장소다.
+ReadWritePaths=/home/pastday/oikos-data/admissions
 
 [Install]
 WantedBy=multi-user.target

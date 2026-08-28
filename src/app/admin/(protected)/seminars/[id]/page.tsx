@@ -12,7 +12,10 @@ import {
 } from "@/components/admin/ui";
 import { InquiryEditForm } from "@/components/admin/InquiryEditForm";
 import { updateSeminarApplication } from "../../inquiry-actions";
-import { seminarStatusLabels } from "@/lib/admin/inquiry";
+import {
+  inquiryStatuses,
+  seminarStatusLabels,
+} from "@/lib/admin/inquiry";
 import { localeLabels } from "@/lib/admin/format";
 
 export const metadata: Metadata = {
@@ -130,6 +133,7 @@ export default async function SeminarDetailPage({ params }: PageProps) {
         <InquiryEditForm
           id={application.id}
           action={updateSeminarApplication}
+          statuses={inquiryStatuses}
           currentStatus={application.status}
           currentMemo={application.adminMemo}
           statusLabels={seminarStatusLabels}

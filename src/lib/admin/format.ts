@@ -52,6 +52,16 @@ export function toDateInputValue(value: Date | null): string {
   return value ? value.toISOString().slice(0, 10) : "";
 }
 
+/**
+ * `@db.Date` 컬럼(생년월일 등)의 **표시용** 값. 예: 1990-01-01
+ *
+ * 위의 날짜/시간과 달리 **한국 시간으로 바꾸지 않는다.** 시각 개념이 없는 값이라
+ * 시간대를 한 번 더 적용하면 하루가 밀린다. (`toDateInputValue` 와 같은 이유)
+ */
+export function formatDateOnly(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
 /** 긴 문의내용을 목록에서 한 줄로 줄여 보여준다. */
 export function truncate(value: string | null, length: number): string {
   if (!value) return "";
