@@ -35,16 +35,14 @@ export function HeroSection({
       <Container className="relative">
         <div className="py-16 sm:py-20 lg:py-28">
           <div className="flex items-center gap-4">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white sm:h-[4.5rem] sm:w-[4.5rem]">
-              <Image
-                src="/images/oikos-seal.png"
-                alt={hero.logoAlt}
-                width={295}
-                height={220}
-                priority
-                className="h-10 w-auto sm:h-11"
-              />
-            </span>
+            <Image
+              src="/images/oikos-seal.png"
+              alt={hero.logoAlt}
+              width={295}
+              height={220}
+              priority
+              className="h-14 w-auto shrink-0 sm:h-16"
+            />
             <p className="font-serif text-xs font-semibold tracking-[0.25em] text-gold-soft sm:text-sm">
               {hero.eyebrow}
             </p>
