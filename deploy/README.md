@@ -108,6 +108,33 @@ sudo systemctl restart oikos
 
 nginx 설정을 바꾸지 않았다면 nginx 는 재시작할 필요가 없다.
 
+### 시드 스크립트는 `npm run build` **앞에** 돌린다
+
+`seed:cms` · `seed:pages` · `seed:works` 를 함께 돌릴 때 순서를 지켜야 한다.
+
+```bash
+git pull
+npm ci
+npm run seed:works          # 시드가 먼저
+npm run build               # 그 다음 빌드
+sudo systemctl restart oikos
+```
+
+공개 페이지는 **빌드할 때 한 번 그려 두고 그대로 서빙한다.** 스스로 다시 그리는
+주기가 없다. (`prerender-manifest.json` 의 `initialRevalidateSeconds: false`)
+화면을 다시 그리게 하는 것은 두 가지뿐이다 — **빌드**, 그리고 관리자가 CMS 에서
+저장할 때 도는 `revalidatePath`. (`src/lib/cms/revalidate.ts`)
+
+시드 스크립트는 Next 서버 **밖**에서 도는 CLI 라 `revalidatePath` 를 부를 수 없다.
+그래서 빌드한 뒤에 시드를 돌리면 **DB 에는 들어갔는데 화면에는 안 나온다.**
+`systemctl restart` 로도 해결되지 않는다. 재시작은 이미 그려 둔 HTML 을 다시
+그리지 않기 때문이다. 순서가 뒤바뀌었다면 시드는 그대로 두고 빌드만 다시 하면 된다.
+
+```bash
+npm run build
+sudo systemctl restart oikos
+```
+
 ---
 
 ## 문제 확인

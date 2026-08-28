@@ -237,6 +237,15 @@ async function main() {
     prisma.facultyArticle.count(),
   ]);
   console.log(`완료. FacultyBook ${books}건 · FacultyArticle ${articles}건`);
+
+  // 이 스크립트는 Next 서버 밖에서 도는 CLI 라 `revalidatePath` 를 부를 수 없다.
+  // 공개 페이지는 빌드할 때 그려 두고 그대로 서빙하므로(`revalidate: false`),
+  // 빌드한 뒤에 이 스크립트를 돌리면 DB 에는 들어갔는데 화면에는 안 나온다.
+  // 재시작으로는 해결되지 않는다. 이미 그려 둔 HTML 을 다시 그리지 않기 때문이다.
+  // 실제로 운영에서 이 순서로 돌려 유튜브 항목이 화면에서 빠졌다.
+  console.log(
+    "\n화면에 반영하려면 이 스크립트를 돌린 뒤 빌드해야 한다: npm run build",
+  );
 }
 
 main()
