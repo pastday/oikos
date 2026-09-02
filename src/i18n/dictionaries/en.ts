@@ -17,6 +17,7 @@ export const en: Dictionary = {
     home: "HOME",
     about: "Graduate School",
     faculty: "Faculty",
+    news: "News",
     programs: "MBA · DBA Programs",
     degree: "Degree & Accreditation",
     admission: "Admissions",
@@ -50,6 +51,18 @@ export const en: Dictionary = {
     externalLinks: "External Links",
     externalLinkPending: "Link coming soon",
     copyright: "Oikos University. All rights reserved.",
+  },
+
+  news: {
+    title: "News",
+    description: "Latest news and updates from OIKOS University.",
+    empty: "No news has been posted yet.",
+    backToList: "Back to list",
+    categoryLabel: "Category",
+    publishedLabel: "Published",
+    attachmentsTitle: "Attachments",
+    downloadLabel: "Download",
+    newWindow: "opens in a new window",
   },
 
   pages: {

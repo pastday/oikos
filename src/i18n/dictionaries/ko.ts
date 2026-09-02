@@ -16,6 +16,7 @@ export const ko = {
     home: "HOME",
     about: "대학원 소개",
     faculty: "교수진",
+    news: "학교소식",
     programs: "MBA · DBA 과정",
     degree: "학위 및 인증",
     admission: "입학안내",
@@ -48,6 +49,25 @@ export const ko = {
     externalLinks: "관련 사이트",
     externalLinkPending: "링크 준비중",
     copyright: "Oikos University. All rights reserved.",
+  },
+
+  /**
+   * 학교소식 목록·상세 UI 문구.
+   *
+   * 목록 상단 문구는 고정값이라 CMS 로 관리하지 않고 여기 둔다.
+   * (교수진·FAQ 의 intro 는 PageSection 이지만 학교소식은 상단 레이아웃이 단순하다)
+   * 게시물 제목·요약·본문 같은 실제 콘텐츠는 DB(`NewsPost`)에서 온다.
+   */
+  news: {
+    title: "학교소식",
+    description: "OIKOS UNIVERSITY의 새로운 소식을 전합니다.",
+    empty: "등록된 학교소식이 없습니다.",
+    backToList: "목록으로",
+    categoryLabel: "카테고리",
+    publishedLabel: "게시일",
+    attachmentsTitle: "첨부파일",
+    downloadLabel: "다운로드",
+    newWindow: "새 창에서 열림",
   },
 
   pages: {

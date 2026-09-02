@@ -423,6 +423,83 @@ export const faqSchema = z.object({
 export type FaqInput = z.infer<typeof faqSchema>;
 
 // ---------------------------------------------------------------------------
+// 학교소식 (학교소식 지시 4·7·8항)
+// ---------------------------------------------------------------------------
+
+export const newsCategories = [
+  "NOTICE",
+  "EVENT",
+  "ACADEMIC",
+  "MEDIA",
+  "OTHER",
+] as const;
+
+/**
+ * 상세 URL slug.
+ *
+ * 비워 두면 액션이 한국어 제목에서 자동 생성한다. 직접 입력하는 경우
+ * 문자(한글 포함)·숫자와 하이픈만 허용한다. `href` 세그먼트에 들어가는 값이라
+ * 공백·슬래시·특수문자가 섞이면 링크가 깨진다.
+ */
+const newsSlug = z
+  .string()
+  .trim()
+  .max(120)
+  .optional()
+  .transform((value) =>
+    value === undefined || value.length === 0 ? null : value,
+  )
+  .refine(
+    (value) =>
+      value === null || /^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u.test(value),
+    "슬러그는 문자·숫자와 하이픈(-)만 사용할 수 있습니다.",
+  );
+
+/**
+ * 게시일. 필수다.
+ *
+ * `<input type="date">` 가 보내는 `YYYY-MM-DD` 만 받는다. `@db.Date` 컬럼이라
+ * **정오(UTC)로 만든다.** 자정으로 만들면 시간대 해석에 따라 하루가 밀린다.
+ * (`FacultyBook.publishedAt` 의 `optionalDate` 와 같은 규칙이며 여기서는 필수)
+ */
+const requiredNewsDate = z
+  .string()
+  .trim()
+  .refine(
+    (value) => /^\d{4}-\d{2}-\d{2}$/.test(value),
+    "게시일을 선택해 주세요.",
+  )
+  .transform((value) => new Date(`${value}T12:00:00Z`))
+  .refine(
+    (value) => !Number.isNaN(value.getTime()),
+    "실제로 없는 날짜입니다.",
+  );
+
+/**
+ * 학교소식.
+ *
+ * 한국어 제목·본문만 필수다. 영문이 비면 영문 페이지에서 한국어를 그대로 보여준다.
+ * 본문은 rich text 가 아니라 여러 문단의 평문이며, 화면에서 HTML 로 해석하지 않는다.
+ * 첨부파일(`attachmentMediaIds`)은 개수가 가변이라 이 스키마가 아니라
+ * 액션에서 `formData.getAll` 로 따로 처리한다.
+ */
+export const newsSchema = z.object({
+  slug: newsSlug,
+  titleKo: requiredShort,
+  titleEn: optionalShort,
+  summaryKo: optionalLong,
+  summaryEn: optionalLong,
+  contentKo: z.string().trim().min(1).max(LONG),
+  contentEn: optionalLong,
+  category: z.enum(newsCategories),
+  publishedAt: requiredNewsDate,
+  coverMediaId: mediaRef,
+  isPublished: checkbox,
+});
+
+export type NewsInput = z.infer<typeof newsSchema>;
+
+// ---------------------------------------------------------------------------
 // 입학안내 수치
 // ---------------------------------------------------------------------------
 

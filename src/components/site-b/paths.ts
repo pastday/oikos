@@ -46,6 +46,7 @@ const navSpecs = [
   { key: "home", path: "" },
   { key: "about", path: "/about" },
   { key: "faculty", path: "/faculty" },
+  { key: "news", path: "/news" },
   { key: "programs", path: "/programs" },
   { key: "degree", path: "/degree" },
   { key: "admission", path: "/admission" },

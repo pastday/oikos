@@ -3,6 +3,7 @@ import { DeleteButton } from "./DeleteButton";
 import type {
   CourseCategory,
   FacultyType,
+  NewsCategory,
   ProgramType,
 } from "@/generated/prisma/enums";
 import { cn } from "@/lib/cn";
@@ -28,6 +29,15 @@ export const courseCategoryLabels: Record<CourseCategory, string> = {
 export const programTypeLabels: Record<ProgramType, string> = {
   MBA: "MBA",
   DBA: "DBA",
+};
+
+/** 학교소식 카테고리. 관리자 화면은 한국어만 쓴다. (공개 화면 라벨은 `lib/cms/news.ts`) */
+export const newsCategoryLabels: Record<NewsCategory, string> = {
+  NOTICE: "공지",
+  EVENT: "행사",
+  ACADEMIC: "학사",
+  MEDIA: "미디어",
+  OTHER: "기타",
 };
 
 /** 학기가 지정되지 않은 과목을 목록에서 어떻게 부를지. */

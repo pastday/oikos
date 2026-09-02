@@ -18,6 +18,50 @@ export type MediaChoice = {
   kind: MediaKind;
 };
 
+/** 모든 파일을 선택 목록으로. 학교소식 첨부처럼 이미지·PDF 를 함께 붙이는 곳에서 쓴다. */
+export async function getAllMediaChoices(): Promise<MediaChoice[]> {
+  const rows = await prisma.media.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      path: true,
+      originalName: true,
+      altKo: true,
+      mimeType: true,
+    },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    url: row.path,
+    originalName: row.originalName,
+    altKo: row.altKo,
+    kind: kindFromMimeType(row.mimeType),
+  }));
+}
+
+/**
+ * 종류를 가리지 않고 **실제로 존재하는 Media id 만** 순서를 지켜 남긴다.
+ *
+ * 학교소식 첨부는 이미지·PDF 를 함께 받으므로 `resolveMediaId` 처럼 종류를 강제하지 않는다.
+ * 없는 id 가 하나라도 섞여 있으면 액션이 저장을 거부할 수 있도록 개수도 함께 돌려준다.
+ */
+export async function resolveExistingMediaIds(
+  ids: string[],
+): Promise<{ ids: string[]; missing: number }> {
+  const unique = [...new Set(ids.filter((id) => id.length > 0))];
+  if (unique.length === 0) return { ids: [], missing: 0 };
+
+  const rows = await prisma.media.findMany({
+    where: { id: { in: unique } },
+    select: { id: true },
+  });
+
+  const found = new Set(rows.map((row) => row.id));
+  const kept = unique.filter((id) => found.has(id));
+  return { ids: kept, missing: unique.length - kept.length };
+}
+
 /** 선택 목록. 종류로 걸러서 가져온다. */
 export async function getMediaChoices(kind: MediaKind): Promise<MediaChoice[]> {
   const rows = await prisma.media.findMany({

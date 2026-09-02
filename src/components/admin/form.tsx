@@ -217,6 +217,7 @@ export function DateField({
   name,
   label,
   hint,
+  required,
   defaultValue,
   disabled,
 }: FieldProps) {
@@ -224,11 +225,12 @@ export function DateField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id} label={label} />
+      <Label htmlFor={id} label={label} required={required} />
       <input
         id={id}
         name={name}
         type="date"
+        required={required}
         defaultValue={defaultValue ?? ""}
         disabled={disabled}
         aria-describedby={hintId}

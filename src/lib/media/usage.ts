@@ -47,7 +47,14 @@ function describeSection(pageKey: string, sectionKey: string): string {
 }
 
 export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
-  const [faculty, sectionImages, sectionDocuments, items] = await Promise.all([
+  const [
+    faculty,
+    sectionImages,
+    sectionDocuments,
+    items,
+    newsCovers,
+    newsAttachments,
+  ] = await Promise.all([
     prisma.faculty.findMany({
       where: { photoMediaId: mediaId },
       select: { id: true, nameKo: true },
@@ -69,7 +76,25 @@ export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
       },
       orderBy: { sortOrder: "asc" },
     }),
+    prisma.newsPost.findMany({
+      where: { coverMediaId: mediaId },
+      select: { id: true, titleKo: true },
+      orderBy: { publishedAt: "desc" },
+    }),
+    prisma.newsAttachment.findMany({
+      where: { mediaId },
+      select: { post: { select: { id: true, titleKo: true } } },
+      orderBy: { sortOrder: "asc" },
+    }),
   ]);
+
+  // 학교소식은 A안·B안 두 곳의 목록과 상세에 나온다. 대체 텍스트를 고치면 네 패턴을 다시 만든다.
+  const NEWS_PATHS = [
+    "/[locale]/(site)/news",
+    "/[locale]/(site)/news/[slug]",
+    "/[locale]/design-b/news",
+    "/[locale]/design-b/news/[slug]",
+  ];
 
   return [
     ...faculty.map((member) => ({
@@ -95,6 +120,16 @@ export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
       )} — ${item.labelKo ?? "항목"}`,
       href: `/admin/pages/${item.section.pageKey}/${item.section.sectionKey}`,
       paths: [`/[locale]/${item.section.pageKey}`],
+    })),
+    ...newsCovers.map((post) => ({
+      label: `학교소식 — ${post.titleKo} (대표 이미지)`,
+      href: `/admin/news/${post.id}/edit`,
+      paths: NEWS_PATHS,
+    })),
+    ...newsAttachments.map((attachment) => ({
+      label: `학교소식 — ${attachment.post.titleKo} (첨부파일)`,
+      href: `/admin/news/${attachment.post.id}/edit`,
+      paths: NEWS_PATHS,
     })),
   ];
 }

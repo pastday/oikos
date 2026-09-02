@@ -49,6 +49,19 @@ enum CourseCategory {
   OTHER // 기타
 }
 
+/// 학교소식 카테고리.
+///
+/// 처음부터 복잡한 분류 체계를 만들지 않는다. 다섯 값이면 충분하다. (학교소식 지시 8항)
+/// 한/영 표시 문구는 코드(`src/lib/cms/news.ts`, `src/components/admin/cms-ui.tsx`)에 둔다.
+/// 교수 관련 외부 언론보도(`FacultyArticle`)와는 전혀 다른 기능이다. (지시 16항)
+enum NewsCategory {
+  NOTICE // 공지
+  EVENT // 행사
+  ACADEMIC // 학사
+  MEDIA // 미디어
+  OTHER // 기타
+}
+
 /// 상담신청·설명회신청 공통 처리 상태.
 /// 두 폼의 상태 흐름이 동일하므로 enum 중복을 피하고 하나를 재사용한다.
 enum InquiryStatus {
@@ -400,6 +413,85 @@ model FAQ {
 }
 
 // ---------------------------------------------------------------------------
+// 학교소식
+// ---------------------------------------------------------------------------
+
+/// 학교 자체 소식 한 건. (행사 · 공지 · 홍보)
+///
+/// **교수 관련 외부 언론보도(`FacultyArticle`)와 별개의 기능이다.** (지시 16항)
+///  - 교수 개인의 외부 기사 → `FacultyArticle` → 교수진 상세의 "언론 · 미디어"
+///  - 학교 단위의 행사 · 공지 → `NewsPost` → `/news` 목록·상세
+/// 기존 `FacultyArticle` 데이터를 이쪽으로 옮기지 않는다.
+///
+/// **한국어 제목·본문만 필수다.** 영문 필드가 비면 영문 페이지에서 한국어를 그대로
+/// 보여 준다. (`pickLocale` — 없는 번역을 지어내지 않는다는 기존 정책)
+///
+/// 본문은 rich text 가 아니라 **여러 문단의 평문**이다. 빈 줄로 문단을 나눈다.
+/// (`PageSection.bodyKo` 와 같은 방식) HTML 직접 입력은 받지 않는다.
+model NewsPost {
+  id String @id @default(cuid())
+
+  /// 상세 URL 세그먼트. 사람이 읽을 수 있는 값이며 유일하다.
+  /// 관리자가 비워 두면 저장 시 한국어 제목에서 자동 생성하고, 겹치면 뒤에 -2, -3 을 붙인다.
+  slug String @unique
+
+  titleKo   String
+  titleEn   String?
+  summaryKo String?
+  summaryEn String?
+  /// 본문. 빈 줄로 문단을 나눈다. 한국어는 필수.
+  contentKo String
+  contentEn String?
+
+  category NewsCategory @default(NOTICE)
+
+  /// 게시일. 목록 정렬·표시에 쓴다. **날짜만** 저장한다. (`FacultyArticle.publishedAt` 과 같은 이유)
+  /// 미래 날짜 예약 게시는 만들지 않는다. (지시 9항)
+  publishedAt DateTime @db.Date
+
+  /// 공개 여부. 비공개면 관리자에서만 보이고 `/news` 목록·상세에서 사라진다.
+  isPublished Boolean @default(true)
+
+  /// 대표 이미지. **기존 `Media` 를 재사용한다.** 없으면 화면이 이미지 영역을 생략한다.
+  /// `onDelete: Restrict` 라 사용 중인 파일은 DB 가 삭제를 거부한다. (다른 콘텐츠와 같은 정책)
+  coverMediaId String?
+  cover        Media?  @relation("NewsPostCover", fields: [coverMediaId], references: [id], onDelete: Restrict)
+
+  /// 첨부파일. `Media` 를 그대로 쓰되, 한 소식이 여러 개를 순서대로 가질 수 있어
+  /// 조인 테이블을 둔다. (`PageSection` 은 문서가 하나뿐이라 단일 FK 였다)
+  attachments NewsAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// 공개 목록의 최신순 정렬용
+  @@index([isPublished, publishedAt])
+  @@map("news_posts")
+}
+
+/// 학교소식 ↔ 첨부파일 연결. (지시 4·14항)
+///
+/// **별도 파일 테이블을 새로 만들지 않는다.** 기존 `Media` 를 재사용하고
+/// 소속·순서만 이 표가 담는다. 소식을 지우면 이 연결 행만 함께 사라지고
+/// (`onDelete: Cascade`) `Media` 파일 자체는 남는다. (지시 15항 — 물리 삭제 금지)
+model NewsAttachment {
+  id     String   @id @default(cuid())
+  postId String
+  post   NewsPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  mediaId String
+  media   Media  @relation("NewsAttachmentMedia", fields: [mediaId], references: [id], onDelete: Restrict)
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  /// 같은 파일을 한 소식에 두 번 붙이지 않는다.
+  @@unique([postId, mediaId])
+  @@index([postId, sortOrder])
+  @@map("news_attachments")
+}
+
+// ---------------------------------------------------------------------------
 // 입학상담 / 설명회 신청
 // ---------------------------------------------------------------------------
 
@@ -472,6 +564,8 @@ model Media {
   facultyPhotos        Faculty[]
   facultyBookCovers    FacultyBook[]     @relation("FacultyBookCover")
   facultyArticleImages FacultyArticle[]  @relation("FacultyArticleImage")
+  newsPostCovers       NewsPost[]        @relation("NewsPostCover")
+  newsAttachments      NewsAttachment[]  @relation("NewsAttachmentMedia")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -666,7 +760,7 @@ model AdmissionEducation {
   schoolAddress String?
   period        String?
   degreeName    String?
-  sortOrder     Int    @default(0)
+  sortOrder     Int     @default(0)
 
   createdAt DateTime @default(now())
 
@@ -684,7 +778,7 @@ model AdmissionCareer {
   organization String
   period       String?
   position     String?
-  sortOrder    Int    @default(0)
+  sortOrder    Int     @default(0)
 
   createdAt DateTime @default(now())
 
@@ -708,7 +802,7 @@ model AdmissionFile {
   /// 지원자가 올린 원본 파일명. **표시·다운로드 파일명으로만 쓰고 저장 경로에는 쓰지 않는다.**
   originalName String
   /// 실제 저장 파일명. `<uuid>.<확장자>` 이며 확장자는 magic byte 판정 결과에서 나온다.
-  storedName   String           @unique
+  storedName   String @unique
   mimeType     String
   size         Int
   /// 업로드 루트 기준 상대 경로. 공개 URL 이 아니다.

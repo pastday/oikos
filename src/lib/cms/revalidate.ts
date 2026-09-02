@@ -119,6 +119,19 @@ export function revalidateFaq(): void {
 }
 
 /**
+ * 학교소식 변경.
+ *
+ * 목록(`/news`)과 상세(`/news/[slug]`)에만 나온다. 메인·다른 페이지에는 노출되지 않는다.
+ * 상세는 동적 세그먼트이므로 **라우트 패턴**(`/news/[slug]`)으로 무효화해야 한다.
+ * (실제 slug 를 넘기면 무효화되지 않는다 — 이 파일 상단 주석 참고)
+ * `revalidate()` 가 A안·B안 두 패턴을 함께 처리한다.
+ */
+export function revalidateNews(): void {
+  revalidate("/news");
+  revalidate("/news/[slug]");
+}
+
+/**
  * 입학안내 수치(등록금·수수료·개강) 변경.
  *
  * 금액은 등록금 표뿐 아니라 **입학절차 설명과 비고 문구에도 들어간다.**
