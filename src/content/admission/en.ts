@@ -238,5 +238,22 @@ export const admissionEn: AdmissionContent = {
       { path: "/admission", label: "Admissions" },
       { path: "/consultation", label: "Admission consultation" },
     ],
+    payment: {
+      heading: "Next Step",
+      nextStepLabel: "Next Step",
+      nextStepValue: "Admission Fee Payment",
+      feeLabel: "Admission Fee",
+      accountHeading: "Payment Account",
+      bankLabel: "Bank",
+      holderLabel: "Account Holder",
+      accountLabel: "Account Number",
+      depositorNote:
+        "Please use the applicant's name as the depositor name.",
+      processNote:
+        "After the admission fee is paid, the admission review proceeds. Once the review is complete and the Letter of Admission is issued, tuition payment will follow.",
+      separateNote: "The admission fee is separate from tuition.",
+      copyButton: "Copy account number",
+      copied: "Account number copied.",
+    },
   },
 };

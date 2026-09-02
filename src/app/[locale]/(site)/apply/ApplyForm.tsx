@@ -18,6 +18,7 @@ import {
 } from "@/components/form/Fields";
 import { FormAlert, SubmitButton } from "@/components/form/FormFeedback";
 import { SignaturePad } from "@/components/admission/SignaturePad";
+import { CopyAccountButton } from "@/components/admission/CopyAccountButton";
 import {
   getAdmissionContent,
   type AdmissionContent,
@@ -40,6 +41,8 @@ import {
   admissionDocumentList,
   type AdmissionDocumentKey,
 } from "@/lib/admission/documents";
+import { formatKrw } from "@/content/program-facts";
+import type { AdmissionFeeReceipt } from "@/lib/cms/admission-fee";
 import {
   submitAdmissionApplication,
   type AdmissionFormState,
@@ -246,6 +249,7 @@ export function ApplyForm({
         applicationNo={state.applicationNo}
         program={state.program}
         name={state.name}
+        feeInfo={state.feeInfo}
       />
     );
   }
@@ -1357,13 +1361,18 @@ function SubmittedPanel({
   applicationNo,
   program,
   name,
+  feeInfo,
 }: {
   locale: Locale;
   content: AdmissionContent;
   applicationNo: string;
   program: string;
   name: string;
+  /** DB·파일 저장이 모두 성공한 뒤 Server Action 이 실어 보낸 값. 꺼져 있으면 null. */
+  feeInfo: AdmissionFeeReceipt | null;
 }) {
+  const pay = content.success.payment;
+
   return (
     <div
       role="status"
@@ -1402,6 +1411,75 @@ function SubmittedPanel({
       <p className="mt-4 text-center text-xs text-muted">
         {content.success.note}
       </p>
+
+      {/* 입학허가비 납부 안내. feeInfo 가 null 이면(관리자가 안내 OFF) 이 영역을 그리지 않는다.
+          feeInfo 는 DB·파일 저장이 모두 성공한 뒤에만 채워진다. (지시 10·14항) */}
+      {feeInfo && (
+        <div className="mx-auto mt-8 max-w-md rounded-md border border-navy/15 bg-background px-5 py-5">
+          <div className="flex items-baseline justify-between border-b border-line pb-3">
+            <span className="text-xs font-semibold text-muted">
+              {pay.nextStepLabel}
+            </span>
+            <span className="text-sm font-bold text-navy">
+              {pay.nextStepValue}
+            </span>
+          </div>
+
+          <div className="flex items-baseline justify-between border-b border-line py-3">
+            <span className="text-xs font-semibold text-muted">
+              {pay.feeLabel}
+            </span>
+            <span className="font-serif text-lg font-bold text-navy">
+              {formatKrw(feeInfo.amount, locale)}
+            </span>
+          </div>
+
+          <p className="mt-4 text-xs font-semibold text-navy">
+            {pay.accountHeading}
+          </p>
+          <dl className="mt-2">
+            <div className="flex items-baseline justify-between border-b border-line py-2">
+              <dt className="text-xs font-semibold text-muted">
+                {pay.bankLabel}
+              </dt>
+              <dd className="text-sm font-semibold text-foreground/85">
+                {feeInfo.bank}
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between border-b border-line py-2">
+              <dt className="text-xs font-semibold text-muted">
+                {pay.holderLabel}
+              </dt>
+              <dd className="text-sm font-semibold text-foreground/85">
+                {feeInfo.accountHolder}
+              </dd>
+            </div>
+            <div className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+              <dt className="text-xs font-semibold text-muted">
+                {pay.accountLabel}
+              </dt>
+              <dd className="flex flex-wrap items-center gap-2 text-sm font-semibold break-all text-foreground/85">
+                <span>{feeInfo.accountNumber}</span>
+                <CopyAccountButton
+                  value={feeInfo.accountNumber}
+                  label={pay.copyButton}
+                  copiedLabel={pay.copied}
+                />
+              </dd>
+            </div>
+          </dl>
+
+          <p className="mt-3 text-xs leading-relaxed text-navy">
+            {pay.depositorNote}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            {pay.processNote}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            ※ {pay.separateNote}
+          </p>
+        </div>
+      )}
 
       <ul className="mt-7 flex flex-wrap justify-center gap-3">
         {content.success.links.map((link) => (

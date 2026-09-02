@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AdmissionFeeNotice } from "@/components/page/AdmissionFeeNotice";
 import { AdmissionResources } from "@/components/page/AdmissionResources";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
@@ -13,6 +14,7 @@ import {
   getPublishedPrograms,
 } from "@/lib/cms/queries";
 import { getAdmissionResources } from "@/lib/cms/resources";
+import { getAdmissionFeeDisplay } from "@/lib/cms/admission-fee";
 import { toPageIntro, toPairs, toValues } from "@/lib/cms/page-view";
 import { formatKrw } from "@/content/program-facts";
 import { getDictionary } from "@/i18n";
@@ -70,14 +72,21 @@ export default async function AdmissionPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [sections, numbers, amounts, programs, admissionResources] =
-    await Promise.all([
-      getPageSections(PAGE_KEY, locale),
-      getProgramNumbers(),
-      getAdmissionNumbers(),
-      getPublishedPrograms(locale),
-      getAdmissionResources(locale),
-    ]);
+  const [
+    sections,
+    numbers,
+    amounts,
+    programs,
+    admissionResources,
+    admissionFee,
+  ] = await Promise.all([
+    getPageSections(PAGE_KEY, locale),
+    getProgramNumbers(),
+    getAdmissionNumbers(),
+    getPublishedPrograms(locale),
+    getAdmissionResources(locale),
+    getAdmissionFeeDisplay(),
+  ]);
 
   const dict = getDictionary(locale);
   const pages = getPageContent(locale, numbers);
@@ -207,6 +216,14 @@ export default async function AdmissionPage({ params }: PageProps) {
           )}
         </Section>
       )}
+
+      {/* 입학허가비 안내. 금액·절차만. 계좌정보는 최종 제출 성공 화면에서만. (지시 8·20항)
+          관리자가 납부 안내를 끄면 컴포넌트가 아무것도 그리지 않는다. */}
+      <AdmissionFeeNotice
+        enabled={admissionFee.enabled}
+        amountFormatted={formatKrw(admissionFee.amount, locale)}
+        content={content.admissionFee}
+      />
 
       {steps && steps.items.length > 0 && (
         <Section

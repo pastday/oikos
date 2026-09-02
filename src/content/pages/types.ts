@@ -213,6 +213,21 @@ export type AdmissionContent = {
     description: string;
     items: { period: string; label: string; type: "semester" | "break" }[];
   };
+  /**
+   * 입학허가비 안내 영역의 **문구**. 금액은 `SiteSetting`(`admissionFee.amount`)에서 오고
+   * 관리자가 납부 안내를 끄면 이 영역 자체를 그리지 않는다.
+   * 은행·예금주·계좌번호는 여기에도, 공개 페이지에도 나오지 않는다. (지시 8·20항)
+   */
+  admissionFee: {
+    title: string;
+    amountLabel: string;
+    /** 입학상담 → … → 등록금 납부 6단계. 절차 안에서 입학허가비 위치를 보여 준다. */
+    steps: string[];
+    /** 금액 아래 설명 문단. */
+    paragraphs: string[];
+    /** ※ 로 시작하는 주의 문구. "등록금과 별도" / "계좌는 최종 제출 후 안내". */
+    notes: string[];
+  };
 };
 
 export type FaqContent = {

@@ -40,6 +40,10 @@ import {
   type AdmissionInput,
 } from "@/lib/admission/validation";
 import { MIN_FILL_MS, spamGuardFields, toFieldErrors } from "@/lib/validation/inquiry";
+import {
+  getAdmissionFeeForReceipt,
+  type AdmissionFeeReceipt,
+} from "@/lib/cms/admission-fee";
 import type { AdmissionFileType } from "@/generated/prisma/enums";
 
 /**
@@ -72,6 +76,12 @@ export type AdmissionFormState =
       applicationNo: string;
       program: ProgramType;
       name: string;
+      /**
+       * 최종 제출 성공 시점의 입학허가비·납부계좌. (입학허가비 안내 지시 10·11·19항)
+       * 관리자가 납부 안내를 껐으면 `null` → 완료 화면이 계좌 영역을 그리지 않는다.
+       * DB 저장·파일 저장이 모두 성공한 뒤에만 이 값을 읽어 담는다.
+       */
+      feeInfo: AdmissionFeeReceipt | null;
     }
   /** 오류가 있는 첫 STEP 번호를 함께 돌려준다. 폼이 그 단계로 되돌아간다. */
   | { status: "invalid"; fieldErrors: AdmissionFieldErrors; step: number }
@@ -355,11 +365,17 @@ export async function submitAdmissionApplication(
     return { status: "error", reason: "server" };
   }
 
+  // 여기까지 왔으면 신청서 · 학력 · 경력 · 서명 · 첨부파일이 모두 저장됐다.
+  // 그때만 완료 화면에 계좌정보를 실어 보낸다. (지시 10·11항)
+  // getAdmissionFeeForReceipt 는 로그를 남기지 않는다. (지시 21항)
+  const feeInfo = await getAdmissionFeeForReceipt();
+
   return {
     status: "success",
     applicationNo: created.applicationNo,
     program: created.program,
     name: input.nameKo,
+    feeInfo,
   };
 }
 

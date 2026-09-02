@@ -590,6 +590,80 @@ export const admissionNumberSchema = z
   .transform((value) => (value.length === 0 ? null : value));
 
 // ---------------------------------------------------------------------------
+// 입학허가비 및 납부계좌 (입학허가비 안내 지시 4·5·6·27항)
+// ---------------------------------------------------------------------------
+
+/**
+ * 입학허가비·은행·예금주·계좌번호.
+ *
+ * - 금액: 숫자만. **0 보다 커야 한다.** (등록금 수치처럼 빈 값 허용이 아니다)
+ * - 계좌번호: 은행마다 형식이 달라 **문자열 그대로 저장.** 전화번호 포맷 함수를 쓰지 않는다.
+ *   앞뒤 공백만 `trim`.
+ * - 활성(`enabled`)일 때만 은행·예금주·계좌번호가 비어 있으면 저장을 막는다.
+ *   비활성일 때는 값을 유지하면서 노출만 끌 수 있다. (지시 27항)
+ * - 검증 실패 시 관리자 입력값이 사라지지 않게 하는 것은 폼 쪽에서 처리한다.
+ */
+export const admissionFeeSchema = z
+  .object({
+    enabled: z
+      .string()
+      .optional()
+      .transform((value) => value === "on"),
+    amount: z.string().trim().max(15),
+    bank: z.string().trim().max(80),
+    accountHolder: z.string().trim().max(80),
+    accountNumber: z.string().trim().max(80),
+  })
+  .superRefine((data, ctx) => {
+    const amountNum = Number(data.amount);
+    const amountValid =
+      data.amount.length > 0 &&
+      Number.isInteger(amountNum) &&
+      amountNum > 0;
+
+    if (data.amount.length > 0 && !amountValid) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["amount"],
+        message: "입학허가비는 0보다 큰 숫자만 입력할 수 있습니다.",
+      });
+    }
+
+    if (!data.enabled) return;
+
+    if (!amountValid) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["amount"],
+        message: "입학허가비는 0보다 큰 숫자만 입력할 수 있습니다.",
+      });
+    }
+    if (data.bank.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["bank"],
+        message: "은행명을 입력해 주세요.",
+      });
+    }
+    if (data.accountHolder.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["accountHolder"],
+        message: "예금주를 입력해 주세요.",
+      });
+    }
+    if (data.accountNumber.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["accountNumber"],
+        message: "계좌번호를 입력해 주세요.",
+      });
+    }
+  });
+
+export type AdmissionFeeInput = z.infer<typeof admissionFeeSchema>;
+
+// ---------------------------------------------------------------------------
 // 미디어 (11단계)
 // ---------------------------------------------------------------------------
 

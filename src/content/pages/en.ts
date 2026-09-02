@@ -554,6 +554,26 @@ export function createPagesEn(
         { period: "January", label: "Break", type: "break" },
       ],
     },
+    admissionFee: {
+      title: "Admission Fee",
+      amountLabel: "Admission Fee",
+      steps: [
+        "Admission consultation",
+        "Application submission",
+        "Admission fee payment",
+        "Admission review",
+        "Letter of Admission issued",
+        "Tuition payment",
+      ],
+      paragraphs: [
+        "The admission fee is paid when the application is submitted.",
+        "The collected admission fees are remitted together in US dollars. After the admission review is completed and the Letter of Admission is issued, tuition payment will follow.",
+      ],
+      notes: [
+        "The admission fee is separate from tuition.",
+        "Detailed payment information is provided after the online application has been successfully submitted.",
+      ],
+    },
   },
 
   // -------------------------------------------------------------------------

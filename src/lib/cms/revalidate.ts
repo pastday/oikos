@@ -155,3 +155,13 @@ export function revalidateResources(): void {
 export function revalidateAdmissionNumbers(): void {
   revalidate("/admission");
 }
+
+/**
+ * 입학허가비·납부계좌 설정 변경.
+ *
+ * 공개로 나오는 곳은 입학안내(입학허가비 안내 영역)뿐이다. 최종 제출 성공 화면은
+ * 정적 페이지가 아니라 Server Action 이 매번 최신값을 읽어 반환하므로 무효화할 대상이 없다.
+ */
+export function revalidateAdmissionFee(): void {
+  revalidate("/admission");
+}

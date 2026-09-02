@@ -165,5 +165,26 @@ export type AdmissionContent = {
     nameLabel: string;
     note: string;
     links: { path: string; label: string }[];
+    /**
+     * 최종 제출 성공 화면의 **입학허가비 납부 안내** 문구.
+     * 금액·은행·예금주·계좌번호 값은 Server Action 반환값(`feeInfo`)에서 오고,
+     * 여기에는 라벨과 안내 문장만 둔다. (계좌정보를 콘텐츠 파일에 적지 않는다)
+     * 관리자가 납부 안내를 끄면 `feeInfo` 가 `null` 이라 이 영역이 그려지지 않는다.
+     */
+    payment: {
+      heading: string;
+      nextStepLabel: string;
+      nextStepValue: string;
+      feeLabel: string;
+      accountHeading: string;
+      bankLabel: string;
+      holderLabel: string;
+      accountLabel: string;
+      depositorNote: string;
+      processNote: string;
+      separateNote: string;
+      copyButton: string;
+      copied: string;
+    };
   };
 };

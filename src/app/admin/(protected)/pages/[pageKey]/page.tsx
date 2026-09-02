@@ -6,12 +6,14 @@ import { prisma } from "@/lib/prisma";
 import { AdminPageHeader, EmptyValue } from "@/components/admin/ui";
 import { PublishBadge, Th, Td } from "@/components/admin/cms-ui";
 import { AdmissionNumbersForm } from "@/components/admin/AdmissionNumbersForm";
+import { AdmissionFeeForm } from "@/components/admin/AdmissionFeeForm";
 import {
   ADMISSION_PAGE_KEY,
   admissionNumberKeys,
   findPage,
 } from "@/lib/cms/page-catalog";
-import { saveAdmissionNumbers } from "../../cms-actions";
+import { getAdmissionFeeSettings } from "@/lib/cms/admission-fee";
+import { saveAdmissionFee, saveAdmissionNumbers } from "../../cms-actions";
 
 export const metadata: Metadata = {
   title: "페이지 콘텐츠 | Oikos 관리자",
@@ -69,6 +71,8 @@ export default async function AdminPageSectionsPage({ params }: PageProps) {
     }
   }
 
+  const feeSettings = isAdmission ? await getAdmissionFeeSettings() : null;
+
   return (
     <div className="flex flex-col gap-6">
       <AdminPageHeader title={page.label} description={page.description}>
@@ -87,6 +91,10 @@ export default async function AdminPageSectionsPage({ params }: PageProps) {
           action={saveAdmissionNumbers}
           values={numberValues}
         />
+      )}
+
+      {isAdmission && feeSettings && (
+        <AdmissionFeeForm action={saveAdmissionFee} values={feeSettings} />
       )}
 
       <div className="relative overflow-x-auto rounded-lg border border-line bg-background">

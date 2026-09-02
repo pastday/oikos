@@ -221,5 +221,21 @@ export const admissionKo: AdmissionContent = {
       { path: "/admission", label: "입학안내" },
       { path: "/consultation", label: "입학상담 신청" },
     ],
+    payment: {
+      heading: "다음 단계",
+      nextStepLabel: "다음 단계",
+      nextStepValue: "입학허가비 납부",
+      feeLabel: "입학허가비",
+      accountHeading: "입금계좌",
+      bankLabel: "은행",
+      holderLabel: "예금주",
+      accountLabel: "계좌번호",
+      depositorNote: "입금자명은 지원자 이름과 동일하게 입력해 주세요.",
+      processNote:
+        "입학허가비 납부 후 입학 심사가 진행되며, 심사 후 입학허가서가 발급되면 등록금을 납부하게 됩니다.",
+      separateNote: "입학허가비와 등록금은 별도입니다.",
+      copyButton: "계좌번호 복사",
+      copied: "계좌번호가 복사되었습니다.",
+    },
   },
 };

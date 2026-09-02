@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BAdmissionFeeNotice } from "@/components/site-b/BAdmissionFeeNotice";
 import { BAdmissionResources } from "@/components/site-b/BAdmissionResources";
 import { BDocumentLink } from "@/components/site-b/BDocumentLink";
 import { BSection } from "@/components/site-b/BLayout";
@@ -25,6 +26,7 @@ import {
   getPublishedPrograms,
 } from "@/lib/cms/queries";
 import { getAdmissionResources } from "@/lib/cms/resources";
+import { getAdmissionFeeDisplay } from "@/lib/cms/admission-fee";
 import { cn } from "@/lib/cn";
 
 const PAGE_KEY = "admission";
@@ -80,14 +82,21 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [sections, numbers, amounts, programs, admissionResources] =
-    await Promise.all([
-      getPageSections(PAGE_KEY, locale),
-      getProgramNumbers(),
-      getAdmissionNumbers(),
-      getPublishedPrograms(locale),
-      getAdmissionResources(locale),
-    ]);
+  const [
+    sections,
+    numbers,
+    amounts,
+    programs,
+    admissionResources,
+    admissionFee,
+  ] = await Promise.all([
+    getPageSections(PAGE_KEY, locale),
+    getProgramNumbers(),
+    getAdmissionNumbers(),
+    getPublishedPrograms(locale),
+    getAdmissionResources(locale),
+    getAdmissionFeeDisplay(),
+  ]);
 
   const dict = getDictionary(locale);
   const pages = getPageContent(locale, numbers);
@@ -339,10 +348,18 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
         </BSection>
       )}
 
+      {/* 입학허가비 안내. 금액·절차만. 계좌정보는 최종 제출 성공 화면에서만. (지시 8·20항) */}
+      <BAdmissionFeeNotice
+        enabled={admissionFee.enabled}
+        index={6}
+        amountFormatted={formatKrw(admissionFee.amount, locale)}
+        content={content.admissionFee}
+      />
+
       {/* 입학 관련 서류 다운로드. 온라인 입학신청·입학상담과 별도 영역이다. (자료실 지시 18항) */}
       <BAdmissionResources
         locale={locale}
-        index={6}
+        index={7}
         items={admissionResources}
         labels={{
           sectionTitle: dict.resources.admissionSectionTitle,

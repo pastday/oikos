@@ -5,6 +5,7 @@ import type { ProgramType } from "@/generated/prisma/enums";
 import { requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import {
+  revalidateAdmissionFee,
   revalidateAdmissionNumbers,
   revalidateCourse,
   revalidateFaculty,
@@ -17,8 +18,10 @@ import {
   findSection,
   sectionSlots,
 } from "@/lib/cms/page-catalog";
+import { ADMISSION_FEE_KEYS } from "@/lib/cms/admission-fee";
 import { resolveMediaId } from "@/lib/media/select";
 import {
+  admissionFeeSchema,
   admissionNumberSchema,
   courseSchema,
   facultyArticleSchema,
@@ -701,5 +704,63 @@ export async function saveAdmissionNumbers(
   }
 
   revalidateAdmissionNumbers();
+  return { status: "saved" };
+}
+
+// ---------------------------------------------------------------------------
+// 입학허가비 및 납부계좌 (입학허가비 안내)
+// ---------------------------------------------------------------------------
+
+/**
+ * 입학허가비·은행·예금주·계좌번호 저장.
+ *
+ * 기존 `saveAdmissionNumbers` 와 같은 방식이다. `SiteSetting` 5개 key 를 한 트랜잭션으로
+ * upsert 한다. **로그에 계좌정보를 남기지 않는다.** (실패 시 오류 객체만 기록 — 지시 21항)
+ */
+export async function saveAdmissionFee(
+  _prevState: CmsFormState,
+  formData: FormData,
+): Promise<CmsFormState> {
+  await requireAdmin();
+
+  const parsed = admissionFeeSchema.safeParse(formDataToObject(formData));
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const field =
+      typeof issue?.path?.[0] === "string" ? issue.path[0] : undefined;
+    return {
+      status: "error",
+      message: issue?.message ?? CMS_INVALID_ERROR,
+      field,
+    };
+  }
+
+  const values: { key: string; value: string }[] = [
+    { key: ADMISSION_FEE_KEYS.amount, value: parsed.data.amount },
+    { key: ADMISSION_FEE_KEYS.bank, value: parsed.data.bank },
+    { key: ADMISSION_FEE_KEYS.accountHolder, value: parsed.data.accountHolder },
+    { key: ADMISSION_FEE_KEYS.accountNumber, value: parsed.data.accountNumber },
+    {
+      key: ADMISSION_FEE_KEYS.enabled,
+      value: parsed.data.enabled ? "true" : "false",
+    },
+  ];
+
+  try {
+    await prisma.$transaction(
+      values.map(({ key, value }) =>
+        prisma.siteSetting.upsert({
+          where: { key },
+          update: { value },
+          create: { key, value },
+        }),
+      ),
+    );
+  } catch (error) {
+    // toErrorState 는 오류 객체만 로그에 남긴다. 입력값(계좌정보)은 찍히지 않는다.
+    return toErrorState("admission-fee", error);
+  }
+
+  revalidateAdmissionFee();
   return { status: "saved" };
 }
