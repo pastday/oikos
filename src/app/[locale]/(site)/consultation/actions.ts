@@ -2,6 +2,8 @@
 
 import { isLocale } from "@/i18n/config";
 import { prisma } from "@/lib/prisma";
+// 온라인 입학신청과 같은 전화번호 정규화를 쓴다. (별도 로직을 만들지 않는다)
+import { normalizePhoneForStorage } from "@/lib/admission/formatting";
 import {
   consultationErrorCodes,
   consultationFields,
@@ -99,7 +101,8 @@ export async function submitConsultation(
 
   const parsed = consultationSchema.safeParse({
     name: readText(formData, "name"),
-    phone: readText(formData, "phone"),
+    // 입학신청과 동일하게 포맷된 문자열(예: 010-7794-2288)로 저장한다.
+    phone: normalizePhoneForStorage(readText(formData, "phone")),
     email: readText(formData, "email"),
     interestedProgram: readText(formData, "interestedProgram"),
     message: readText(formData, "message"),
@@ -165,7 +168,8 @@ export async function submitSeminarApplication(
 
   const parsed = seminarSchema.safeParse({
     name: readText(formData, "name"),
-    phone: readText(formData, "phone"),
+    // 입학신청과 동일하게 포맷된 문자열(예: 010-7794-2288)로 저장한다.
+    phone: normalizePhoneForStorage(readText(formData, "phone")),
     email: readText(formData, "email"),
     preferredSession: readText(formData, "preferredSession"),
     attendeeCount: readText(formData, "attendeeCount"),

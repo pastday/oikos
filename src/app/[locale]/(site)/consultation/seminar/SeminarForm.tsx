@@ -14,6 +14,8 @@ import {
 } from "@/components/form/FormFeedback";
 import type { SeminarContent } from "@/content/pages";
 import type { Locale } from "@/i18n/config";
+// 온라인 입학신청과 같은 전화번호 자동 포맷을 쓴다. (별도 로직을 만들지 않는다)
+import { formatKoreanPhone } from "@/lib/admission/formatting";
 import { MAX_ATTENDEES, MIN_ATTENDEES } from "@/lib/validation/inquiry";
 import { submitSeminarApplication, type SeminarFormState } from "../actions";
 
@@ -106,7 +108,7 @@ export function SeminarForm({
           autoComplete="tel"
           maxLength={30}
           value={values.phone}
-          onChange={set("phone")}
+          onChange={(value) => set("phone")(formatKoreanPhone(value))}
           error={fieldErrors.phone && text.errors[fieldErrors.phone]}
           required
           requiredMark={text.requiredMark}
