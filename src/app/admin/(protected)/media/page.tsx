@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/ui";
 import { MediaThumb } from "@/components/admin/MediaThumb";
 import { formatBytes, kindFromMimeType } from "@/lib/media/validation";
+import { extensionLabel } from "@/lib/media/url";
 
 export const metadata: Metadata = {
   title: "미디어 | Oikos 관리자",
@@ -32,7 +33,7 @@ export default async function AdminMediaListPage() {
     <div className="flex flex-col gap-6">
       <AdminPageHeader
         title="미디어"
-        description="교수 사진·이미지·PDF 자료를 올리고 관리합니다. 올린 파일은 CMS 에서 선택해 사용합니다."
+        description="교수 사진·이미지·PDF·문서(HWP·DOCX 등)를 올리고 관리합니다. 올린 파일은 CMS 에서 선택해 사용합니다."
       >
         <Link
           href="/admin/media/new"
@@ -48,6 +49,7 @@ export default async function AdminMediaListPage() {
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((row) => {
             const kind = kindFromMimeType(row.mimeType);
+            const ext = extensionLabel(row.storedName);
 
             return (
               <li
@@ -58,6 +60,7 @@ export default async function AdminMediaListPage() {
                   url={row.path}
                   kind={kind}
                   alt={row.altKo ?? ""}
+                  label={ext}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -68,7 +71,7 @@ export default async function AdminMediaListPage() {
                   </p>
 
                   <p className="mt-1 text-xs text-muted">
-                    {kind === "pdf" ? "PDF" : row.mimeType.replace("image/", "").toUpperCase()}
+                    {ext}
                     {" · "}
                     {formatBytes(row.size)}
                     {" · "}

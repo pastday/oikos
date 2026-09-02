@@ -13,6 +13,7 @@ export const mainNavItems = [
   { key: "about", path: "/about" },
   { key: "faculty", path: "/faculty" },
   { key: "news", path: "/news" },
+  { key: "resources", path: "/resources" },
   { key: "programs", path: "/programs" },
   { key: "degree", path: "/degree" },
   { key: "admission", path: "/admission" },

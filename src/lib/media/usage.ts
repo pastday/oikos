@@ -54,6 +54,7 @@ export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
     items,
     newsCovers,
     newsAttachments,
+    resourceAttachments,
   ] = await Promise.all([
     prisma.faculty.findMany({
       where: { photoMediaId: mediaId },
@@ -86,6 +87,11 @@ export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
       select: { post: { select: { id: true, titleKo: true } } },
       orderBy: { sortOrder: "asc" },
     }),
+    prisma.resourceAttachment.findMany({
+      where: { mediaId },
+      select: { post: { select: { id: true, titleKo: true } } },
+      orderBy: { sortOrder: "asc" },
+    }),
   ]);
 
   // 학교소식은 A안·B안 두 곳의 목록과 상세에 나온다. 대체 텍스트를 고치면 네 패턴을 다시 만든다.
@@ -94,6 +100,15 @@ export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
     "/[locale]/(site)/news/[slug]",
     "/[locale]/design-b/news",
     "/[locale]/design-b/news/[slug]",
+  ];
+  // 자료실은 목록·상세 + 입학안내(ADMISSION 자료)에 나온다.
+  const RESOURCE_PATHS = [
+    "/[locale]/(site)/resources",
+    "/[locale]/(site)/resources/[slug]",
+    "/[locale]/design-b/resources",
+    "/[locale]/design-b/resources/[slug]",
+    "/[locale]/(site)/admission",
+    "/[locale]/design-b/admission",
   ];
 
   return [
@@ -130,6 +145,11 @@ export async function findMediaUsage(mediaId: string): Promise<MediaUsage[]> {
       label: `학교소식 — ${attachment.post.titleKo} (첨부파일)`,
       href: `/admin/news/${attachment.post.id}/edit`,
       paths: NEWS_PATHS,
+    })),
+    ...resourceAttachments.map((attachment) => ({
+      label: `자료실 — ${attachment.post.titleKo} (첨부파일)`,
+      href: `/admin/resources/${attachment.post.id}/edit`,
+      paths: RESOURCE_PATHS,
     })),
   ];
 }

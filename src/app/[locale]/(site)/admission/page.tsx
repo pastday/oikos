@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AdmissionResources } from "@/components/page/AdmissionResources";
 import { PageHero } from "@/components/page/PageHero";
 import { RelatedLinks } from "@/components/page/RelatedLinks";
 import { FactGrid, Prose, Section } from "@/components/page/Section";
@@ -11,8 +12,10 @@ import {
   getProgramNumbers,
   getPublishedPrograms,
 } from "@/lib/cms/queries";
+import { getAdmissionResources } from "@/lib/cms/resources";
 import { toPageIntro, toPairs, toValues } from "@/lib/cms/page-view";
 import { formatKrw } from "@/content/program-facts";
+import { getDictionary } from "@/i18n";
 import { isLocale, type Locale } from "@/i18n/config";
 import { buildPageMetadata } from "@/lib/metadata";
 import { cn } from "@/lib/cn";
@@ -67,13 +70,16 @@ export default async function AdmissionPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [sections, numbers, amounts, programs] = await Promise.all([
-    getPageSections(PAGE_KEY, locale),
-    getProgramNumbers(),
-    getAdmissionNumbers(),
-    getPublishedPrograms(locale),
-  ]);
+  const [sections, numbers, amounts, programs, admissionResources] =
+    await Promise.all([
+      getPageSections(PAGE_KEY, locale),
+      getProgramNumbers(),
+      getAdmissionNumbers(),
+      getPublishedPrograms(locale),
+      getAdmissionResources(locale),
+    ]);
 
+  const dict = getDictionary(locale);
   const pages = getPageContent(locale, numbers);
   const content = pages.admission;
 
@@ -259,6 +265,21 @@ export default async function AdmissionPage({ params }: PageProps) {
           </ol>
         </Section>
       )}
+
+      {/* 입학 관련 서류 다운로드. 온라인 입학신청·입학상담과 별도 영역이다. (자료실 지시 18항)
+          공개된 ADMISSION 자료가 없으면 컴포넌트가 아무것도 그리지 않는다. */}
+      <AdmissionResources
+        locale={locale}
+        items={admissionResources}
+        labels={{
+          sectionTitle: dict.resources.admissionSectionTitle,
+          download: dict.resources.downloadLabel,
+          viewDetail: dict.resources.viewDetail,
+          fileCount: dict.resources.fileCountLabel,
+          viewAll: dict.resources.viewAll,
+          newWindow: dict.resources.newWindow,
+        }}
+      />
 
       <RelatedLinks
         locale={locale}

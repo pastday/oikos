@@ -17,7 +17,7 @@ export default async function NewMediaPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <AdminPageHeader
         title="파일 올리기"
-        description="올린 파일은 미디어 목록에 쌓이고, 교수진 사진 등에서 선택해 사용합니다."
+        description="올린 파일은 미디어 목록에 쌓이고, 교수진 사진·자료실 첨부 등에서 선택해 사용합니다."
       >
         <Link
           href="/admin/media"

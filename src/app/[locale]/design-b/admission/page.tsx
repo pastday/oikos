@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BAdmissionResources } from "@/components/site-b/BAdmissionResources";
 import { BDocumentLink } from "@/components/site-b/BDocumentLink";
 import { BSection } from "@/components/site-b/BLayout";
 import { BPageHero } from "@/components/site-b/BPageHero";
@@ -23,6 +24,7 @@ import {
   getProgramNumbers,
   getPublishedPrograms,
 } from "@/lib/cms/queries";
+import { getAdmissionResources } from "@/lib/cms/resources";
 import { cn } from "@/lib/cn";
 
 const PAGE_KEY = "admission";
@@ -78,12 +80,14 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [sections, numbers, amounts, programs] = await Promise.all([
-    getPageSections(PAGE_KEY, locale),
-    getProgramNumbers(),
-    getAdmissionNumbers(),
-    getPublishedPrograms(locale),
-  ]);
+  const [sections, numbers, amounts, programs, admissionResources] =
+    await Promise.all([
+      getPageSections(PAGE_KEY, locale),
+      getProgramNumbers(),
+      getAdmissionNumbers(),
+      getPublishedPrograms(locale),
+      getAdmissionResources(locale),
+    ]);
 
   const dict = getDictionary(locale);
   const pages = getPageContent(locale, numbers);
@@ -334,6 +338,20 @@ export default async function DesignBAdmissionPage({ params }: PageProps) {
           </ol>
         </BSection>
       )}
+
+      {/* 입학 관련 서류 다운로드. 온라인 입학신청·입학상담과 별도 영역이다. (자료실 지시 18항) */}
+      <BAdmissionResources
+        locale={locale}
+        index={6}
+        items={admissionResources}
+        labels={{
+          sectionTitle: dict.resources.admissionSectionTitle,
+          download: dict.resources.downloadLabel,
+          viewDetail: dict.resources.viewDetail,
+          fileCount: dict.resources.fileCountLabel,
+          viewAll: dict.resources.viewAll,
+        }}
+      />
 
       <BRelated
         locale={locale}

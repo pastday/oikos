@@ -5,6 +5,7 @@ import type {
   FacultyType,
   NewsCategory,
   ProgramType,
+  ResourceCategory,
 } from "@/generated/prisma/enums";
 import { cn } from "@/lib/cn";
 
@@ -38,6 +39,14 @@ export const newsCategoryLabels: Record<NewsCategory, string> = {
   ACADEMIC: "학사",
   MEDIA: "미디어",
   OTHER: "기타",
+};
+
+/** 자료실 카테고리. 관리자 화면은 한국어만 쓴다. (공개 화면 라벨은 `lib/cms/resources.ts`) */
+export const resourceCategoryLabels: Record<ResourceCategory, string> = {
+  ADMISSION: "입학 관련 서식",
+  GUIDE: "모집요강",
+  ACADEMIC: "학사 자료",
+  OTHER: "기타 자료",
 };
 
 /** 학기가 지정되지 않은 과목을 목록에서 어떻게 부를지. */

@@ -7,8 +7,6 @@ import { LangSection, TextAreaField } from "@/components/admin/form";
 import {
   ACCEPT_ATTRIBUTE,
   formatBytes,
-  MAX_IMAGE_BYTES,
-  MAX_PDF_BYTES,
   UPLOAD_HELP,
 } from "@/lib/media/validation";
 import type { CmsFormState } from "@/lib/cms/validation";
@@ -57,8 +55,7 @@ export function MediaUploadForm({
         />
 
         <p className="mt-2 text-xs leading-relaxed text-muted">
-          {UPLOAD_HELP} 이미지 최대 {formatBytes(MAX_IMAGE_BYTES)}, PDF 최대{" "}
-          {formatBytes(MAX_PDF_BYTES)}.
+          {UPLOAD_HELP}
           <br />
           SVG 는 스크립트를 품을 수 있어 받지 않습니다.
         </p>

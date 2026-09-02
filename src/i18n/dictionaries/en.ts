@@ -18,6 +18,7 @@ export const en: Dictionary = {
     about: "Graduate School",
     faculty: "Faculty",
     news: "News",
+    resources: "Resources",
     programs: "MBA · DBA Programs",
     degree: "Degree & Accreditation",
     admission: "Admissions",
@@ -67,6 +68,22 @@ export const en: Dictionary = {
     videosTitle: "Videos",
     viewArticle: "View Article",
     watchVideo: "Watch Video",
+  },
+
+  resources: {
+    title: "Resources",
+    description:
+      "Download admission forms, academic materials, and other OIKOS University resources.",
+    empty: "No resources have been posted yet.",
+    backToList: "Back to list",
+    publishedLabel: "Posted",
+    attachmentsTitle: "Attachments",
+    downloadLabel: "Download",
+    viewDetail: "View details",
+    fileCountLabel: "{count} files",
+    newWindow: "opens in a new window",
+    admissionSectionTitle: "Admission Forms & Downloads",
+    viewAll: "View all resources",
   },
 
   pages: {

@@ -46,6 +46,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "교수진", href: "/admin/faculty" },
       { label: "학교소식", href: "/admin/news" },
+      { label: "자료실", href: "/admin/resources" },
       { label: "MBA · DBA 과정", href: "/admin/programs" },
       { label: "교과목", href: "/admin/courses" },
       {

@@ -17,6 +17,7 @@ export const ko = {
     about: "대학원 소개",
     faculty: "교수진",
     news: "학교소식",
+    resources: "자료실",
     programs: "MBA · DBA 과정",
     degree: "학위 및 인증",
     admission: "입학안내",
@@ -72,6 +73,27 @@ export const ko = {
     videosTitle: "동영상",
     viewArticle: "기사 보기",
     watchVideo: "영상 보기",
+  },
+
+  /**
+   * 자료실 목록·상세 + 입학안내 하단 다운로드 영역의 UI 문구.
+   * 게시물 제목·요약·본문·파일명 같은 실제 콘텐츠는 DB(`ResourcePost`/`Media`)에서 온다.
+   */
+  resources: {
+    title: "자료실",
+    description:
+      "OIKOS University의 입학, 학사 및 각종 자료를 다운로드할 수 있습니다.",
+    empty: "등록된 자료가 없습니다.",
+    backToList: "목록으로",
+    publishedLabel: "등록일",
+    attachmentsTitle: "첨부파일",
+    downloadLabel: "다운로드",
+    viewDetail: "상세보기",
+    /** `{count}` 자리에 파일 개수가 들어간다. */
+    fileCountLabel: "파일 {count}개",
+    newWindow: "새 창에서 열림",
+    admissionSectionTitle: "입학 관련 서류 다운로드",
+    viewAll: "자료실 전체보기",
   },
 
   pages: {

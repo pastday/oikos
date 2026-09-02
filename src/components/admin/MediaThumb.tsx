@@ -18,11 +18,14 @@ export function MediaThumb({
   kind,
   alt,
   size = "md",
+  label,
 }: {
   url: string;
-  kind: "image" | "pdf";
+  kind: "image" | "pdf" | "document";
   alt: string;
   size?: "sm" | "md";
+  /** pdf·document 일 때 배지에 쓸 짧은 라벨. 없으면 kind 기본값. */
+  label?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -31,11 +34,11 @@ export function MediaThumb({
     size === "sm" ? "h-12 w-12" : "h-20 w-20",
   );
 
-  if (kind === "pdf") {
+  if (kind === "pdf" || kind === "document") {
     return (
       <span className={box} aria-hidden="true">
-        <span className="font-serif text-[0.625rem] font-bold tracking-wide text-navy">
-          PDF
+        <span className="px-1 text-center font-serif text-[0.625rem] font-bold tracking-wide text-navy">
+          {label ?? (kind === "pdf" ? "PDF" : "FILE")}
         </span>
       </span>
     );

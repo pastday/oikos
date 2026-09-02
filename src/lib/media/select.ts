@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { MediaKind } from "./validation";
 import { kindFromMimeType } from "./validation";
+import { extensionLabel } from "./url";
 
 /**
  * 관리자 화면의 **미디어 선택 목록**과 **서버 측 타입 검증**.
@@ -16,28 +17,45 @@ export type MediaChoice = {
   originalName: string;
   altKo: string | null;
   kind: MediaKind;
+  /** 확장자 대문자 라벨. 예: "PDF" · "DOCX" · "PNG" */
+  ext: string;
 };
 
-/** 모든 파일을 선택 목록으로. 학교소식 첨부처럼 이미지·PDF 를 함께 붙이는 곳에서 쓴다. */
-export async function getAllMediaChoices(): Promise<MediaChoice[]> {
-  const rows = await prisma.media.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      path: true,
-      originalName: true,
-      altKo: true,
-      mimeType: true,
-    },
-  });
+const mediaChoiceSelect = {
+  id: true,
+  path: true,
+  storedName: true,
+  originalName: true,
+  altKo: true,
+  mimeType: true,
+} as const;
 
-  return rows.map((row) => ({
+function toChoice(row: {
+  id: string;
+  path: string;
+  storedName: string;
+  originalName: string;
+  altKo: string | null;
+  mimeType: string;
+}): MediaChoice {
+  return {
     id: row.id,
     url: row.path,
     originalName: row.originalName,
     altKo: row.altKo,
     kind: kindFromMimeType(row.mimeType),
-  }));
+    ext: extensionLabel(row.storedName),
+  };
+}
+
+/** 모든 파일을 선택 목록으로. 자료실·학교소식 첨부처럼 종류를 가리지 않는 곳에서 쓴다. */
+export async function getAllMediaChoices(): Promise<MediaChoice[]> {
+  const rows = await prisma.media.findMany({
+    orderBy: { createdAt: "desc" },
+    select: mediaChoiceSelect,
+  });
+
+  return rows.map(toChoice);
 }
 
 /**
@@ -62,30 +80,25 @@ export async function resolveExistingMediaIds(
   return { ids: kept, missing: unique.length - kept.length };
 }
 
-/** 선택 목록. 종류로 걸러서 가져온다. */
+/** 선택 목록. 종류로 걸러서 가져온다. (이미지 칸 / PDF 칸 전용) */
 export async function getMediaChoices(kind: MediaKind): Promise<MediaChoice[]> {
+  const where =
+    kind === "pdf"
+      ? { mimeType: "application/pdf" }
+      : kind === "document"
+        ? {
+            NOT: { mimeType: { startsWith: "image/" } },
+            mimeType: { not: "application/pdf" },
+          }
+        : { mimeType: { startsWith: "image/" } };
+
   const rows = await prisma.media.findMany({
-    where:
-      kind === "pdf"
-        ? { mimeType: "application/pdf" }
-        : { mimeType: { startsWith: "image/" } },
+    where,
     orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      path: true,
-      originalName: true,
-      altKo: true,
-      mimeType: true,
-    },
+    select: mediaChoiceSelect,
   });
 
-  return rows.map((row) => ({
-    id: row.id,
-    url: row.path,
-    originalName: row.originalName,
-    altKo: row.altKo,
-    kind: kindFromMimeType(row.mimeType),
-  }));
+  return rows.map(toChoice);
 }
 
 /**

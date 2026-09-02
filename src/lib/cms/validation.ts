@@ -531,6 +531,43 @@ export const newsLinkRowsSchema = z.array(newsLinkRowSchema).max(30);
 export type NewsLinkRowInput = z.infer<typeof newsLinkRowSchema>;
 
 // ---------------------------------------------------------------------------
+// 자료실 (자료실 지시 3·11·12·15항)
+// ---------------------------------------------------------------------------
+
+export const resourceCategories = [
+  "ADMISSION",
+  "GUIDE",
+  "ACADEMIC",
+  "OTHER",
+] as const;
+
+/**
+ * 자료실 게시물.
+ *
+ * 한국어 제목만 필수다. 요약·본문·영문은 모두 선택이다. (파일 중심 콘텐츠)
+ * slug·게시일 규칙은 학교소식과 같은 것(`newsSlug` / `requiredNewsDate`)을 재사용한다.
+ * 첨부파일(`attachmentMediaIds`)은 개수가 가변이라 액션에서 `formData.getAll` 로 처리한다.
+ */
+export const resourceSchema = z.object({
+  slug: newsSlug,
+  category: z.enum(resourceCategories),
+  titleKo: z
+    .string()
+    .trim()
+    .min(1, "제목을 입력해 주세요.")
+    .max(SHORT, "제목이 너무 깁니다."),
+  titleEn: optionalShort,
+  summaryKo: optionalLong,
+  summaryEn: optionalLong,
+  contentKo: optionalLong,
+  contentEn: optionalLong,
+  publishedAt: requiredNewsDate,
+  isPublished: checkbox,
+});
+
+export type ResourceInput = z.infer<typeof resourceSchema>;
+
+// ---------------------------------------------------------------------------
 // 입학안내 수치
 // ---------------------------------------------------------------------------
 

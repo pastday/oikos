@@ -132,6 +132,20 @@ export function revalidateNews(): void {
 }
 
 /**
+ * 자료실 변경.
+ *
+ * 목록(`/resources`)과 상세(`/resources/[slug]`)에 나온다.
+ * **입학안내(`/admission`)도 항상 함께 무효화한다.** `category = ADMISSION` 자료가
+ * 입학안내 하단에 나오고, 카테고리가 바뀌어 그 목록에서 빠지는 경우까지 놓치지 않기 위해서다.
+ * `revalidate()` 가 A안·B안 두 패턴을 함께 처리한다.
+ */
+export function revalidateResources(): void {
+  revalidate("/resources");
+  revalidate("/resources/[slug]");
+  revalidate("/admission");
+}
+
+/**
  * 입학안내 수치(등록금·수수료·개강) 변경.
  *
  * 금액은 등록금 표뿐 아니라 **입학절차 설명과 비고 문구에도 들어간다.**

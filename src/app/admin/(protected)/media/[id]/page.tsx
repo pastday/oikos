@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { AdminPageHeader, DateTimeText, DetailRow } from "@/components/admin/ui";
 import { MediaThumb } from "@/components/admin/MediaThumb";
+import { extensionLabel } from "@/lib/media/url";
 import { MediaDetailForm } from "@/components/admin/MediaDetailForm";
 import { formatBytes, kindFromMimeType } from "@/lib/media/validation";
 import { findMediaUsage } from "@/lib/media/usage";
@@ -39,7 +40,12 @@ export default async function MediaDetailPage({ params }: PageProps) {
       </AdminPageHeader>
 
       <section className="flex flex-col gap-5 rounded-lg border border-line bg-background p-5 sm:flex-row">
-        <MediaThumb url={media.path} kind={kind} alt={media.altKo ?? ""} />
+        <MediaThumb
+          url={media.path}
+          kind={kind}
+          alt={media.altKo ?? ""}
+          label={extensionLabel(media.storedName)}
+        />
 
         <dl className="min-w-0 flex-1">
           <DetailRow label="원본 파일명">{media.originalName}</DetailRow>
