@@ -61,6 +61,80 @@ export default async function DesignBNewsDetailPage({ params }: PageProps) {
         <div className="max-w-[72ch]">
           <BBody paragraphs={post.paragraphs} />
 
+          {post.links.videos.length > 0 && (
+            <div className="mt-14 border-t border-rule-2 pt-8">
+              <BEyebrow>{dict.news.videosTitle}</BEyebrow>
+              <ul className="mt-6 flex flex-col gap-10">
+                {post.links.videos.map((video) => (
+                  <li key={video.id}>
+                    <p className="mb-3 font-serif text-lg font-bold break-words text-ink">
+                      {video.title}
+                    </p>
+                    {video.embedUrl ? (
+                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-black">
+                        <iframe
+                          src={video.embedUrl}
+                          title={video.title}
+                          loading="lazy"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          className="absolute inset-0 h-full w-full"
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-ink hover:underline"
+                      >
+                        {dict.news.watchVideo}
+                        <span aria-hidden="true">↗</span>
+                        <span className="sr-only">({dict.news.newWindow})</span>
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {post.links.articles.length > 0 && (
+            <div className="mt-14 border-t border-rule-2 pt-8">
+              <BEyebrow>{dict.news.relatedArticlesTitle}</BEyebrow>
+              <ul className="mt-5 flex flex-col">
+                {post.links.articles.map((link) => (
+                  <li
+                    key={link.id}
+                    className="border-b border-rule-2/60 first:border-t"
+                  >
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-baseline gap-4 py-4"
+                    >
+                      <span className="min-w-0 flex-1 font-serif text-lg font-bold break-words text-ink group-hover:underline">
+                        {link.title}
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold whitespace-nowrap text-quiet">
+                        {dict.news.viewArticle}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-ink transition-transform group-hover:translate-x-1"
+                      >
+                        ↗
+                      </span>
+                      <span className="sr-only">({dict.news.newWindow})</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {post.attachments.length > 0 && (
             <div className="mt-14 border-t border-rule-2 pt-8">
               <BEyebrow>{dict.news.attachmentsTitle}</BEyebrow>

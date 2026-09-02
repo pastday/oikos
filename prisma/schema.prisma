@@ -62,6 +62,14 @@ enum NewsCategory {
   OTHER // 기타
 }
 
+/// 학교소식에 딸린 관련 링크의 종류.
+///  - ARTICLE: 언론기사·외부 블로그 등 일반 외부 링크. 상세에서 "관련 기사"로 나온다.
+///  - VIDEO:   YouTube 영상. 상세에서 embed iframe 으로 나온다. (video ID 는 URL 에서 추출)
+enum NewsLinkType {
+  ARTICLE
+  VIDEO
+}
+
 /// 상담신청·설명회신청 공통 처리 상태.
 /// 두 폼의 상태 흐름이 동일하므로 enum 중복을 피하고 하나를 재사용한다.
 enum InquiryStatus {
@@ -461,6 +469,10 @@ model NewsPost {
   /// 조인 테이블을 둔다. (`PageSection` 은 문서가 하나뿐이라 단일 FK 였다)
   attachments NewsAttachment[]
 
+  /// 관련 기사·외부 링크·YouTube 영상. 관리자가 여러 개 추가·삭제·정렬할 수 있어
+  /// 관계형 모델로 둔다. (문자열/JSON 배열보다 정렬·검증이 명확하다)
+  links NewsLink[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -489,6 +501,31 @@ model NewsAttachment {
   @@unique([postId, mediaId])
   @@index([postId, sortOrder])
   @@map("news_attachments")
+}
+
+/// 학교소식의 관련 기사 · 외부 링크 · 동영상 한 건. (학교소식 UX 정비 3항)
+///
+/// `FacultyArticle`(교수 개인 언론보도)과는 무관한 별도 테이블이다.
+/// 여기 링크는 학교소식 게시물에 붙는 참고 링크이며, 화면도 `/news/[slug]` 상세에서만 나온다.
+///
+/// **한국어 제목만 필수.** 영문이 비면 영문 페이지에서 한국어를 그대로 쓴다. (`pickLocale`)
+/// `url` 은 저장 시 http/https 만 통과하며, VIDEO 는 추가로 YouTube URL 만 허용한다.
+/// video ID 추출·embed URL 생성은 화면 조회 단계에서 한다. (`lib/cms/news.ts`)
+model NewsLink {
+  id     String       @id @default(cuid())
+  postId String
+  post   NewsPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type   NewsLinkType
+
+  titleKo String
+  titleEn String?
+  url     String
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([postId, sortOrder])
+  @@map("news_links")
 }
 
 // ---------------------------------------------------------------------------

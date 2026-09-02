@@ -63,6 +63,10 @@ export const en: Dictionary = {
     attachmentsTitle: "Attachments",
     downloadLabel: "Download",
     newWindow: "opens in a new window",
+    relatedArticlesTitle: "Related Articles",
+    videosTitle: "Videos",
+    viewArticle: "View Article",
+    watchVideo: "Watch Video",
   },
 
   pages: {

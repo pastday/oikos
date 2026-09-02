@@ -7,8 +7,12 @@ import {
   pickLocaleOptional,
   toMediaView,
   toParagraphs,
+  toSafeUrl,
   type MediaView,
 } from "./types";
+import { parseYouTubeId, youTubeEmbedUrl } from "./news-shared";
+
+export { slugifyNews, parseYouTubeId, youTubeEmbedUrl } from "./news-shared";
 
 /**
  * 학교소식(`NewsPost`) 공개 화면용 조회 · 표현.
@@ -128,10 +132,28 @@ export type NewsAttachmentView = {
   size: number;
 };
 
+/** 관련 기사·외부 링크·동영상 한 건 (표시용). */
+export type NewsLinkView = {
+  id: string;
+  /** 현재 locale 기준 링크 제목 */
+  title: string;
+  /** 검증을 통과한 http(s) 주소 */
+  url: string;
+  /** VIDEO 이고 YouTube 주소일 때만 채워진다. iframe src 로 그대로 쓸 수 있는 안전한 embed 주소. */
+  embedUrl: string | null;
+};
+
+export type NewsRelatedLinks = {
+  articles: NewsLinkView[];
+  videos: NewsLinkView[];
+};
+
 export type NewsDetail = NewsListItem & {
   /** 본문 문단. 빈 줄로 나눈다. 없으면 빈 배열 */
   paragraphs: string[];
   attachments: NewsAttachmentView[];
+  /** 관련 기사 · 동영상. 둘 다 비어 있으면 화면이 영역을 그리지 않는다. */
+  links: NewsRelatedLinks;
 };
 
 // ---------------------------------------------------------------------------
@@ -233,6 +255,16 @@ export const getPublishedNewsPost = cache(
             },
           },
         },
+        links: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: {
+            id: true,
+            type: true,
+            titleKo: true,
+            titleEn: true,
+            url: true,
+          },
+        },
       },
     });
 
@@ -249,9 +281,54 @@ export const getPublishedNewsPost = cache(
         url: attachment.media.path,
         size: attachment.media.size,
       })),
+      links: toRelatedLinks(locale, row.links),
     };
   },
 );
+
+/**
+ * 관련 링크를 화면용으로 정리한다.
+ *
+ * - URL 은 여기서 다시 `toSafeUrl` 로 http(s) 만 통과시킨다. (DB 가 CMS 를 거치지 않고
+ *   바뀔 수 있어 방어를 한 번 더 둔다 — `FacultyArticle` 의 `toSafeUrl` 과 같은 이유)
+ * - VIDEO 는 YouTube ID 를 추출해 **우리가 만든 embed 주소**만 넘긴다. 원본 URL 을
+ *   iframe src 에 넣지 않는다. ID 를 못 뽑으면 embed 없이 링크로만 표시한다.
+ */
+function toRelatedLinks(
+  locale: Locale,
+  rows: {
+    id: string;
+    type: "ARTICLE" | "VIDEO";
+    titleKo: string;
+    titleEn: string | null;
+    url: string;
+  }[],
+): NewsRelatedLinks {
+  const articles: NewsLinkView[] = [];
+  const videos: NewsLinkView[] = [];
+
+  for (const row of rows) {
+    const safeUrl = toSafeUrl(row.url);
+    if (!safeUrl) continue;
+
+    const view: NewsLinkView = {
+      id: row.id,
+      title: pickLocale(locale, row.titleKo, row.titleEn),
+      url: safeUrl,
+      embedUrl: null,
+    };
+
+    if (row.type === "VIDEO") {
+      const videoId = parseYouTubeId(row.url);
+      view.embedUrl = videoId ? youTubeEmbedUrl(videoId) : null;
+      videos.push(view);
+    } else {
+      articles.push(view);
+    }
+  }
+
+  return { articles, videos };
+}
 
 /** 첨부파일 용량 표기. 1KB 미만도 최소 1 KB 로 적는다. (`MediaBlocks` 와 같은 규칙) */
 export function formatAttachmentSize(bytes: number): string {
@@ -259,25 +336,4 @@ export function formatAttachmentSize(bytes: number): string {
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// ---------------------------------------------------------------------------
-// slug
-// ---------------------------------------------------------------------------
-
-/**
- * 제목에서 URL slug 를 만든다.
- *
- * 문자(한글 포함)와 숫자만 남기고 나머지는 `-` 로 바꾼다.
- * 한글 slug 는 브라우저가 percent-encoding 해서 정상 동작하며, 국내 사이트에서 흔하다.
- * 관리자가 직접 입력한 slug 가 있으면 그 값을 그대로 쓰므로, 이건 자동 생성 fallback 이다.
- */
-export function slugifyNews(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80)
-    .replace(/-+$/g, "");
 }

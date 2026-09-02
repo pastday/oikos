@@ -319,7 +319,12 @@ export function formDataToObject(formData: FormData): Record<string, string> {
 export type CmsFormState =
   | { status: "idle" }
   | { status: "saved" }
-  | { status: "error"; message: string };
+  /**
+   * `field` 는 어느 입력에서 오류가 났는지 힌트다. (선택)
+   * 폼이 그 입력(`[name]` 또는 `[data-field]`)으로 스크롤·포커스하는 데 쓴다.
+   * 없으면 오류 메시지만 표시한다.
+   */
+  | { status: "error"; message: string; field?: string };
 
 export const CMS_GENERIC_ERROR =
   "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
@@ -435,24 +440,20 @@ export const newsCategories = [
 ] as const;
 
 /**
- * 상세 URL slug.
+ * 상세 URL slug (선택).
  *
- * 비워 두면 액션이 한국어 제목에서 자동 생성한다. 직접 입력하는 경우
- * 문자(한글 포함)·숫자와 하이픈만 허용한다. `href` 세그먼트에 들어가는 값이라
- * 공백·슬래시·특수문자가 섞이면 링크가 깨진다.
+ * **형식을 여기서 강제하지 않는다.** 관리자가 규칙을 몰라도 되도록, 액션이
+ * `slugifyNews()` 로 무엇이 들어와도 정규화한다. ("Degree conferment ceremony" →
+ * "degree-conferment-ceremony") 비어 있으면 제목에서 자동 생성한다.
+ * 여기서는 길이만 본다.
  */
 const newsSlug = z
   .string()
   .trim()
-  .max(120)
+  .max(200)
   .optional()
   .transform((value) =>
     value === undefined || value.length === 0 ? null : value,
-  )
-  .refine(
-    (value) =>
-      value === null || /^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u.test(value),
-    "슬러그는 문자·숫자와 하이픈(-)만 사용할 수 있습니다.",
   );
 
 /**
@@ -485,11 +486,19 @@ const requiredNewsDate = z
  */
 export const newsSchema = z.object({
   slug: newsSlug,
-  titleKo: requiredShort,
+  titleKo: z
+    .string()
+    .trim()
+    .min(1, "제목을 입력해 주세요.")
+    .max(SHORT, "제목이 너무 깁니다."),
   titleEn: optionalShort,
   summaryKo: optionalLong,
   summaryEn: optionalLong,
-  contentKo: z.string().trim().min(1).max(LONG),
+  contentKo: z
+    .string()
+    .trim()
+    .min(1, "본문을 입력해 주세요.")
+    .max(LONG, "본문이 너무 깁니다."),
   contentEn: optionalLong,
   category: z.enum(newsCategories),
   publishedAt: requiredNewsDate,
@@ -498,6 +507,28 @@ export const newsSchema = z.object({
 });
 
 export type NewsInput = z.infer<typeof newsSchema>;
+
+/**
+ * 관련 링크(기사 · 동영상) 한 줄.
+ *
+ * 폼은 각 종류를 JSON 배열 hidden input 으로 보낸다. (`articleLinksJson` /
+ * `videoLinksJson`) 액션이 `JSON.parse` 후 이 스키마로 검증한다.
+ * URL 의 프로토콜(http/https)과 YouTube 여부는 액션에서 다시 본다.
+ */
+export const newsLinkRowSchema = z.object({
+  titleKo: z.string().trim().min(1, "링크 제목을 입력해 주세요.").max(SHORT),
+  titleEn: z
+    .string()
+    .trim()
+    .max(SHORT)
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  url: z.string().trim().min(1, "링크 URL을 입력해 주세요.").max(500),
+});
+
+export const newsLinkRowsSchema = z.array(newsLinkRowSchema).max(30);
+
+export type NewsLinkRowInput = z.infer<typeof newsLinkRowSchema>;
 
 // ---------------------------------------------------------------------------
 // 입학안내 수치

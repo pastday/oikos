@@ -110,6 +110,12 @@ function Hint({ id, text }: { id?: string; text?: string }) {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * 텍스트 한 줄.
+ *
+ * 기본은 **비제어**(`defaultValue`)다. `value` 를 주면 제어 입력으로 바뀐다.
+ * (학교소식 제목처럼 다른 UI — slug 미리보기 — 가 값을 실시간으로 봐야 할 때 쓴다)
+ */
 export function TextField({
   name,
   label,
@@ -118,8 +124,15 @@ export function TextField({
   defaultValue,
   disabled,
   maxLength = 200,
-}: FieldProps & { maxLength?: number }) {
+  value,
+  onChange,
+}: FieldProps & {
+  maxLength?: number;
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
   const { id, hintId } = useFieldIds(hint);
+  const controlled = value !== undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -128,12 +141,14 @@ export function TextField({
         id={id}
         name={name}
         type="text"
-        defaultValue={defaultValue ?? ""}
         required={required}
         maxLength={maxLength}
         disabled={disabled}
         aria-describedby={hintId}
         className={controlClassName}
+        {...(controlled
+          ? { value, onChange: (event) => onChange?.(event.target.value) }
+          : { defaultValue: defaultValue ?? "" })}
       />
       <Hint id={hintId} text={hint} />
     </div>

@@ -29,9 +29,19 @@ export default async function EditNewsPage({ params }: PageProps) {
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
         select: { mediaId: true },
       },
+      links: {
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: { type: true, titleKo: true, titleEn: true, url: true },
+      },
     },
   });
   if (!post) notFound();
+
+  const toRow = (link: { titleKo: string; titleEn: string | null; url: string }) => ({
+    titleKo: link.titleKo,
+    titleEn: link.titleEn ?? "",
+    url: link.url,
+  });
 
   const [imageOptions, attachmentOptions] = await Promise.all([
     getMediaChoices("image"),
@@ -72,6 +82,12 @@ export default async function EditNewsPage({ params }: PageProps) {
           attachmentMediaIds: post.attachments.map(
             (attachment) => attachment.mediaId,
           ),
+          articleLinks: post.links
+            .filter((link) => link.type === "ARTICLE")
+            .map(toRow),
+          videoLinks: post.links
+            .filter((link) => link.type === "VIDEO")
+            .map(toRow),
         }}
       />
 

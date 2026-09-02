@@ -68,6 +68,10 @@ export const ko = {
     attachmentsTitle: "첨부파일",
     downloadLabel: "다운로드",
     newWindow: "새 창에서 열림",
+    relatedArticlesTitle: "관련 기사",
+    videosTitle: "동영상",
+    viewArticle: "기사 보기",
+    watchVideo: "영상 보기",
   },
 
   pages: {

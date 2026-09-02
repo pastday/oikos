@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { AdminFormMessage } from "@/components/admin/ui";
 import {
   CheckboxField,
@@ -14,17 +23,33 @@ import {
 } from "@/components/admin/form";
 import { MediaPicker } from "@/components/admin/MediaPicker";
 import { NewsAttachmentsField } from "@/components/admin/NewsAttachmentsField";
+import {
+  NewsLinksField,
+  type NewsLinkRow,
+} from "@/components/admin/NewsLinksField";
 import { newsCategoryLabels } from "@/components/admin/cms-ui";
 import { newsCategories } from "@/lib/cms/validation";
+import { slugifyNews } from "@/lib/cms/news-shared";
 import type { MediaChoice } from "@/lib/media/select";
 import type { CmsFormState } from "@/lib/cms/validation";
 
 /**
  * 학교소식 등록 · 수정. 신규와 수정이 같은 폼을 쓴다. (학교소식 지시 7·19항)
  *
- * 새 디자인 시스템을 만들지 않는다. FAQ·교수 저서 폼과 같은 조각(`SettingsSection`,
- * `LangSection`, `MediaPicker` …)을 그대로 쓴다. 구획만 지시 19항대로 나눈다.
- *   게시 설정 · 미디어 · 기본정보 · 내용
+ * ## 저장 실패 시 입력값이 사라지지 않게 하는 방법 (UX 정비 2항)
+ *
+ * 이전 구현은 `<form action={formAction}>` 였다. React 19 는 폼 액션을 실행할 때마다
+ * (검증 실패로 돌아와도) `requestFormReset` 을 걸어 **비제어 입력값을 defaultValue 로
+ * 되돌린다.** 그래서 slug 오류 한 번에 제목·본문이 전부 초기화됐다.
+ *
+ * 이제 `<form onSubmit>` 에서 `new FormData(form)` 을 직접 만들어
+ * `startTransition(() => formAction(fd))` 로 부른다. React 가 폼 제출을 관리하지 않으므로
+ * 리셋이 일어나지 않고, DOM 에 남은 값이 그대로 유지된다.
+ * 대표 이미지·첨부파일·관련 링크는 각자 자기 state 를 가진 컴포넌트라 리렌더에도 남는다.
+ * (입학신청 폼에서 쓴 방식과 같다 — `ApplyForm` 주석 참고)
+ *
+ * ## 구획 (지시 19항)
+ *   게시 설정 · 미디어 · 한국어 · English · 관련 링크
  */
 
 const INITIAL_STATE: CmsFormState = { status: "idle" };
@@ -44,6 +69,10 @@ export type NewsFormValues = {
   coverMediaId: string | null;
   /** 연결된 첨부파일 Media id. 표시순서대로 */
   attachmentMediaIds: string[];
+  /** 관련 기사 / 외부 링크 */
+  articleLinks: NewsLinkRow[];
+  /** 동영상(YouTube) 링크 */
+  videoLinks: NewsLinkRow[];
 };
 
 const CATEGORY_OPTIONS = newsCategories.map((value) => ({
@@ -67,9 +96,51 @@ export function NewsForm({
   attachmentOptions: MediaChoice[];
 }) {
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
+  const formRef = useRef<HTMLFormElement>(null);
+  const alertRef = useRef<HTMLDivElement>(null);
+
+  // slug 미리보기·자동 생성을 위해 제목/slug 만 제어 입력으로 둔다. 나머지는 비제어.
+  const [titleKo, setTitleKo] = useState(values.titleKo);
+  const [titleEn, setTitleEn] = useState(values.titleEn ?? "");
+  const [slug, setSlug] = useState(values.slug ?? "");
+
+  const autoSlug = useMemo(
+    () => slugifyNews(titleEn.trim() || titleKo.trim()),
+    [titleEn, titleKo],
+  );
+
+  // 저장 실패 시 첫 오류 필드로 스크롤·포커스한다. (지시 2항)
+  useEffect(() => {
+    if (state.status !== "error") return;
+    const root = formRef.current;
+    const field = state.field;
+
+    const target =
+      (field && root
+        ? (root.querySelector<HTMLElement>(`[name="${field}"]`) ??
+          root.querySelector<HTMLElement>(`[data-field="${field}"]`))
+        : null) ?? alertRef.current;
+
+    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (target && target !== alertRef.current) {
+      window.setTimeout(() => target.focus?.(), 300);
+    }
+  }, [state]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isPending || !formRef.current) return;
+    const formData = new FormData(formRef.current);
+    startTransition(() => formAction(formData));
+  }
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-6"
+    >
       <SettingsSection title="게시 설정">
         <DateField
           name="publishedAt"
@@ -86,14 +157,14 @@ export function NewsForm({
           options={CATEGORY_OPTIONS}
           disabled={isPending}
         />
-        <TextField
-          name="slug"
-          label="주소(slug)"
-          hint="상세 페이지 주소에 쓰입니다. 비워 두면 한국어 제목에서 자동 생성됩니다. 문자·숫자·하이픈만 가능합니다."
-          defaultValue={values.slug}
-          maxLength={120}
-          disabled={isPending}
-        />
+        <div className="sm:col-span-2">
+          <SlugField
+            slug={slug}
+            autoSlug={autoSlug}
+            onChange={setSlug}
+            disabled={isPending}
+          />
+        </div>
         <CheckboxField
           name="isPublished"
           label="홈페이지에 공개"
@@ -126,7 +197,8 @@ export function NewsForm({
             name="titleKo"
             label="제목"
             required
-            defaultValue={values.titleKo}
+            value={titleKo}
+            onChange={setTitleKo}
             disabled={isPending}
           />
           <TextAreaField
@@ -152,7 +224,8 @@ export function NewsForm({
             name="titleEn"
             label="Title"
             hint="비워 두면 영문 페이지에도 한국어 제목이 표시됩니다."
-            defaultValue={values.titleEn}
+            value={titleEn}
+            onChange={setTitleEn}
             disabled={isPending}
           />
           <TextAreaField
@@ -174,12 +247,39 @@ export function NewsForm({
         </LangSection>
       </div>
 
-      {state.status === "saved" && (
-        <AdminFormMessage tone="success" message="저장되었습니다." />
-      )}
-      {state.status === "error" && (
-        <AdminFormMessage tone="error" message={state.message} />
-      )}
+      <SettingsSection title="관련 링크">
+        <div className="sm:col-span-2 flex flex-col gap-6">
+          <NewsLinksField
+            name="articleLinksJson"
+            field="articleLinks"
+            heading="기사 / 외부 링크"
+            description="언론기사·외부 블로그 등. 상세페이지에 '관련 기사'로 표시됩니다. http:// 또는 https:// 주소만 됩니다."
+            urlPlaceholder="https://example.com/article/123"
+            addLabel="링크 추가"
+            defaultValue={values.articleLinks}
+            disabled={isPending}
+          />
+          <NewsLinksField
+            name="videoLinksJson"
+            field="videoLinks"
+            heading="동영상"
+            description="YouTube 주소만 지원합니다. (youtube.com/watch?v=… 또는 youtu.be/…) 상세페이지에 영상이 바로 재생되도록 표시됩니다."
+            urlPlaceholder="https://www.youtube.com/watch?v=VIDEO_ID"
+            addLabel="동영상 추가"
+            defaultValue={values.videoLinks}
+            disabled={isPending}
+          />
+        </div>
+      </SettingsSection>
+
+      <div ref={alertRef} tabIndex={-1}>
+        {state.status === "saved" && (
+          <AdminFormMessage tone="success" message="저장되었습니다." />
+        )}
+        {state.status === "error" && (
+          <AdminFormMessage tone="error" message={state.message} />
+        )}
+      </div>
 
       <div className="flex items-center gap-3">
         <button
@@ -197,5 +297,60 @@ export function NewsForm({
         </Link>
       </div>
     </form>
+  );
+}
+
+/**
+ * 주소(slug) 입력.
+ *
+ * slug 규칙을 관리자가 몰라도 되게 만든다. 비워 두면 제목에서 자동 생성되고,
+ * 무엇을 입력하든 서버가 정규화한다. 실제 주소 미리보기를 함께 보여 준다.
+ */
+function SlugField({
+  slug,
+  autoSlug,
+  onChange,
+  disabled,
+}: {
+  slug: string;
+  autoSlug: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const id = useId();
+  const effective = slug.trim().length > 0 ? slugifyNews(slug) : autoSlug;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-semibold text-navy">
+        주소(slug)
+      </label>
+      <input
+        id={id}
+        name="slug"
+        type="text"
+        value={slug}
+        maxLength={200}
+        disabled={disabled}
+        placeholder={autoSlug || "제목에서 자동 생성"}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-md border border-line bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted/60 focus:border-navy-soft disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted"
+      />
+      <p className="text-xs leading-relaxed text-muted">
+        상세페이지 주소입니다. 비워두면 제목에서 자동 생성됩니다. 대문자·공백은
+        자동으로 정리됩니다.
+      </p>
+      {effective && (
+        <p className="text-xs text-muted">
+          주소 미리보기:{" "}
+          <code className="rounded bg-surface px-1 py-0.5 text-navy">
+            /ko/news/{effective}
+          </code>{" "}
+          <code className="rounded bg-surface px-1 py-0.5 text-navy">
+            /en/news/{effective}
+          </code>
+        </p>
+      )}
+    </div>
   );
 }

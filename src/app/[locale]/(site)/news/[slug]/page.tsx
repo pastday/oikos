@@ -99,6 +99,76 @@ export default async function NewsDetailPage({ params }: PageProps) {
             </div>
           )}
 
+          {post.links.articles.length > 0 && (
+            <div className="mt-12 border-t border-line pt-8">
+              <h2 className="text-sm font-bold tracking-[0.08em] text-navy">
+                {dict.news.relatedArticlesTitle}
+              </h2>
+              <ul className="mt-4 flex flex-col gap-2.5">
+                {post.links.articles.map((link) => (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 rounded-md border border-line bg-background px-4 py-3 text-sm transition-colors hover:border-navy"
+                    >
+                      <span className="min-w-0 flex-1 font-semibold break-words text-navy">
+                        {link.title}
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold whitespace-nowrap text-navy">
+                        {dict.news.viewArticle}
+                        <span aria-hidden="true"> →</span>
+                      </span>
+                      <span className="sr-only">({dict.news.newWindow})</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {post.links.videos.length > 0 && (
+            <div className="mt-12 border-t border-line pt-8">
+              <h2 className="text-sm font-bold tracking-[0.08em] text-navy">
+                {dict.news.videosTitle}
+              </h2>
+              <ul className="mt-4 flex flex-col gap-8">
+                {post.links.videos.map((video) => (
+                  <li key={video.id}>
+                    <p className="mb-3 text-sm font-semibold break-words text-navy">
+                      {video.title}
+                    </p>
+                    {video.embedUrl ? (
+                      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-line bg-black">
+                        <iframe
+                          src={video.embedUrl}
+                          title={video.title}
+                          loading="lazy"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          className="absolute inset-0 h-full w-full"
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy underline-offset-4 hover:underline"
+                      >
+                        {dict.news.watchVideo}
+                        <span aria-hidden="true">→</span>
+                        <span className="sr-only">({dict.news.newWindow})</span>
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {post.attachments.length > 0 && (
             <div className="mt-12 border-t border-line pt-8">
               <h2 className="text-sm font-bold tracking-[0.08em] text-navy">

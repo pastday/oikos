@@ -56,6 +56,8 @@ export default async function NewNewsPage() {
           isPublished: true,
           coverMediaId: null,
           attachmentMediaIds: [],
+          articleLinks: [],
+          videoLinks: [],
         }}
       />
     </div>
